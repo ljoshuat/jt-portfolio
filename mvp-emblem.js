@@ -76,8 +76,8 @@
       }
       
       const mat = {
-        black: new THREE.MeshStandardMaterial({ name: 'chrome_satin', color: 0xD8DEF0, roughness: 0.2, metalness: 1.0 }),
-        letter: new THREE.MeshStandardMaterial({ name: 'chrome', color: 0xF2F5FF, roughness: 0.03, metalness: 1.0 }),
+        black: new THREE.MeshStandardMaterial({ name: 'chrome_satin', color: 0xE9ECF2, roughness: 0.1, metalness: 1.0 }),
+        letter: new THREE.MeshStandardMaterial({ name: 'chrome', color: 0xFFFFFF, roughness: 0.015, metalness: 1.0 }),
         green: new THREE.MeshPhysicalMaterial({ name: 'black_enamel', color: 0x03050c, roughness: 0.5, metalness: 0.0, clearcoat: 1.0, clearcoatRoughness: 0.06 }),
         dark: new THREE.MeshStandardMaterial({ name: 'back_black', color: 0x111111, roughness: 0.6, metalness: 0.0 }),
       };
@@ -139,26 +139,30 @@
         const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ color: new THREE.Color(hex).multiplyScalar(k), side: THREE.DoubleSide }));
         m.position.set(x, y, z); m.lookAt(0, 0, 0); env.add(m);
       };
-      // Large gradient card behind the camera: flat chrome faces mirror this (bright sky, dark horizon, cool floor)
-      {
-        const cv = document.createElement('canvas'); cv.width = 16; cv.height = 512;
-        const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 512);
-        gr.addColorStop(0.00, '#f2f5ff'); gr.addColorStop(0.16, '#7486b8');
-        gr.addColorStop(0.26, '#121a30'); gr.addColorStop(0.32, '#020306'); gr.addColorStop(0.40, '#33427a');
-        gr.addColorStop(0.52, '#d4ddf6'); gr.addColorStop(0.62, '#5e72b0'); gr.addColorStop(0.78, '#141c3a'); gr.addColorStop(1.00, '#03040a');
-        g.fillStyle = gr; g.fillRect(0, 0, 16, 512);
+      const card = (w, h, x, y, z, stops) => {
+        const cv = document.createElement('canvas'); cv.width = 4; cv.height = 1024;
+        const g = cv.getContext('2d'), gr = g.createLinearGradient(0, 0, 0, 1024);
+        stops.forEach(([o, c]) => gr.addColorStop(o, c));
+        g.fillStyle = gr; g.fillRect(0, 0, 4, 1024);
         const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
-        const card = new THREE.Mesh(new THREE.PlaneGeometry(6, 1.6), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
-        card.position.set(-0.25, 0.05, 1.4); card.lookAt(0, 0.05, 0); card.rotateZ(-0.06); env.add(card);
-      }
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+        m.position.set(x, y, z); m.lookAt(0, y, 0); env.add(m);
+      };
+      // Wide backdrop behind the camera: soft sky above, dim ground below
+      card(8, 3, 0, 0, 1.6, [[0, '#d9dee8'], [0.45, '#59606e'], [0.5, '#1b1f27'], [0.75, '#3a404c'], [1, '#121418']]);
+      // Narrow "horizon" card where flat chrome faces look: bright sky, a hard dark horizon line, then a lit ground.
+      // The badge's sway tilts this band across the letters, which is what makes the chrome read as a mirror.
+      card(6, 0.34, 0, -0.075, 1.4, [
+        [0.00, '#ffffff'], [0.30, '#e6e9ef'], [0.44, '#9aa1ae'], [0.485, '#3b414c'],
+        [0.50, '#07080b'], [0.56, '#141820'], [0.70, '#4c5360'], [0.88, '#a4abb8'], [1.00, '#d6dae2'],
+      ]);
       plane(4, 0.5, 0, 1.4, 1.2, 0xffffff, 14);      // top softbox: hard highlight along upper edges
       plane(0.18, 2.4, -1.6, 0.3, 1.0, 0xffffff, 10); // left strip
-      plane(0.12, 2.4, 1.9, 0.2, 0.6, 0xc4d0ff, 3);   // right strip (dimmer, for falloff)
-      plane(3, 2, -2.4, 0.2, -1.2, 0x6a6cff, 1.8);    // blue-violet kicker
-      plane(3, 2, 2.4, 0.2, -1.2, 0x2f6bff, 2.4);     // blue kicker
-      plane(5, 0.4, 0, -1.1, 1.4, 0x4a5fa8, 0.9);     // low floor bounce
+      plane(0.12, 2.4, 1.9, 0.2, 0.6, 0xffffff, 4);   // right strip (dimmer, for falloff)
+      plane(3, 2, -2.4, 0.2, -1.2, 0x8a90ff, 1.2);    // faint cool kicker
+      plane(3, 2, 2.4, 0.2, -1.2, 0x6f9bff, 1.4);     // faint cool kicker
       const pmrem = new THREE.PMREMGenerator(renderer);
-      const tex = pmrem.fromScene(env, 0.01).texture;
+      const tex = pmrem.fromScene(env, 0.004, 0.1, 100, { size: 512 }).texture;
       pmrem.dispose();
       return tex;
     }
@@ -168,7 +172,7 @@
       renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
       renderer.toneMapping = THREE.ACESFilmicToneMapping;
-      renderer.toneMappingExposure = 0.85;
+      renderer.toneMappingExposure = 0.95;
       renderer.outputColorSpace = THREE.SRGBColorSpace;
       Object.assign(renderer.domElement.style, { display: 'block', width: '100%', height: '100%' });
       container.appendChild(renderer.domElement);
@@ -177,13 +181,13 @@
       const { model, mat } = buildEmblem();
       const envTex = buildEnv(renderer);
       Object.values(mat).forEach(m => { m.envMap = envTex; });
-      mat.black.envMapIntensity = 1.2; mat.letter.envMapIntensity = 2.0;
+      mat.black.envMapIntensity = 1.4; mat.letter.envMapIntensity = 1.8;
       mat.green.envMapIntensity = 0.9; mat.dark.envMapIntensity = 0.3;
       new THREE.Box3().setFromObject(model).getCenter(model.position).negate();
       scene.add(model);
       const key = new THREE.DirectionalLight(0xeef2ff, 3.2); key.position.set(-0.9, 1.0, 0.6); scene.add(key);
-      const rimA = new THREE.DirectionalLight(0x7a7cff, 2.4); rimA.position.set(-1, 0.2, -0.5); scene.add(rimA);
-      const rimB = new THREE.DirectionalLight(0x3a72ff, 2.8); rimB.position.set(1, -0.3, -0.3); scene.add(rimB);
+      const rimA = new THREE.DirectionalLight(0xc8ccff, 1.2); rimA.position.set(-1, 0.2, -0.5); scene.add(rimA);
+      const rimB = new THREE.DirectionalLight(0xb0c4ff, 1.2); rimB.position.set(1, -0.3, -0.3); scene.add(rimB);
 
       const camera = new THREE.PerspectiveCamera(30, 1, 0.01, 10);
       const controls = new OrbitControls(camera, renderer.domElement);
@@ -215,7 +219,7 @@
       const tick = () => {
         raf = requestAnimationFrame(tick); if (!visible) return;
         timer.update(); const t = timer.getElapsed();
-        if (autoRotate) { model.rotation.y = Math.sin(t * 0.45) * 0.22; model.rotation.x = Math.sin(t * 0.3) * 0.05; }
+        if (autoRotate) { model.rotation.y = Math.sin(t * 0.45) * 0.22; model.rotation.x = Math.sin(t * 0.3) * 0.07; }
         controls.update(); renderer.render(scene, camera);
       };
       tick();
