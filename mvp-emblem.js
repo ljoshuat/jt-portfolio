@@ -205,7 +205,7 @@
         camera.aspect = w / h; camera.updateProjectionMatrix();
         const halfW = 0.165, halfH = 0.03;
         const vFov = camera.fov * Math.PI / 180, hFov = 2 * Math.atan(Math.tan(vFov / 2) * camera.aspect);
-        const d = Math.max(halfW / Math.tan(hFov / 2), halfH / Math.tan(vFov / 2)) * 1.15;
+        const d = Math.max(halfW / Math.tan(hFov / 2), halfH / Math.tan(vFov / 2)) * 1.35; // margin so the sway never clips
         const dir = camera.position.lengthSq() ? camera.position.clone().normalize() : new THREE.Vector3(0, 0.04, 1).normalize();
         camera.position.copy(dir.multiplyScalar(d));
         controls.update();
