@@ -115,8 +115,14 @@
       part(player, "toggle").setAttribute("aria-label", "Play");
     });
 
+    /* Back to the cover and play button when it ends */
+
     video.addEventListener("ended", () => {
+      clearTimeout(idleTimer);
+      player.classList.remove("is-started", "is-active");
       player.classList.add("is-paused");
+      video.currentTime = 0;
+      render();
     });
 
     video.addEventListener("volumechange", () => {
