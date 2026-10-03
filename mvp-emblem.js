@@ -148,20 +148,20 @@
         const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
         m.position.set(x, y, z); m.lookAt(0, y, 0); env.add(m);
       };
-      // Blurred factory floor behind the camera (warm grey, yellow safety rails, overhead lights)
+      // Blurred factory floor behind the camera (cool grey, Royals-blue rails, overhead lights)
       // so edges and bevels pick up the same vibe as the Ford grille shots.
       {
         const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 384;
         const g = cv.getContext('2d');
         const bg = g.createLinearGradient(0, 0, 0, 384);
         bg.addColorStop(0, '#1d2a48'); bg.addColorStop(0.18, '#3a4766'); bg.addColorStop(0.32, '#a9aaa6');
-        bg.addColorStop(0.55, '#8f8b7c'); bg.addColorStop(1, '#2a2822');
+        bg.addColorStop(0.55, '#7f8898'); bg.addColorStop(1, '#1f2430');
         g.fillStyle = bg; g.fillRect(0, 0, 1024, 384);
         g.filter = 'blur(10px)';
         g.fillStyle = '#f2efe4';
         for (let i = 0; i < 7; i++) g.fillRect(40 + i * 150, 120, 90, 14);                 // overhead fixtures
-        g.fillStyle = '#d9c24a';
-        for (let i = 0; i < 9; i++) g.fillRect(20 + i * 118, 190 + (i % 3) * 12, 26, 150); // yellow rails
+        g.fillStyle = '#1d5aa0';
+        for (let i = 0; i < 9; i++) g.fillRect(20 + i * 118, 190 + (i % 3) * 12, 26, 150); // Royals-blue rails
         g.fillRect(0, 300, 1024, 18);
         g.fillStyle = '#6f7fa8';
         for (let i = 0; i < 5; i++) g.fillRect(90 + i * 210, 250, 120, 60);                // blue-grey machinery
@@ -171,7 +171,7 @@
         m.position.set(0, 0, 1.6); m.lookAt(0, 0, 0); env.add(m);
       }
       // Narrow "horizon" card where flat chrome faces look: bright sky with a band of Ford-blue paint, a hard dark
-      // horizon line, then a blurred factory floor (warm grey with yellow rails). The badge's sway tilts this band
+      // horizon line, then a blurred factory floor (cool grey with Royals-blue rails). The badge's sway tilts this band
       // across the letters, which is what makes the chrome read as a mirror.
       {
         // 0.72 tall card; the middle 0.34 (y0..y1 on the canvas) holds the sky / horizon / floor band, and the rest
@@ -183,16 +183,16 @@
         const gr = g.createLinearGradient(0, 0, 0, H);
         [[0, '#141a2a'], [0.10, '#3c4a6a'], [0.18, '#0c0e13'], [0.24, '#c9ccd4'],
          [0.264, '#fbf8ef'], [at(0.22) / H, '#e4e2da'], [at(0.30) / H, '#7f8ba8'], [at(0.36) / H, '#2c4170'],
-         [at(0.44) / H, '#5b6884'], [at(0.485) / H, '#2a2f39'], [at(0.50) / H, '#07080b'], [at(0.55) / H, '#1c1b17'],
-         [at(0.66) / H, '#6d6650'], [at(0.85) / H, '#a9a48e'], [0.736, '#d8d4c4'], [0.80, '#8a8574'], [1, '#2a2822']]
+         [at(0.44) / H, '#5b6884'], [at(0.485) / H, '#2a2f39'], [at(0.50) / H, '#07080b'], [at(0.55) / H, '#15181e'],
+         [at(0.66) / H, '#4f5a6b'], [at(0.85) / H, '#9aa7b8'], [0.736, '#ccd5df'], [0.80, '#7d8796'], [1, '#1f2430']]
           .forEach(([o, c]) => gr.addColorStop(o, c));
         g.fillStyle = gr; g.fillRect(0, 0, W, H);
         g.filter = 'blur(6px)';
         g.fillStyle = 'rgba(8, 9, 12, 0.85)';
         for (let y = 20; y < y0 - 30; y += 70) g.fillRect(0, y, W, 26);                         // grille bars
-        g.fillStyle = 'rgba(232, 200, 64, 0.85)';
-        for (let x = 10; x < W; x += 64) g.fillRect(x + ((x / 64) % 3) * 9, at(0.6), 14, H - at(0.6)); // yellow rails
-        g.fillStyle = 'rgba(232, 200, 64, 0.7)'; g.fillRect(0, at(0.7), W, 10); g.fillRect(0, y1 + 60, W, 12);
+        g.fillStyle = 'rgba(0, 70, 135, 0.9)';
+        for (let x = 10; x < W; x += 64) g.fillRect(x + ((x / 64) % 3) * 9, at(0.6), 14, H - at(0.6)); // Royals-blue rails
+        g.fillStyle = 'rgba(123, 178, 221, 0.75)'; g.fillRect(0, at(0.7), W, 10); g.fillRect(0, y1 + 60, W, 12); // powder-blue bars
         g.fillStyle = 'rgba(245, 243, 235, 0.9)';
         for (let x = 30; x < W; x += 170) g.fillRect(x, at(0.14), 70, 10);                     // overhead lights
         g.filter = 'none';
