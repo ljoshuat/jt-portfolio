@@ -115,6 +115,74 @@ function initWork(container = document) {
     });
 
 
+    /* =====================================================
+       DEPTH PARALLAX
+    ===================================================== */
+
+    /*
+     * Any element with data-depth="1.2" drifts
+     * against the scroll inside its section.
+     * Higher numbers move further, so they read
+     * as closer to the viewer. Off on phones and
+     * for reduced motion.
+     */
+
+    const depthItems =
+      container.querySelectorAll(
+        "[data-depth]"
+      );
+
+    const allowDepth =
+      window.matchMedia(
+        "(min-width: 768px) and (prefers-reduced-motion: no-preference)"
+      ).matches;
+
+
+    if (depthItems.length && allowDepth) {
+
+      depthItems.forEach((item) => {
+
+        const depth =
+          parseFloat(item.dataset.depth) || 1;
+
+        const section =
+          item.closest("section") || item.parentElement;
+
+
+        gsap.fromTo(
+          item,
+
+          {
+            y: () => depth * 70
+          },
+
+          {
+            y: () => depth * -70,
+
+            ease: "none",
+
+            scrollTrigger: {
+
+              trigger: section,
+
+              start: "top bottom",
+
+              end: "bottom top",
+
+              scrub: true,
+
+              invalidateOnRefresh: true
+
+            }
+
+          }
+        );
+
+      });
+
+    }
+
+
   }, container);
 
 
