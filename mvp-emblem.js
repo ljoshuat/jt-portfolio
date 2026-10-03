@@ -1,10 +1,14 @@
 // MVP Edition emblem: chrome 3D badge (three.js), transparent background.
 // Add an empty div with data-mvp-emblem to a page and give it a size (3:1 frames it well).
-// Options as attributes: data-auto-rotate="false", data-interactive="false".
+// Options as attributes: data-auto-rotate="false", data-interactive="false",
+// data-reflection="<image url>" (what the chrome reflects) or data-reflection="none" for the built-in studio only.
 // three.js is only downloaded on pages that have an emblem.
 (() => {
   const THREE_URL = "https://cdn.jsdelivr.net/npm/three@0.184.0/+esm";
   const ORBIT_URL = "https://cdn.jsdelivr.net/npm/three@0.184.0/examples/jsm/controls/OrbitControls.js/+esm";
+  // Default reflection photo ships next to this script (same jsDelivr commit).
+  const SCRIPT_SRC = document.currentScript && document.currentScript.src;
+  const DEFAULT_REFLECTION = SCRIPT_SRC ? new URL("mvp-emblem-reflection.jpg", SCRIPT_SRC).href : null;
   let libPromise = null;
   let mounted = [];
 
@@ -132,7 +136,7 @@
     }
 
     // Off-screen studio for chrome reflections only (never visible)
-    function buildEnv(renderer) {
+    function buildEnv(renderer, photo) {
       const env = new THREE.Scene();
       env.background = new THREE.Color(0x000000);
       const plane = (w, h, x, y, z, hex, k) => {
@@ -157,6 +161,8 @@
         bg.addColorStop(0, '#1d2a48'); bg.addColorStop(0.18, '#3a4766'); bg.addColorStop(0.32, '#a9aaa6');
         bg.addColorStop(0.55, '#7f8898'); bg.addColorStop(1, '#1f2430');
         g.fillStyle = bg; g.fillRect(0, 0, 1024, 384);
+        if (photo) g.drawImage(photo, 0, -40, 1024, 576);
+        else {
         g.filter = 'blur(10px)';
         g.fillStyle = '#f2efe4';
         for (let i = 0; i < 7; i++) g.fillRect(40 + i * 150, 120, 90, 14);                 // overhead fixtures
@@ -166,6 +172,7 @@
         g.fillStyle = '#6f7fa8';
         for (let i = 0; i < 5; i++) g.fillRect(90 + i * 210, 250, 120, 60);                // blue-grey machinery
         g.filter = 'none';
+        }
         const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
         const m = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
         m.position.set(0, 0, 1.6); m.lookAt(0, 0, 0); env.add(m);
@@ -187,6 +194,17 @@
          [at(0.66) / H, '#4f5a6b'], [at(0.85) / H, '#9aa7b8'], [0.736, '#ccd5df'], [0.80, '#7d8796'], [1, '#1f2430']]
           .forEach(([o, c]) => gr.addColorStop(o, c));
         g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        if (photo) {
+          // Photo version: the crowd shot fills the card, with a soft bright sky and a dark horizon laid over it
+          // so the letters still read as chrome rather than a flat picture.
+          g.drawImage(photo, 0, 0, W, H);
+          const ov = g.createLinearGradient(0, 0, 0, H);
+          [[0, 'rgba(10,14,28,0.35)'], [0.264, 'rgba(255,255,255,0.15)'], [at(0.18) / H, 'rgba(255,255,255,0.6)'],
+           [at(0.40) / H, 'rgba(0,0,0,0)'], [at(0.47) / H, 'rgba(4,6,12,0.75)'], [at(0.50) / H, 'rgba(4,6,12,0.95)'],
+           [at(0.56) / H, 'rgba(4,6,12,0.3)'], [at(0.70) / H, 'rgba(255,255,255,0.08)'], [1, 'rgba(10,14,28,0.3)']]
+            .forEach(([o, c]) => ov.addColorStop(o, c));
+          g.fillStyle = ov; g.fillRect(0, 0, W, H);
+        } else {
         g.filter = 'blur(6px)';
         g.fillStyle = 'rgba(8, 9, 12, 0.85)';
         for (let y = 20; y < y0 - 30; y += 70) g.fillRect(0, y, W, 26);                         // grille bars
@@ -196,6 +214,7 @@
         g.fillStyle = 'rgba(245, 243, 235, 0.9)';
         for (let x = 30; x < W; x += 170) g.fillRect(x, at(0.14), 70, 10);                     // overhead lights
         g.filter = 'none';
+        }
         const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
         const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.72), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
         m.position.set(0, -0.075, 1.4); m.lookAt(0, -0.075, 0); env.add(m);
@@ -211,7 +230,7 @@
       return tex;
     }
 
-    function mountEmblem(container, { autoRotate = true, interactive = true, pixelRatio = 2 } = {}) {
+    function mountEmblem(container, { autoRotate = true, interactive = true, pixelRatio = 2, reflection = null } = {}) {
       const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
       renderer.setClearColor(0x000000, 0);
       renderer.setPixelRatio(Math.min(window.devicePixelRatio, pixelRatio));
@@ -223,8 +242,21 @@
 
       const scene = new THREE.Scene();
       const { model, mat } = buildEmblem();
-      const envTex = buildEnv(renderer);
+      let envTex = buildEnv(renderer);
       Object.values(mat).forEach(m => { m.envMap = envTex; });
+      // Swap in the photo reflection once it loads; the built-in studio shows until then (or if it fails).
+      let disposed = false;
+      if (reflection) {
+        const img = new Image();
+        img.crossOrigin = 'anonymous';
+        img.onload = () => {
+          if (disposed) return;
+          const next = buildEnv(renderer, img);
+          Object.values(mat).forEach(m => { m.envMap = next; m.needsUpdate = true; });
+          envTex.dispose(); envTex = next;
+        };
+        img.src = reflection;
+      }
       mat.black.envMapIntensity = 1.4; mat.letter.envMapIntensity = 1.8;
       mat.green.envMapIntensity = 0.9; mat.dark.envMapIntensity = 0.3;
       new THREE.Box3().setFromObject(model).getCenter(model.position).negate();
@@ -272,6 +304,7 @@
         dispose() {
           cancelAnimationFrame(raf); ro.disconnect(); io.disconnect(); controls.dispose();
           scene.traverse(o => { if (o.isMesh) o.geometry.dispose(); });
+          disposed = true;
           Object.values(mat).forEach(m => m.dispose()); envTex.dispose();
           renderer.dispose(); renderer.domElement.remove();
         },
@@ -305,6 +338,7 @@
           const emblem = mountEmblem(el, {
             autoRotate: !reduced && el.dataset.autoRotate !== "false",
             interactive: el.dataset.interactive !== "false",
+            reflection: el.dataset.reflection === "none" ? null : el.dataset.reflection || DEFAULT_REFLECTION,
           });
           mounted.push({ el, emblem });
         });
