@@ -165,17 +165,27 @@ function createGalleryParallax(gallery) {
     [left, right].filter(Boolean);
 
 
+  /*
+   * Optional strength per gallery:
+   * data-parallax="1.4" on .work-gallery-grid
+   * moves the outer columns 40% more.
+   */
+
+  const strength =
+    parseFloat(gallery.dataset.parallax) || 1;
+
+
   if (outerItems.length) {
 
     gsap.fromTo(
       outerItems,
 
       {
-        yPercent: 8
+        yPercent: 8 * strength
       },
 
       {
-        yPercent: -15,
+        yPercent: -15 * strength,
 
         ease: "none",
 
