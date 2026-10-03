@@ -105,9 +105,17 @@
     });
 
     video.addEventListener("play", () => {
+
+      /* Only one video at a time: reset any other player */
+
+      document.querySelectorAll(".jt-player").forEach((other) => {
+        if (other !== player && other.jt) other.jt.reset();
+      });
+
       player.classList.remove("is-paused");
       part(player, "toggle").setAttribute("aria-label", "Pause");
       wake();
+
     });
 
     video.addEventListener("pause", () => {
@@ -115,15 +123,19 @@
       part(player, "toggle").setAttribute("aria-label", "Play");
     });
 
-    /* Back to the cover and play button when it ends */
 
-    video.addEventListener("ended", () => {
+    /* Back to the cover and play button */
+
+    function reset() {
+      video.pause();
       clearTimeout(idleTimer);
       player.classList.remove("is-started", "is-active");
       player.classList.add("is-paused");
       video.currentTime = 0;
       render();
-    });
+    }
+
+    video.addEventListener("ended", reset);
 
     video.addEventListener("volumechange", () => {
       player.classList.toggle("is-muted", video.muted);
@@ -187,7 +199,7 @@
     });
 
 
-    player.jt = { video, wake };
+    player.jt = { video, wake, reset };
 
     return player.jt;
 
