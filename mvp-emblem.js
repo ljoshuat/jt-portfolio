@@ -148,19 +148,63 @@
         const m = new THREE.Mesh(new THREE.PlaneGeometry(w, h), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
         m.position.set(x, y, z); m.lookAt(0, y, 0); env.add(m);
       };
-      // Wide backdrop behind the camera: soft sky above, dim ground below
-      card(8, 3, 0, 0, 1.6, [[0, '#d9dee8'], [0.45, '#59606e'], [0.5, '#1b1f27'], [0.75, '#3a404c'], [1, '#121418']]);
-      // Narrow "horizon" card where flat chrome faces look: bright sky, a hard dark horizon line, then a lit ground.
-      // The badge's sway tilts this band across the letters, which is what makes the chrome read as a mirror.
-      card(6, 0.34, 0, -0.075, 1.4, [
-        [0.00, '#ffffff'], [0.30, '#e6e9ef'], [0.44, '#9aa1ae'], [0.485, '#3b414c'],
-        [0.50, '#07080b'], [0.56, '#141820'], [0.70, '#4c5360'], [0.88, '#a4abb8'], [1.00, '#d6dae2'],
-      ]);
+      // Blurred factory floor behind the camera (warm grey, yellow safety rails, overhead lights)
+      // so edges and bevels pick up the same vibe as the Ford grille shots.
+      {
+        const cv = document.createElement('canvas'); cv.width = 1024; cv.height = 384;
+        const g = cv.getContext('2d');
+        const bg = g.createLinearGradient(0, 0, 0, 384);
+        bg.addColorStop(0, '#1d2a48'); bg.addColorStop(0.18, '#3a4766'); bg.addColorStop(0.32, '#a9aaa6');
+        bg.addColorStop(0.55, '#8f8b7c'); bg.addColorStop(1, '#2a2822');
+        g.fillStyle = bg; g.fillRect(0, 0, 1024, 384);
+        g.filter = 'blur(10px)';
+        g.fillStyle = '#f2efe4';
+        for (let i = 0; i < 7; i++) g.fillRect(40 + i * 150, 120, 90, 14);                 // overhead fixtures
+        g.fillStyle = '#d9c24a';
+        for (let i = 0; i < 9; i++) g.fillRect(20 + i * 118, 190 + (i % 3) * 12, 26, 150); // yellow rails
+        g.fillRect(0, 300, 1024, 18);
+        g.fillStyle = '#6f7fa8';
+        for (let i = 0; i < 5; i++) g.fillRect(90 + i * 210, 250, 120, 60);                // blue-grey machinery
+        g.filter = 'none';
+        const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(8, 3), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+        m.position.set(0, 0, 1.6); m.lookAt(0, 0, 0); env.add(m);
+      }
+      // Narrow "horizon" card where flat chrome faces look: bright sky with a band of Ford-blue paint, a hard dark
+      // horizon line, then a blurred factory floor (warm grey with yellow rails). The badge's sway tilts this band
+      // across the letters, which is what makes the chrome read as a mirror.
+      {
+        // 0.72 tall card; the middle 0.34 (y0..y1 on the canvas) holds the sky / horizon / floor band, and the rest
+        // keeps the reflection busy when the badge tilts further: grille bars and paint above, factory floor below.
+        const W = 2048, H = 1024, y0 = H * 0.264, y1 = H * 0.736, bh = y1 - y0;
+        const cv = document.createElement('canvas'); cv.width = W; cv.height = H;
+        const g = cv.getContext('2d');
+        const at = (o) => y0 + o * bh;
+        const gr = g.createLinearGradient(0, 0, 0, H);
+        [[0, '#141a2a'], [0.10, '#3c4a6a'], [0.18, '#0c0e13'], [0.24, '#c9ccd4'],
+         [0.264, '#fbf8ef'], [at(0.22) / H, '#e4e2da'], [at(0.30) / H, '#7f8ba8'], [at(0.36) / H, '#2c4170'],
+         [at(0.44) / H, '#5b6884'], [at(0.485) / H, '#2a2f39'], [at(0.50) / H, '#07080b'], [at(0.55) / H, '#1c1b17'],
+         [at(0.66) / H, '#6d6650'], [at(0.85) / H, '#a9a48e'], [0.736, '#d8d4c4'], [0.80, '#8a8574'], [1, '#2a2822']]
+          .forEach(([o, c]) => gr.addColorStop(o, c));
+        g.fillStyle = gr; g.fillRect(0, 0, W, H);
+        g.filter = 'blur(6px)';
+        g.fillStyle = 'rgba(8, 9, 12, 0.85)';
+        for (let y = 20; y < y0 - 30; y += 70) g.fillRect(0, y, W, 26);                         // grille bars
+        g.fillStyle = 'rgba(232, 200, 64, 0.85)';
+        for (let x = 10; x < W; x += 64) g.fillRect(x + ((x / 64) % 3) * 9, at(0.6), 14, H - at(0.6)); // yellow rails
+        g.fillStyle = 'rgba(232, 200, 64, 0.7)'; g.fillRect(0, at(0.7), W, 10); g.fillRect(0, y1 + 60, W, 12);
+        g.fillStyle = 'rgba(245, 243, 235, 0.9)';
+        for (let x = 30; x < W; x += 170) g.fillRect(x, at(0.14), 70, 10);                     // overhead lights
+        g.filter = 'none';
+        const tex = new THREE.CanvasTexture(cv); tex.colorSpace = THREE.SRGBColorSpace;
+        const m = new THREE.Mesh(new THREE.PlaneGeometry(6, 0.72), new THREE.MeshBasicMaterial({ map: tex, side: THREE.DoubleSide }));
+        m.position.set(0, -0.075, 1.4); m.lookAt(0, -0.075, 0); env.add(m);
+      }
       plane(4, 0.5, 0, 1.4, 1.2, 0xffffff, 14);      // top softbox: hard highlight along upper edges
       plane(0.18, 2.4, -1.6, 0.3, 1.0, 0xffffff, 10); // left strip
       plane(0.12, 2.4, 1.9, 0.2, 0.6, 0xffffff, 4);   // right strip (dimmer, for falloff)
-      plane(3, 2, -2.4, 0.2, -1.2, 0x8a90ff, 1.2);    // faint cool kicker
-      plane(3, 2, 2.4, 0.2, -1.2, 0x6f9bff, 1.4);     // faint cool kicker
+      plane(3, 2, -2.4, 0.2, -1.2, 0x2f4f9e, 2.2);    // Ford-blue paint kicker
+      plane(3, 2, 2.4, 0.2, -1.2, 0x2a4690, 2.2);     // Ford-blue paint kicker
       const pmrem = new THREE.PMREMGenerator(renderer);
       const tex = pmrem.fromScene(env, 0.004, 0.1, 100, { size: 512 }).texture;
       pmrem.dispose();
