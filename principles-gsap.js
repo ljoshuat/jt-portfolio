@@ -10,11 +10,24 @@ let principlesContext = null;
 function initPrinciples(container = document) {
 
   /* -----------------------------------------
-     DESKTOP ONLY
+     TABLET + PHONE: NO STICKY SCROLL
+     Each principle gets its own video, with
+     the heading on top and the text below.
   ----------------------------------------- */
 
   if (window.innerWidth < 992) {
+
+    const mobileSection =
+      container.querySelector(
+        ".section_principles"
+      );
+
+    if (mobileSection) {
+      setupPrinciplesMobile(mobileSection);
+    }
+
     return;
+
   }
 
 
@@ -360,5 +373,81 @@ function destroyPrinciples() {
     principlesContext = null;
 
   }
+
+}
+
+
+/* =========================================================
+   PRINCIPLES ON TABLET + PHONE
+
+   Copies each principle's video from the sticky column
+   into that principle's visual slot. The layout itself
+   lives in the site head CSS ("PRINCIPLES ON MOBILE").
+========================================================= */
+
+function setupPrinciplesMobile(section) {
+
+  if (section.dataset.mobileReady) return;
+
+  section.dataset.mobileReady = "true";
+
+
+  const videos =
+    section.querySelectorAll(
+      ".principle_video_wrap .principle-img"
+    );
+
+  const visuals =
+    section.querySelectorAll(
+      ".principles_item-visual"
+    );
+
+
+  visuals.forEach((visual, i) => {
+
+    const source = videos[i];
+
+    if (!source) return;
+
+
+    const copy = source.cloneNode(true);
+
+    copy
+      .querySelectorAll("[id]")
+      .forEach((el) => el.removeAttribute("id"));
+
+    visual.appendChild(copy);
+
+
+    const video = copy.querySelector("video");
+
+    if (!video) return;
+
+    video.muted = true;
+    video.playsInline = true;
+
+
+    const play = () => video.play().catch(() => {});
+
+    play();
+
+    video.addEventListener("canplay", play, { once: true });
+
+
+    /* Make sure it plays once it scrolls into view */
+
+    if ("IntersectionObserver" in window) {
+
+      new IntersectionObserver((entries) => {
+
+        entries.forEach((entry) => {
+          if (entry.isIntersecting && video.paused) play();
+        });
+
+      }).observe(visual);
+
+    }
+
+  });
 
 }
