@@ -1847,14 +1847,14 @@ function initScrollAnimations(container) {
   /* -----------------------------------------
      PHONE EYEBROWS AROUND THE RINGS HEADING
      [Welcome…] fades in just before the
-     heading's words, [Since 2003] just after.
+     heading's words, [Since 2003] once they finish.
      Only shown on phones (data-mobile-copy).
   ----------------------------------------- */
 
   [
-    ["welcome", 0],
-    ["since", 0.6]
-  ].forEach(([name, delay]) => {
+    ["welcome", false],
+    ["since", true]
+  ].forEach(([name, afterHeading]) => {
 
     const eyebrow =
       container.querySelector(
@@ -1868,6 +1868,11 @@ function initScrollAnimations(container) {
       eyebrow.parentElement.querySelector(
         ".stag-blur"
       );
+
+    const delay =
+      afterHeading
+        ? stagRevealTime(heading)
+        : 0;
 
     gsap.fromTo(
       eyebrow,
@@ -1906,7 +1911,8 @@ function initScrollAnimations(container) {
      RINGS ON TABLET + PHONE
      The ring scroll interaction is desktop
      only, so fade the rings up right after
-     the heading above them reveals.
+     the heading above them (and the phone
+     [Since 2003] under it) reveals.
   ----------------------------------------- */
 
   if (window.innerWidth < 992) {
@@ -1953,7 +1959,10 @@ function initScrollAnimations(container) {
 
           duration: 0.8,
 
-          delay: 0.5,
+          delay:
+            window.innerWidth < 768
+              ? stagRevealTime(ringsHeading) + 0.3
+              : 0.5,
 
           ease: "power2.out",
 
@@ -1998,6 +2007,23 @@ function initScrollAnimations(container) {
    parking each ring on its drawn frame for a
    few seconds.
 ========================================================= */
+
+/* How long a .stag-blur heading's word stagger
+   takes to finish (0.04s stagger, 0.6s per word),
+   so lines under it can wait their turn. */
+function stagRevealTime(heading) {
+
+  const words =
+    heading
+      ? heading.querySelectorAll(".stag-word").length
+      : 0;
+
+  return words
+    ? (words - 1) * 0.04 + 0.6
+    : 0.6;
+
+}
+
 
 let ringLottieTimer = null;
 
