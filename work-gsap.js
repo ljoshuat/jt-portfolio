@@ -49,7 +49,25 @@ function initWork(container = document) {
       );
 
 
-    if (imageWrap && visualSection) {
+    /*
+     * Mobile: skip the scale-up so the hero
+     * loads full width in the viewport.
+     */
+
+    const isMobile =
+      window.matchMedia("(max-width: 767px)").matches;
+
+
+    if (imageWrap && isMobile) {
+
+      gsap.set(imageWrap, {
+        scale: 1
+      });
+
+    }
+
+
+    if (imageWrap && visualSection && !isMobile) {
 
       gsap.set(imageWrap, {
         scale: 0.68,
