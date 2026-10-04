@@ -1807,6 +1807,79 @@ function initScrollAnimations(container) {
   );
 
 
+  /* -----------------------------------------
+     RINGS ON TABLET + PHONE
+     The ring scroll interaction is desktop
+     only, so fade the rings up right after
+     the heading above them reveals.
+  ----------------------------------------- */
+
+  if (window.innerWidth < 992) {
+
+    const ringsSection =
+      container.querySelector(
+        ".section_circles"
+      );
+
+    const ringsHeading =
+      ringsSection &&
+      ringsSection.querySelector(
+        ".stag-blur"
+      );
+
+    const rings =
+      ringsSection
+        ? ringsSection.querySelectorAll(
+            ".circle_scroll-parent, .circle-intersect"
+          )
+        : [];
+
+    if (rings.length) {
+
+      gsap.set(
+        rings,
+        {
+          opacity: 0,
+          y: 40,
+          filter: "blur(6px)"
+        }
+      );
+
+      gsap.to(
+        rings,
+        {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+
+          stagger: 0.12,
+
+          duration: 0.8,
+
+          delay: 0.5,
+
+          ease: "power2.out",
+
+          scrollTrigger: {
+
+            trigger:
+              ringsHeading || ringsSection,
+
+            start: "top 35%",
+
+            invalidateOnRefresh:
+              true
+
+          }
+
+        }
+      );
+
+    }
+
+  }
+
+
   requestAnimationFrame(() => {
 
     ScrollTrigger.refresh();
