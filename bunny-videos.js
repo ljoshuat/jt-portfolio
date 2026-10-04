@@ -24,24 +24,38 @@ function initBunnyVideos(container = document) {
 
     /* -----------------------------------------
        MAKE SURE SOURCE IS LOADED
+
+       Only start a load when the browser hasn't
+       picked a source yet. Re-assigning src or
+       calling load() on a video that is already
+       loading throws away what it has buffered,
+       which made the homepage video late after
+       a Barba return.
     ----------------------------------------- */
 
-    const source =
-      video.querySelector("source");
-
-
     if (
-      source &&
-      source.src &&
-      !video.src
+      video.networkState ===
+      HTMLMediaElement.NETWORK_EMPTY
     ) {
 
-      video.src = source.src;
+      const source =
+        video.querySelector("source");
+
+      if (
+        source &&
+        source.src &&
+        !video.src
+      ) {
+
+        video.src = source.src;
+
+      } else {
+
+        video.load();
+
+      }
 
     }
-
-
-    video.load();
 
 
     /* -----------------------------------------

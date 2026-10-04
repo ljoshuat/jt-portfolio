@@ -329,6 +329,25 @@ barba.init({
 
 
         /* -----------------------------------------
+           START AUTOPLAY VIDEOS EARLY
+           Get them buffering while the page is
+           still hidden instead of after init.
+        ----------------------------------------- */
+
+        data.next.container
+          .querySelectorAll("video[autoplay]")
+          .forEach(video => {
+
+            video.muted = true;
+
+            video.playsInline = true;
+
+            video.play().catch(() => {});
+
+          });
+
+
+        /* -----------------------------------------
            PREPARE WORK IMAGE
         ----------------------------------------- */
 
