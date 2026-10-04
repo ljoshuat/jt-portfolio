@@ -342,7 +342,12 @@ barba.init({
             );
 
 
-          if (imageWrap) {
+          /* Mobile skips the hero scale-up (see work-gsap.js) */
+
+          if (
+            imageWrap &&
+            !window.matchMedia("(max-width: 767px)").matches
+          ) {
 
             gsap.set(
               imageWrap,
