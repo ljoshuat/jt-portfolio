@@ -1898,10 +1898,13 @@ function initScrollAnimations(container) {
    RING LOTTIES ON PHONES
    Webflow skips the ring draw-in to its last
    frame on phones. After a Barba return the
-   Lotties reload after that skip and sit on
-   their blank first frame, so park each ring
-   on its drawn frame once it has loaded.
+   Lotties load after that skip, at different
+   times, and can be reset again, so keep
+   parking each ring on its drawn frame for a
+   few seconds.
 ========================================================= */
+
+let ringLottieTimer = null;
 
 function drawRingLotties(section) {
 
@@ -1910,7 +1913,7 @@ function drawRingLotties(section) {
     window.innerWidth >= 768
   ) return;
 
-  const lottieLib =
+  const getLottieLib = () =>
     (window.Webflow &&
       Webflow.require &&
       Webflow.require("lottie") &&
@@ -1918,56 +1921,84 @@ function drawRingLotties(section) {
     window.lottie ||
     window.bodymovin;
 
-  if (
-    !lottieLib ||
-    !lottieLib.getRegisteredAnimations
-  ) return;
-
-  const ringEls =
+  const ringEls = Array.from(
     section.querySelectorAll(
       ".circle_lottie-line"
-    );
+    )
+  );
 
-  lottieLib
-    .getRegisteredAnimations()
-    .forEach(anim => {
+  if (!ringEls.length) return;
 
-      const isRing =
-        Array.from(ringEls).some(
+  const parkRings = () => {
+
+    const lottieLib = getLottieLib();
+
+    if (
+      !lottieLib ||
+      !lottieLib.getRegisteredAnimations
+    ) return;
+
+    lottieLib
+      .getRegisteredAnimations()
+      .forEach(anim => {
+
+        const isRing = ringEls.some(
           el =>
             el === anim.wrapper ||
             el.contains(anim.wrapper)
         );
 
-      if (!isRing) return;
-
-      const park = () => {
-
-        if (!anim.totalFrames) return;
+        if (
+          !isRing ||
+          !anim.isLoaded ||
+          !anim.totalFrames
+        ) return;
 
         // Webflow's ring draw ends at 98%.
-        anim.goToAndStop(
-          Math.floor(
-            (anim.totalFrames - 1) * 0.98
-          ),
-          true
+        const drawnFrame = Math.floor(
+          (anim.totalFrames - 1) * 0.98
         );
 
-      };
+        if (
+          Math.abs(
+            anim.currentFrame - drawnFrame
+          ) > 0.5
+        ) {
 
-      if (anim.isLoaded) {
+          anim.goToAndStop(
+            drawnFrame,
+            true
+          );
 
-        park();
+        }
 
-      } else {
+      });
 
-        anim.addEventListener(
-          "DOMLoaded",
-          park
-        );
+  };
 
-      }
+  clearInterval(ringLottieTimer);
 
-    });
+  let ticks = 0;
+
+  parkRings();
+
+  ringLottieTimer = setInterval(() => {
+
+    parkRings();
+
+    ticks++;
+
+    if (
+      ticks >= 24 ||
+      !document.contains(section)
+    ) {
+
+      clearInterval(ringLottieTimer);
+
+      ringLottieTimer = null;
+
+    }
+
+  }, 250);
 
 }
