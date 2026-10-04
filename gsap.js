@@ -1672,6 +1672,43 @@ function revealHero(container) {
 
   }
 
+
+  /* -----------------------------------------
+     PHONE EYEBROW UNDER THE HEADING
+     Only shown on phones (data-mobile-copy).
+  ----------------------------------------- */
+
+  const heroEyebrow =
+    container.querySelector(
+      '[data-mobile-copy="hello"]'
+    );
+
+
+  if (heroEyebrow) {
+
+    gsap.set(
+      heroEyebrow,
+      {
+        autoAlpha: 0,
+        y: 20
+      }
+    );
+
+    tl.to(
+      heroEyebrow,
+      {
+        autoAlpha: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out"
+      },
+      "-=0.5"
+    );
+
+  }
+
 }
 
 
@@ -1805,6 +1842,64 @@ function initScrollAnimations(container) {
 
     }
   );
+
+
+  /* -----------------------------------------
+     PHONE EYEBROWS AROUND THE RINGS HEADING
+     [Welcome…] fades in just before the
+     heading's words, [Since 2003] just after.
+     Only shown on phones (data-mobile-copy).
+  ----------------------------------------- */
+
+  [
+    ["welcome", 0],
+    ["since", 0.6]
+  ].forEach(([name, delay]) => {
+
+    const eyebrow =
+      container.querySelector(
+        `[data-mobile-copy="${name}"]`
+      );
+
+    if (!eyebrow) return;
+
+    const heading =
+      eyebrow.parentElement &&
+      eyebrow.parentElement.querySelector(
+        ".stag-blur"
+      );
+
+    gsap.fromTo(
+      eyebrow,
+      {
+        autoAlpha: 0,
+        y: 20
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+
+        duration: 0.6,
+
+        delay,
+
+        ease: "power2.out",
+
+        scrollTrigger: {
+
+          trigger: heading || eyebrow,
+
+          start: "top 35%",
+
+          invalidateOnRefresh:
+            true
+
+        }
+
+      }
+    );
+
+  });
 
 
   /* -----------------------------------------
