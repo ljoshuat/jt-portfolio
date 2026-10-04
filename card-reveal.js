@@ -8,6 +8,9 @@
    keep their staggered offset and the /work filter can still
    fade items in and out.
 
+   No blur here: Safari lets the card's video spill out of its
+   frame when an ancestor has a CSS filter.
+
    Uses ScrollTrigger.batch, so cards scrolled past quickly
    still reveal, and cards hidden by the filter or View More
    never get stuck hidden (the filter fades those in itself).
@@ -52,8 +55,7 @@
 
       gsap.set(card, {
         opacity: 0,
-        y: 60,
-        filter: "blur(6px)"
+        y: 60
       });
 
     });
@@ -66,11 +68,9 @@
         gsap.to(batch, {
           opacity: 1,
           y: 0,
-          filter: "blur(0px)",
           duration: 0.9,
           stagger: 0.15,
-          ease: "power2.out",
-          clearProps: "filter"
+          ease: "power2.out"
         });
       }
     }));
