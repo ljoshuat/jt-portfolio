@@ -101,8 +101,44 @@
           const on = btn.getAttribute("data-filter").trim() === slug;
           btn.classList.toggle(ACTIVE, on);
           btn.setAttribute("aria-pressed", on ? "true" : "false");
+          if (on) revealButton(btn);
         });
       }
+
+      /* On phones the bar is one row that scrolls sideways (CSS in
+         site head). Mark the edges so the fades only show where more
+         filters are hidden, and slide the active filter into view. */
+      function scrollable() {
+        return bar.scrollWidth > bar.clientWidth + 2;
+      }
+
+      function updateEdges() {
+        if (!bar.isConnected) return;
+        const end = bar.scrollWidth - bar.clientWidth;
+        bar.classList.toggle("is-scrolled", scrollable() && bar.scrollLeft > 2);
+        bar.classList.toggle(
+          "is-scroll-end",
+          !scrollable() || bar.scrollLeft >= end - 2
+        );
+      }
+
+      function revealButton(btn) {
+        if (!scrollable()) return;
+        const barBox = bar.getBoundingClientRect();
+        const btnBox = btn.getBoundingClientRect();
+        const left =
+          bar.scrollLeft +
+          (btnBox.left - barBox.left) -
+          (barBox.width - btnBox.width) / 2;
+        bar.scrollTo({
+          left: Math.max(0, left),
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+      }
+
+      bar.addEventListener("scroll", updateEdges, { passive: true });
+      window.addEventListener("resize", updateEdges);
+      updateEdges();
   
       function setUrl(slug) {
         const url = new URL(window.location.href);
