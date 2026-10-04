@@ -232,8 +232,10 @@ function createGalleryParallax(gallery) {
    * gallery (Fan Zone) into 2 columns, each
    * stack's 1st image on the left and 2nd on
    * the right. The column wrappers no longer
-   * render, so drift the images instead, the
-   * right column lower and further.
+   * render, so drift the images instead. The
+   * right column sits about half an image
+   * lower and travels further, so the two
+   * columns slide past each other.
    */
 
   const stacks =
@@ -258,9 +260,24 @@ function createGalleryParallax(gallery) {
     });
 
 
+    /*
+     * Room below the grid for the lowered
+     * right column, so it never runs into
+     * the next section.
+     */
+
+    if (rightImages[0]) {
+
+      gsap.set(gallery, {
+        paddingBottom: rightImages[0].offsetHeight * 0.5
+      });
+
+    }
+
+
     [
-      [leftImages, 4, -4],
-      [rightImages, 18, -10]
+      [leftImages, 15, -25],
+      [rightImages, 75, 25]
     ].forEach(([images, from, to]) => {
 
       if (!images.length) return;
