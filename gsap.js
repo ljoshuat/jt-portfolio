@@ -1880,6 +1880,63 @@ function initScrollAnimations(container) {
   }
 
 
+  /* -----------------------------------------
+     SELECTED PROJECTS ON TABLET + PHONE
+     Each project card fades up as it
+     scrolls into view.
+  ----------------------------------------- */
+
+  if (window.innerWidth < 992) {
+
+    const projectCards =
+      gsap.utils.toArray(
+        ".section_featured .work_grid-item",
+        container
+      );
+
+    projectCards.forEach(
+      card => {
+
+        gsap.set(
+          card,
+          {
+            opacity: 0,
+            y: 60,
+            filter: "blur(6px)"
+          }
+        );
+
+        gsap.to(
+          card,
+          {
+            opacity: 1,
+            y: 0,
+            filter: "blur(0px)",
+
+            duration: 0.9,
+
+            ease: "power2.out",
+
+            scrollTrigger: {
+
+              trigger: card,
+
+              start: "top 88%",
+
+              invalidateOnRefresh:
+                true
+
+            }
+
+          }
+        );
+
+      }
+    );
+
+  }
+
+
   requestAnimationFrame(() => {
 
     ScrollTrigger.refresh();
