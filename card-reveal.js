@@ -8,21 +8,28 @@
    keep their staggered offset and the /work filter can still
    fade items in and out.
 
-   Uses an IntersectionObserver, so cards shown later by the
-   filter or View More still reveal when they come into view.
-   Load site-wide (footer) after GSAP. Hooks into Barba itself.
+   Uses ScrollTrigger.batch, so cards scrolled past quickly
+   still reveal, and cards hidden by the filter or View More
+   never get stuck hidden (the filter fades those in itself).
+   Load site-wide (footer) after GSAP and ScrollTrigger.
+   Hooks into Barba itself.
 ========================================================= */
 
 (() => {
 
   const CARDS = ".section_featured .grid_link";
 
+  let triggers = [];
+
 
   function initCardReveal(scope = document) {
 
-    if (typeof gsap === "undefined") return;
-
-    if (!("IntersectionObserver" in window)) return;
+    if (
+      typeof gsap === "undefined" ||
+      typeof ScrollTrigger === "undefined"
+    ) {
+      return;
+    }
 
     if (
       window.matchMedia(
@@ -52,18 +59,11 @@
     });
 
 
-    const observer = new IntersectionObserver(
-      (entries) => {
-
-        const entering = entries
-          .filter((entry) => entry.isIntersecting)
-          .map((entry) => entry.target);
-
-        if (!entering.length) return;
-
-        entering.forEach((card) => observer.unobserve(card));
-
-        gsap.to(entering, {
+    triggers = triggers.concat(ScrollTrigger.batch(cards, {
+      start: "top 88%",
+      once: true,
+      onEnter: (batch) => {
+        gsap.to(batch, {
           opacity: 1,
           y: 0,
           filter: "blur(0px)",
@@ -72,14 +72,8 @@
           ease: "power2.out",
           clearProps: "filter"
         });
-
-      },
-      {
-        rootMargin: "0px 0px -12% 0px"
       }
-    );
-
-    cards.forEach((card) => observer.observe(card));
+    }));
 
   }
 
@@ -93,6 +87,12 @@
   }
 
   if (typeof barba !== "undefined" && barba.hooks) {
+    /* Drop the old page's triggers before the next page comes in */
+    barba.hooks.before(() => {
+      triggers.forEach((trigger) => trigger.kill());
+      triggers = [];
+    });
+
     barba.hooks.after((data) => {
       initCardReveal(
         (data && data.next && data.next.container) || document
