@@ -1836,6 +1836,8 @@ function initScrollAnimations(container) {
 
     if (rings.length) {
 
+      drawRingLotties(ringsSection);
+
       gsap.set(
         rings,
         {
@@ -1859,6 +1861,9 @@ function initScrollAnimations(container) {
           delay: 0.5,
 
           ease: "power2.out",
+
+          onStart: () =>
+            drawRingLotties(ringsSection),
 
           scrollTrigger: {
 
@@ -1885,5 +1890,84 @@ function initScrollAnimations(container) {
     ScrollTrigger.refresh();
 
   });
+
+}
+
+
+/* =========================================================
+   RING LOTTIES ON PHONES
+   Webflow skips the ring draw-in to its last
+   frame on phones. After a Barba return the
+   Lotties reload after that skip and sit on
+   their blank first frame, so park each ring
+   on its drawn frame once it has loaded.
+========================================================= */
+
+function drawRingLotties(section) {
+
+  if (
+    !section ||
+    window.innerWidth >= 768
+  ) return;
+
+  const lottieLib =
+    (window.Webflow &&
+      Webflow.require &&
+      Webflow.require("lottie") &&
+      Webflow.require("lottie").lottie) ||
+    window.lottie ||
+    window.bodymovin;
+
+  if (
+    !lottieLib ||
+    !lottieLib.getRegisteredAnimations
+  ) return;
+
+  const ringEls =
+    section.querySelectorAll(
+      ".circle_lottie-line"
+    );
+
+  lottieLib
+    .getRegisteredAnimations()
+    .forEach(anim => {
+
+      const isRing =
+        Array.from(ringEls).some(
+          el =>
+            el === anim.wrapper ||
+            el.contains(anim.wrapper)
+        );
+
+      if (!isRing) return;
+
+      const park = () => {
+
+        if (!anim.totalFrames) return;
+
+        // Webflow's ring draw ends at 98%.
+        anim.goToAndStop(
+          Math.floor(
+            (anim.totalFrames - 1) * 0.98
+          ),
+          true
+        );
+
+      };
+
+      if (anim.isLoaded) {
+
+        park();
+
+      } else {
+
+        anim.addEventListener(
+          "DOMLoaded",
+          park
+        );
+
+      }
+
+    });
 
 }
