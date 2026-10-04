@@ -227,6 +227,80 @@ function initWork(container = document) {
 
 function createGalleryParallax(gallery) {
 
+  /*
+   * Phones: the head CSS reflows a stacked
+   * gallery (Fan Zone) into 2 columns, each
+   * stack's 1st image on the left and 2nd on
+   * the right. The column wrappers no longer
+   * render, so drift the images instead, the
+   * right column lower and further.
+   */
+
+  const stacks =
+    gallery.querySelectorAll(".work-gallery-stack");
+
+  if (
+    stacks.length &&
+    !gallery.classList.contains("is-2col") &&
+    window.matchMedia("(max-width: 767px)").matches
+  ) {
+
+    const leftImages = [];
+    const rightImages = [];
+
+    stacks.forEach((stack) => {
+
+      const images = stack.children;
+
+      if (images[0]) leftImages.push(images[0]);
+      if (images[1]) rightImages.push(images[1]);
+
+    });
+
+
+    [
+      [leftImages, 4, -4],
+      [rightImages, 18, -10]
+    ].forEach(([images, from, to]) => {
+
+      if (!images.length) return;
+
+      gsap.fromTo(
+        images,
+
+        {
+          yPercent: from
+        },
+
+        {
+          yPercent: to,
+
+          ease: "none",
+
+          scrollTrigger: {
+
+            trigger: gallery,
+
+            start: "top bottom",
+
+            end: "bottom top",
+
+            scrub: true,
+
+            invalidateOnRefresh: true
+
+          }
+
+        }
+      );
+
+    });
+
+    return;
+
+  }
+
+
   const left =
     gallery.querySelector(
       ".work-gallery-item.is-left"
