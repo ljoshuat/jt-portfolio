@@ -1,7 +1,7 @@
 /* =========================================================
    SNIPPETS INFINITE SCROLL
    A loose grid of images that drifts upward on its own, forever.
-   Wheel, trackpad, touch drag and arrow keys speed it up or
+   Wheel, trackpad, touch or mouse drag and arrow keys speed it up or
    reverse it; it then settles back to a slow drift in whichever
    direction the visitor last scrolled. Modelled on buckit.design/snippets.
 
@@ -263,46 +263,80 @@
         push(e.deltaY * unit);
       }
   
-      /* Touch: the grid follows the finger, then keeps the fling */
+      /* Drag (finger or mouse): the grid follows the pointer, then
+         keeps the fling */
       let touchY = 0;
       let touchT = 0;
       let touchV = 0;
   
-      function onTouchStart(e) {
-        if (menuOpen()) return;
+      function dragStart(clientY) {
         dragging = true;
         boost = 0;
-        touchY = e.touches[0].clientY;
+        touchY = clientY;
         touchT = performance.now();
         touchV = 0;
       }
   
-      function onTouchMove(e) {
-        if (!dragging) return;
-        if (e.cancelable) e.preventDefault();
-  
+      function dragMove(clientY) {
         const now = performance.now();
-        const ty = e.touches[0].clientY;
-        const dy = ty - touchY;
+        const dy = clientY - touchY;
         const dt = Math.max((now - touchT) / 1000, 0.001);
   
         y = wrapY(y + dy);
         touchV = touchV * 0.2 + (-dy / dt) * 0.8; /* smoothed px/s */
-        touchY = ty;
+        touchY = clientY;
         touchT = now;
       }
   
-      function onTouchEnd() {
-        if (!dragging) return;
+      function dragEnd() {
         dragging = false;
   
-        /* Stale finger (held still before lifting) = no fling */
+        /* Stale pointer (held still before letting go) = no fling */
         if (performance.now() - touchT > 100) touchV = 0;
   
         if (Math.abs(touchV) > 20) {
           dir = touchV > 0 ? 1 : -1;
           boost = clampBoost(touchV - speed * dir);
         }
+      }
+  
+      function onTouchStart(e) {
+        if (menuOpen()) return;
+        dragStart(e.touches[0].clientY);
+      }
+  
+      function onTouchMove(e) {
+        if (!dragging) return;
+        if (e.cancelable) e.preventDefault();
+        dragMove(e.touches[0].clientY);
+      }
+  
+      function onTouchEnd() {
+        if (!dragging) return;
+        dragEnd();
+      }
+  
+      /* Mouse: click and drag up or down, same feel as a finger */
+      let mouseDown = false;
+  
+      function onMouseDown(e) {
+        if (e.button !== 0 || menuOpen()) return;
+        e.preventDefault(); /* no text selection or image ghost */
+        mouseDown = true;
+        wrap.classList.add("is-dragging");
+        dragStart(e.clientY);
+      }
+  
+      function onMouseMove(e) {
+        if (!mouseDown) return;
+        dragMove(e.clientY);
+      }
+  
+      function onMouseUp() {
+        if (!mouseDown) return;
+        mouseDown = false;
+        wrap.classList.remove("is-dragging");
+        dragEnd();
       }
   
       function onKey(e) {
@@ -340,6 +374,9 @@
       wrap.addEventListener("touchmove", onTouchMove, { passive: false });
       wrap.addEventListener("touchend", onTouchEnd);
       wrap.addEventListener("touchcancel", onTouchEnd);
+      wrap.addEventListener("mousedown", onMouseDown);
+      window.addEventListener("mousemove", onMouseMove);
+      window.addEventListener("mouseup", onMouseUp);
       document.addEventListener("keydown", onKey);
       window.addEventListener("load", onLoad);
       if (resize) {
@@ -382,6 +419,9 @@
         wrap.removeEventListener("touchmove", onTouchMove);
         wrap.removeEventListener("touchend", onTouchEnd);
         wrap.removeEventListener("touchcancel", onTouchEnd);
+        wrap.removeEventListener("mousedown", onMouseDown);
+        window.removeEventListener("mousemove", onMouseMove);
+        window.removeEventListener("mouseup", onMouseUp);
         document.removeEventListener("keydown", onKey);
         window.removeEventListener("load", onLoad);
         if (resize) resize.disconnect();
