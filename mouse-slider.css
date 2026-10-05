@@ -175,7 +175,7 @@
   height: 4px;
   border-radius: 999px;
   overflow: hidden;
-  background: rgba(255, 255, 255, 0.35);
+  background: rgba(120, 120, 120, 0.75); /* mid-gray reads on light and dark images */
 }
 .card-progress_fill {
   height: 100%;
