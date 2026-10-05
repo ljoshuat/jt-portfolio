@@ -109,11 +109,14 @@
        "DRAG" badge (with up/down arrows) while it's over the grid.
        It uses the theme colours (Color/accent fill, Color/bg-primary
        lettering), so it follows Dark, Light and Vibe like the circle
-       cursor, which is hidden while the badge shows. */
+       cursor, which is hidden while the badge shows. The fill is
+       see-through with a blur behind it (frosted glass). */
     const DRAG_CURSOR_SIZE = 96; /* px */
+    const DRAG_CURSOR_FILL = 72; /* % of the accent colour that shows */
+    const DRAG_CURSOR_BLUR = 10; /* px of blur behind the badge */
     const DRAG_CURSOR_SVG =
       '<svg viewBox="0 0 163 163" width="100%" height="100%" aria-hidden="true">' +
-      '<circle cx="81.5" cy="81.5" r="81.5" style="fill:var(--color--accent,#e3ff00);transition:fill .4s ease"/>' +
+      '<circle cx="81.5" cy="81.5" r="81.5" style="fill:color-mix(in srgb,var(--color--accent,#e3ff00) ' + DRAG_CURSOR_FILL + '%,transparent);transition:fill .4s ease"/>' +
       '<g style="fill:var(--color--bg-primary,#000);transition:fill .4s ease">' +
       '<path d="M41 74.26H50.86C52.3 74.26 53.5533 74.36 54.62 74.56C55.7 74.7467 56.6267 75.0067 57.4 75.34C58.1867 75.6733 58.8333 76.0667 59.34 76.52C59.8467 76.9733 60.2467 77.4667 60.54 78C60.8467 78.52 61.06 79.06 61.18 79.62C61.3 80.18 61.36 80.74 61.36 81.3V81.9C61.36 82.4333 61.3 82.9867 61.18 83.56C61.0733 84.12 60.8733 84.6667 60.58 85.2C60.2867 85.7333 59.8867 86.24 59.38 86.72C58.8733 87.2 58.2333 87.62 57.46 87.98C56.6867 88.34 55.76 88.6267 54.68 88.84C53.6 89.04 52.3333 89.14 50.88 89.14H41V74.26ZM45.66 85.56H50.5C51.82 85.56 52.8733 85.4333 53.66 85.18C54.4467 84.9133 55.0467 84.5933 55.46 84.22C55.8867 83.8333 56.16 83.42 56.28 82.98C56.4133 82.5267 56.48 82.1067 56.48 81.72V81.6C56.48 81.2267 56.42 80.82 56.3 80.38C56.18 79.9267 55.9133 79.5067 55.5 79.12C55.0867 78.7333 54.48 78.4133 53.68 78.16C52.8933 77.9067 51.8333 77.78 50.5 77.78H45.66V85.56Z"/>' +
       '<path d="M67.6131 80.56H74.6731C75.3398 80.56 75.8198 80.42 76.1131 80.14C76.4065 79.86 76.5531 79.5133 76.5531 79.1V79.08C76.5531 78.6933 76.4065 78.36 76.1131 78.08C75.8331 77.7867 75.3531 77.64 74.6731 77.64H67.6131V80.56ZM67.6131 89.14H62.9531V74.26H74.9531C76.1931 74.26 77.2265 74.36 78.0531 74.56C78.8798 74.76 79.5398 75.04 80.0331 75.4C80.5398 75.7467 80.8931 76.1533 81.0931 76.62C81.3065 77.0867 81.4131 77.5867 81.4131 78.12V78.36C81.4131 78.8933 81.3131 79.3467 81.1131 79.72C80.9265 80.0933 80.6865 80.4133 80.3931 80.68C80.1131 80.9333 79.8131 81.1333 79.4931 81.28C79.1731 81.4267 78.8931 81.54 78.6531 81.62C79.0265 81.7267 79.3865 81.8733 79.7331 82.06C80.0798 82.2467 80.3798 82.4867 80.6331 82.78C80.8865 83.06 81.0865 83.3867 81.2331 83.76C81.3931 84.1333 81.4731 84.56 81.4731 85.04V87.22C81.4731 87.82 81.4998 88.2467 81.5531 88.5C81.6198 88.74 81.6865 88.92 81.7531 89.04V89.14H77.0131C76.9465 89.0467 76.8931 88.9333 76.8531 88.8C76.8131 88.6667 76.7931 88.4667 76.7931 88.2V86.48C76.7931 85.5733 76.5598 84.9133 76.0931 84.5C75.6398 84.0733 74.8398 83.86 73.6931 83.86H67.6131V89.14Z"/>' +
@@ -138,7 +141,9 @@
         "width:" + DRAG_CURSOR_SIZE + "px;height:" + DRAG_CURSOR_SIZE + "px;" +
         "margin:" + -DRAG_CURSOR_SIZE / 2 + "px 0 0 " + -DRAG_CURSOR_SIZE / 2 + "px;" +
         "opacity:0;transform:translate3d(-200px,-200px,0) scale(0.6);" +
-        "transition:opacity .25s ease;will-change:transform;";
+        "transition:opacity .25s ease;will-change:transform;" +
+        "border-radius:50%;-webkit-backdrop-filter:blur(" + DRAG_CURSOR_BLUR + "px);" +
+        "backdrop-filter:blur(" + DRAG_CURSOR_BLUR + "px);";
       document.body.appendChild(el);
       wrap.style.cursor = "none";
   
