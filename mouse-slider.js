@@ -332,6 +332,13 @@
 
      The card gets .is-playing while hovered and the showing image
      gets .is-active, so the fades live in the CSS.
+
+     Video instead of images: put a video URL (e.g. a Bunny
+     play_1080p.mp4 link, bound from the CMS) in data-card-video on
+     the card. When it's filled, hovering plays that video, muted
+     and looping, over the cover, with one progress bar that follows
+     it, and the image slides are skipped. When it's empty the card
+     works exactly as above.
   --------------------------------------------- */
 
   const DEFAULT_SLIDE_TIME = 2000;
@@ -343,6 +350,11 @@
 
     scope.querySelectorAll("[data-card-slideshow]").forEach((card) => {
       if (card.dataset.cardSlideshowReady) return;
+      const videoUrl = (card.getAttribute("data-card-video") || "").trim();
+      if (videoUrl) {
+        initCardVideo(card, videoUrl, touch);
+        return;
+      }
       /* Empty CMS image fields come out as .w-dyn-bind-empty; skip them
          so a card with two hover images gets two bars, not four */
       const slides = Array.from(
@@ -437,6 +449,128 @@
         card.removeEventListener("mouseleave", onLeave);
         delete card.dataset.cardSlideshowReady;
       });
+    });
+  }
+
+  /* Hover video: one muted, looping video stacked over the cover
+     (where the image slides would go), with a single progress bar
+     that tracks its playback. Loads nothing until the first hover. */
+  function initCardVideo(card, url, touch) {
+    card.dataset.cardSlideshowReady = "true";
+
+    const firstSlide = card.querySelector("[data-card-slide]");
+    const holder =
+      (firstSlide && firstSlide.parentElement) ||
+      card.querySelector(".project-card_visual") ||
+      card;
+
+    const video = document.createElement("video");
+    video.muted = true;
+    video.loop = true;
+    video.playsInline = true;
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("aria-hidden", "true");
+    video.preload = "none";
+    video.setAttribute("data-card-slide", "");
+    video.setAttribute("data-card-video-el", "");
+    Object.assign(video.style, {
+      position: "absolute",
+      inset: "0",
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      zIndex: "2",
+      pointerEvents: "none",
+    });
+    holder.insertBefore(video, card.querySelector("[data-card-progress]"));
+
+    const progress = card.querySelector("[data-card-progress]");
+    let fill = null;
+    if (progress) {
+      progress.innerHTML = "";
+      const bar = document.createElement("div");
+      bar.className = "card-progress_bar";
+      fill = document.createElement("div");
+      fill.className = "card-progress_fill";
+      bar.appendChild(fill);
+      progress.appendChild(bar);
+      fill.style.transition = "none";
+      fill.style.transform = "scaleX(0)";
+    }
+
+    let raf = null;
+    let shown = false;
+
+    function track() {
+      if (fill && video.duration) {
+        fill.style.transform = `scaleX(${video.currentTime / video.duration})`;
+      }
+      raf = requestAnimationFrame(track);
+    }
+
+    /* Fade the video in once a frame is ready, so there's no black flash */
+    function reveal() {
+      if (shown && card.classList.contains("is-playing")) {
+        video.classList.add("is-active");
+      }
+    }
+    video.addEventListener("playing", reveal);
+
+    function onEnter() {
+      card.classList.add("is-playing");
+      shown = true;
+      if (!video.getAttribute("src")) video.src = url;
+      try {
+        video.currentTime = 0;
+      } catch (e) {}
+      const playing = video.play();
+      if (playing && playing.catch) playing.catch(() => {});
+      cancelAnimationFrame(raf);
+      track();
+    }
+
+    function onLeave() {
+      card.classList.remove("is-playing");
+      shown = false;
+      video.classList.remove("is-active");
+      video.pause();
+      cancelAnimationFrame(raf);
+      if (fill) fill.style.transform = "scaleX(0)";
+    }
+
+    if (touch) {
+      const watch = new IntersectionObserver(
+        ([entry]) => {
+          if (entry.intersectionRatio >= 0.6) {
+            if (!card.classList.contains("is-playing")) onEnter();
+          } else if (card.classList.contains("is-playing")) {
+            onLeave();
+          }
+        },
+        { threshold: [0, 0.6, 1] }
+      );
+      watch.observe(card);
+      cardCleanups.push(() => {
+        watch.disconnect();
+        onLeave();
+        video.removeEventListener("playing", reveal);
+        video.remove();
+        delete card.dataset.cardSlideshowReady;
+      });
+      return;
+    }
+
+    card.addEventListener("mouseenter", onEnter);
+    card.addEventListener("mouseleave", onLeave);
+
+    cardCleanups.push(() => {
+      onLeave();
+      card.removeEventListener("mouseenter", onEnter);
+      card.removeEventListener("mouseleave", onLeave);
+      video.removeEventListener("playing", reveal);
+      video.remove();
+      delete card.dataset.cardSlideshowReady;
     });
   }
 
