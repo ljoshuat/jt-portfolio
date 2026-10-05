@@ -341,7 +341,11 @@
 
     scope.querySelectorAll("[data-card-slideshow]").forEach((card) => {
       if (card.dataset.cardSlideshowReady) return;
-      const slides = Array.from(card.querySelectorAll("[data-card-slide]"));
+      /* Empty CMS image fields come out as .w-dyn-bind-empty; skip them
+         so a card with two hover images gets two bars, not four */
+      const slides = Array.from(
+        card.querySelectorAll("[data-card-slide]")
+      ).filter((slide) => !slide.classList.contains("w-dyn-bind-empty"));
       if (!slides.length) return;
       card.dataset.cardSlideshowReady = "true";
 
