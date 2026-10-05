@@ -50,50 +50,56 @@ function initWork(container = document) {
 
 
     /*
-     * Mobile: skip the scale-up so the hero
-     * loads full width in the viewport.
+     * Phones and tablets (991px and below,
+     * which covers an iPhone turned sideways):
+     * skip the scale-up so the hero sits full
+     * width and still. matchMedia re-checks on
+     * rotate or resize and undoes the desktop
+     * tween when the screen narrows.
      */
 
-    const isMobile =
-      window.matchMedia("(max-width: 767px)").matches;
+    if (imageWrap && visualSection) {
+
+      const heroMedia = gsap.matchMedia();
+
+      heroMedia.add("(min-width: 992px)", () => {
+
+        gsap.set(imageWrap, {
+          scale: 0.68,
+          transformOrigin: "center top"
+        });
 
 
-    if (imageWrap && isMobile) {
+        gsap.to(imageWrap, {
 
-      gsap.set(imageWrap, {
-        scale: 1
+          scale: 1,
+
+          ease: "none",
+
+          scrollTrigger: {
+
+            trigger: visualSection,
+
+            start: "top 85%",
+
+            end: "top top",
+
+            scrub: true,
+
+            invalidateOnRefresh: true
+
+          }
+
+        });
+
       });
 
-    }
 
+      heroMedia.add("(max-width: 991px)", () => {
 
-    if (imageWrap && visualSection && !isMobile) {
-
-      gsap.set(imageWrap, {
-        scale: 0.68,
-        transformOrigin: "center top"
-      });
-
-
-      gsap.to(imageWrap, {
-
-        scale: 1,
-
-        ease: "none",
-
-        scrollTrigger: {
-
-          trigger: visualSection,
-
-          start: "top 85%",
-
-          end: "top top",
-
-          scrub: true,
-
-          invalidateOnRefresh: true
-
-        }
+        gsap.set(imageWrap, {
+          scale: 1
+        });
 
       });
 

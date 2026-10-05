@@ -361,11 +361,11 @@ barba.init({
             );
 
 
-          /* Mobile skips the hero scale-up (see work-gsap.js) */
+          /* Phones and tablets skip the hero scale-up (see work-gsap.js) */
 
           if (
             imageWrap &&
-            !window.matchMedia("(max-width: 767px)").matches
+            !window.matchMedia("(max-width: 991px)").matches
           ) {
 
             gsap.set(
