@@ -33,7 +33,10 @@
    CTA or links.
 
    A badge inside the site menu (.menu-wrap) works too: it closes
-   the menu as the panel opens. Its styles live with it in the nav.
+   the menu as the panel opens. The menu is on every page, so on
+   pages without the component the script builds the panel itself
+   (cards from /launches). Those pages get the panel styles from the
+   nav component's embed.
 
    Closes on the close button, Escape, or a page change. Tab stays
    inside the panel while it's open. Reduced motion: plain fade.
@@ -47,6 +50,7 @@
   const OPEN_CLASS = "is-open";
   const ROOT_CLASS = "is-launch-open";
   const LENIS_REASON = "launch-modal";
+  const DEFAULT_SOURCE = "/launches";
 
   /* Fetched cards are kept for the visit, so later pages (Barba)
      don't fetch again */
@@ -258,6 +262,7 @@
       });
       const tuck = showing.size > 0;
       cornerBadges().forEach((btn) => {
+        if (btn.closest(HIDE_TARGETS)) return;
         btn.classList.toggle(TUCKED_CLASS, tuck);
         /* Out of the tab order while it's hidden */
         if (tuck) btn.setAttribute("tabindex", "-1");
@@ -271,10 +276,25 @@
      START / BARBA
   --------------------------------------------- */
 
+  /* Same markup as the component, for pages that don't have it */
+  function buildPanel() {
+    const root = document.createElement("div");
+    root.setAttribute("data-launch-root", "");
+    root.setAttribute("data-launch-built", "");
+    root.innerHTML =
+      '<div data-launch-modal data-launch-source="' + DEFAULT_SOURCE + '">' +
+      '<button type="button" class="launch-modal_close" data-launch-close aria-label="Close recently launched">' +
+      '<svg viewBox="0 0 20 20" aria-hidden="true" focusable="false"><path d="M3 3l14 14M17 3L3 17" fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round"/></svg>' +
+      "</button></div>";
+    document.body.appendChild(root);
+    return root.querySelector("[data-launch-modal]");
+  }
+
   function init() {
     routeCaseStudies();
 
     modal = document.querySelector("[data-launch-modal]");
+    if (!modal && document.querySelector("[data-launch-open]")) modal = buildPanel();
     if (!modal || modal.dataset.launchModalReady) return;
     modal.dataset.launchModalReady = "true";
 
@@ -282,7 +302,7 @@
        context keeps it under the nav. Lift it to <body> so it can sit
        on top; destroy() removes it again when the page changes. */
     const root = modal.closest("[data-launch-root]") || modal;
-    if (root.parentElement !== document.body) {
+    if (root.parentElement !== document.body || root.hasAttribute("data-launch-built")) {
       document.body.appendChild(root);
       portaled = root;
     }
