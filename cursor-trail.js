@@ -9,7 +9,7 @@
     const HIDE_NATIVE_CURSOR = true;
   
     const HOVER_TARGETS =
-      "a, button, [role='button'], .mode-item, label, [data-cursor-hover]";
+      "a, button, [role='button'], .mode-item, .menu-toggle, label, [data-cursor-hover]";
   
     const finePointer =
       window.matchMedia("(hover: hover) and (pointer: fine)").matches;
