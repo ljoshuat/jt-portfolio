@@ -24,13 +24,11 @@
    (items start at 0.8s, 0.12s apart) */
 .menu-wrap.is-open .launch-menu-bug {
   transform: rotate(8deg);
-  animation: launch-menu-in 1s cubic-bezier(0.22, 1, 0.36, 1) 1.15s both;
+  animation: launch-menu-in 0.9s cubic-bezier(0.22, 1, 0.36, 1) 1.15s both;
 }
 @keyframes launch-menu-in {
-  0%   { transform: scale(0) rotate(-180deg); }
-  55%  { transform: scale(1.18) rotate(20deg); }
-  75%  { transform: scale(0.94) rotate(2deg); }
-  90%  { transform: scale(1.03) rotate(10deg); }
+  0%   { transform: scale(0) rotate(-120deg); }
+  65%  { transform: scale(1.04) rotate(11deg); }
   100% { transform: scale(1) rotate(8deg); }
 }
 .launch-menu-bug svg {
