@@ -235,4 +235,39 @@
     max-height: 70vh;
   }
 }
+
+/* =========================================================
+   LAUNCHES (CMS cards): the Collection List Item wraps a div
+   card (Webflow won't nest the hover-image fields in a link), so
+   a full-cover .project-card_link overlay carries the link.
+   Portrait cards; about 3.4 show at any desktop width (n4).
+========================================================= */
+[data-mouse-slider-track] > :has(.project-card) {
+  height: auto;
+  width: 22rem;
+  overflow: visible;
+  border-radius: 0;
+}
+.project-card { position: relative; }
+.project-card .project-card_visual { aspect-ratio: 4 / 5; }
+.project-card_link {
+  position: absolute;
+  inset: 0;
+  z-index: 3;
+  overflow: hidden;
+  color: transparent;
+  font-size: 0;
+}
+/* (100vw - 6vw left padding - 3 gaps) / 3.4 */
+@media (min-width: 992px) {
+  [data-mouse-slider-track] > :has(.project-card) {
+    width: calc((100vw - 6vw - 7.5rem) / 3.4);
+  }
+}
+@media (min-width: 768px) and (max-width: 991px) {
+  [data-mouse-slider-track] > :has(.project-card) { width: 42vw; }
+}
+@media (max-width: 767px) {
+  [data-mouse-slider-track] > :has(.project-card) { width: 78vw; }
+}
 </style>
