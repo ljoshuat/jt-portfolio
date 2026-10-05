@@ -112,8 +112,8 @@
        cursor, which is hidden while the badge shows. The fill is
        see-through with a blur behind it (frosted glass). */
     const DRAG_CURSOR_SIZE = 96; /* px */
-    const DRAG_CURSOR_FILL = 72; /* % of the accent colour that shows */
-    const DRAG_CURSOR_BLUR = 10; /* px of blur behind the badge */
+    const DRAG_CURSOR_FILL = 60; /* % of the accent colour that shows */
+    const DRAG_CURSOR_BLUR = 18; /* px of blur behind the badge */
     const DRAG_CURSOR_SVG =
       '<svg viewBox="0 0 163 163" width="100%" height="100%" aria-hidden="true">' +
       '<circle cx="81.5" cy="81.5" r="81.5" style="fill:color-mix(in srgb,var(--color--accent,#e3ff00) ' + DRAG_CURSOR_FILL + '%,transparent);transition:fill .4s ease"/>' +
