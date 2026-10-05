@@ -7,7 +7,7 @@
    snippets_item / snippets_image. This embed turns the centred
    grid into a loose, edge-to-edge scatter: pieces of different
    sizes at irregular positions and heights, with several
-   bleeding off the sides of the screen, plus touch handling,
+   touching the sides of the screen, plus touch handling,
    the heading overlay, and hiding the footer on this page.
    It sits in the page body (not the head) so it travels with
    Barba, which never swaps <head>.
@@ -30,9 +30,9 @@
   pointer-events: none;
 }
 
-/* Full bleed: the list is a 24-column grid that is wider than the
-   screen (112%, shifted left 6%), so pieces placed in the outer
-   columns run off the left or right edge. There are no gaps: the
+/* Full width: the list is a 24-column grid exactly as wide as the
+   screen, so pieces placed in the outer columns sit flush against
+   the left or right edge (touching, never cut off). There are no gaps: the
    space comes from where each piece starts and how far down it
    hangs, so lines never look like rows.
    A piece drops to a new line whenever it starts left of where the
@@ -40,9 +40,9 @@
 .snippets_wrap .snippets_list {
   display: grid;
   grid-template-columns: repeat(24, minmax(0, 1fr));
-  width: 112%;
+  width: 100%;
   max-width: none;
-  margin-left: -6%;
+  margin-left: 0;
   margin-right: 0;
   padding: 0 0 8rem;
   column-gap: 0;
@@ -66,7 +66,7 @@
   max-height: 80vh;
 }
 /* Square logos don't take over: capped, and pushed to the edge
-   they bleed off (set per slot below) */
+   they touch (set per slot below) */
 .snippets_wrap .snippets_item[data-snippets-shape="square"] .snippets_image {
   max-width: 32vw;
 }
@@ -74,24 +74,24 @@
 /* ---------------------------------------------------------
    The scatter: a 9-piece pattern (repeats every 9 items).
    grid-column = start column / how many columns wide
-   (columns 1 and 24 sit partly off screen).
+   (column 1 starts at the left edge, column 24 ends at the right).
    margin-top = how far down it hangs.
 --------------------------------------------------------- */
 
-/* line 1: big piece inset left, smaller one bleeding off the right */
+/* line 1: big piece inset left, smaller one touching the right */
 .snippets_item:nth-child(9n+1) { grid-column: 4 / span 9;  margin-top: 6rem; }
 .snippets_item:nth-child(9n+2) { grid-column: 17 / span 8; margin-top: 13rem; justify-content: flex-end; }
 
-/* line 2: small bleeding off the left, medium, small */
+/* line 2: small touching the left, medium, small */
 .snippets_item:nth-child(9n+3) { grid-column: 1 / span 6;  margin-top: 3rem; justify-content: flex-start; }
 .snippets_item:nth-child(9n+4) { grid-column: 9 / span 8;  margin-top: 10rem; }
 .snippets_item:nth-child(9n+5) { grid-column: 19 / span 5; margin-top: 1rem; }
 
-/* line 3: large piece right of centre, small one bleeding right */
+/* line 3: large piece right of centre, small one touching the right */
 .snippets_item:nth-child(9n+6) { grid-column: 8 / span 10; margin-top: 7rem; }
 .snippets_item:nth-child(9n+7) { grid-column: 20 / span 5; margin-top: 16rem; justify-content: flex-end; }
 
-/* line 4: medium bleeding off the left, large bleeding off the right */
+/* line 4: medium touching the left, large touching the right */
 .snippets_item:nth-child(9n+8) { grid-column: 1 / span 8;  margin-top: 5rem; justify-content: flex-start; }
 .snippets_item:nth-child(9n+9) { grid-column: 14 / span 11; margin-top: 14rem; justify-content: flex-end; }
 
@@ -113,7 +113,7 @@
 
 /* ---------------------------------------------------------
    Phone: mostly one piece per line, swinging left and right,
-   with the odd pair, still running off the edges.
+   with the odd pair, still touching the edges.
 --------------------------------------------------------- */
 @media (max-width: 767px) {
   .snippets_item:nth-child(9n+1) { grid-column: 3 / span 15;  margin-top: 2.5rem; justify-content: center; }
