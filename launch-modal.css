@@ -1,9 +1,10 @@
 <style>
 /* =========================================================
    LAUNCH MODAL (pairs with launch-modal.js)
-   The yellow badge sits in the bottom-right corner; the panel
-   grows out of it as a circle. Can move to the site-wide head
-   once the badge is on every page.
+   The badge sits in the bottom-right corner; the panel grows out
+   of it as a circle. Colors follow the theme (accent badge and
+   close button, bg-primary panel). Lives in an HTML Embed inside
+   the "Recently Launched" component.
 ========================================================= */
 
 /* ---- Badge ---- */
@@ -28,6 +29,16 @@
   width: 100%;
   height: 100%;
   transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+/* Theme colors: CSS beats the SVG's own fills, so the badge is the
+   accent with background-colored type in Dark, Light and Vibe */
+.launch-bug svg circle {
+  fill: var(--color--accent, #e3ff00);
+  transition: fill 0.4s ease;
+}
+.launch-bug svg path {
+  fill: var(--color--bg-primary, #000);
+  transition: fill 0.4s ease;
 }
 .launch-bug:hover svg,
 .launch-bug:focus-visible svg {
@@ -94,6 +105,41 @@ html.is-launch-open body {
     transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
 }
 
+/* Spinner while the cards load from /launches (usually done
+   before anyone opens the panel) */
+[data-launch-modal].is-loading::after {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 50%;
+  width: 2.5rem;
+  height: 2.5rem;
+  margin: -1.25rem 0 0 -1.25rem;
+  border-radius: 50%;
+  border: 2px solid var(--color--accent, #e3ff00);
+  border-right-color: transparent;
+  animation: launch-spin 0.8s linear infinite;
+}
+@keyframes launch-spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Stacked header: serif "Recently" over "LAUNCHED" */
+[data-launch-modal] .section-heading { margin: 0 0 2.5rem; }
+[data-launch-modal] .h2-span { display: block; }
+
+/* Cards also shrink with the window height so the stacked header
+   and the whole card (image + name + line) always fit on screen.
+   4:5 image = 1.25 x width, plus ~23rem for header, text, padding */
+@media (min-width: 992px) {
+  [data-launch-modal] [data-mouse-slider-track] > :has(.project-card) {
+    width: min(
+      calc((100vw - 6vw - 7.5rem) / 3.4),
+      calc((100vh - 23rem) / 1.25)
+    );
+  }
+}
+
 /* ---- Close ---- */
 .launch-modal_close {
   position: absolute;
@@ -108,10 +154,11 @@ html.is-launch-open body {
   padding: 0;
   border: 0;
   border-radius: 50%;
-  background: #e3ff00;
-  color: #000;
+  background: var(--color--accent, #e3ff00);
+  color: var(--color--bg-primary, #000);
   cursor: pointer;
-  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1),
+    background-color 0.4s ease, color 0.4s ease;
 }
 .launch-modal_close svg {
   width: 1.25rem;
@@ -122,7 +169,7 @@ html.is-launch-open body {
   transform: rotate(90deg);
 }
 .launch-modal_close:focus-visible {
-  outline: 2px solid #e3ff00;
+  outline: 2px solid var(--color--accent, #e3ff00);
   outline-offset: 4px;
 }
 
