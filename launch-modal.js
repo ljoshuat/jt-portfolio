@@ -28,6 +28,10 @@
        [data-launch-content]     where the cards go (optional;
                                  defaults to the panel itself)
 
+   The badge tucks away while the site footer (or anything marked
+   [data-launch-hide]) is on screen, so it never covers the footer
+   CTA or links.
+
    Closes on the close button, Escape, or a page change. Tab stays
    inside the panel while it's open. Reduced motion: plain fade.
 
@@ -51,6 +55,7 @@
   let idleTimer = null;
   let portaled = null;
   let wipe = null;
+  let footerWatch = null;
   const cleanup = [];
 
   function on(el, type, fn, opts) {
@@ -215,6 +220,37 @@
   }
 
   /* ---------------------------------------------
+     TUCK AWAY OVER THE FOOTER
+  --------------------------------------------- */
+
+  const HIDE_TARGETS = "footer, .footer, [data-launch-hide]";
+  const TUCKED_CLASS = "is-tucked";
+
+  function watchFooter() {
+    if (!("IntersectionObserver" in window)) return;
+    const targets = Array.from(document.querySelectorAll(HIDE_TARGETS)).filter(
+      (el) => !el.closest("[data-launch-root], [data-launch-modal]")
+    );
+    if (!targets.length) return;
+
+    const showing = new Set();
+    footerWatch = new IntersectionObserver((entries) => {
+      entries.forEach((entry) => {
+        if (entry.isIntersecting) showing.add(entry.target);
+        else showing.delete(entry.target);
+      });
+      const tuck = showing.size > 0;
+      document.querySelectorAll("[data-launch-open]").forEach((btn) => {
+        btn.classList.toggle(TUCKED_CLASS, tuck);
+        /* Out of the tab order while it's hidden */
+        if (tuck) btn.setAttribute("tabindex", "-1");
+        else btn.removeAttribute("tabindex");
+      });
+    });
+    targets.forEach((el) => footerWatch.observe(el));
+  }
+
+  /* ---------------------------------------------
      START / BARBA
   --------------------------------------------- */
 
@@ -261,6 +297,7 @@
       on(btn, "click", () => close());
     });
     on(document, "keydown", onKey);
+    watchFooter();
 
     /* Or once the page has settled */
     idleTimer = setTimeout(loadCards, 2500);
@@ -270,6 +307,8 @@
     close(true);
     clearTimeout(idleTimer);
     cleanup.splice(0).forEach((fn) => fn());
+    if (footerWatch) footerWatch.disconnect();
+    footerWatch = null;
     if (modal) delete modal.dataset.launchModalReady;
     /* It was lifted out of the old page, so it leaves with it */
     if (portaled) portaled.remove();

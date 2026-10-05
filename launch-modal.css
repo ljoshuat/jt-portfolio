@@ -48,7 +48,9 @@
   outline: 2px solid currentColor;
   outline-offset: 4px;
 }
-/* Tucks away while the panel or the site menu is open */
+/* Tucks away while the panel or the site menu is open, or while
+   the footer is on screen (.is-tucked, set by the script) */
+.launch-bug.is-tucked,
 body:has(.menu-wrap.is-open) .launch-bug,
 .is-launch-open .launch-bug {
   transform: scale(0) rotate(-90deg);
