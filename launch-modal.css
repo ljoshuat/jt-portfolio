@@ -150,13 +150,13 @@ html.is-launch-open body {
 [data-launch-modal] .h2-span { display: block; }
 
 /* Cards also shrink with the window height so the stacked header
-   and the whole card (image + name + line) always fit on screen.
-   4:5 image = 1.25 x width, plus ~23rem for header, text, padding */
+   and the whole card always fit on screen (cards are image only).
+   4:5 image = 1.25 x width, plus ~17rem for header and padding */
 @media (min-width: 992px) {
   [data-launch-modal] [data-mouse-slider-track] > :has(.project-card) {
     width: min(
       calc((100vw - 6vw - 7.5rem) / 3.4),
-      calc((100vh - 23rem) / 1.25)
+      calc((100vh - 17rem) / 1.25)
     );
   }
 }
