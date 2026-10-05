@@ -14,6 +14,7 @@
      data-radius    pointer reach in px (default 140)
      data-strength  how far dots get pushed, 0-2 (default 1)
      data-mode      "push" (default) or "swirl"
+     data-shape     "circle" (default) or "square" for pixel dots
      data-fit       "contain" (default) or "cover"
      data-contrast  boosts tone contrast, 0.5-2 (default 1.15)
 
@@ -27,6 +28,7 @@
     radius: 140,
     strength: 1,
     mode: "push",
+    shape: "circle",
     fit: "contain",
     contrast: 1.15
   };
@@ -52,6 +54,7 @@
       radius: num("radius", DEFAULTS.radius),
       strength: num("strength", DEFAULTS.strength),
       mode: el.getAttribute("data-mode") || DEFAULTS.mode,
+      shape: el.getAttribute("data-shape") || DEFAULTS.shape,
       fit: el.getAttribute("data-fit") || DEFAULTS.fit,
       contrast: num("contrast", DEFAULTS.contrast)
     };
@@ -164,6 +167,7 @@
       if (!visible || !dots.length) return;
 
       const animate = !reducedMotion.matches;
+      const square = opts.shape === "square";
       const R = opts.radius;
       const push = R * 0.4 * opts.strength;
       const maxSize = opts.spacing * 0.5;
@@ -253,8 +257,12 @@
 
         const rad = size * (1 + grow) * reveal;
         if (rad < 0.25) continue;
-        ctx.moveTo(x + rad, y);
-        ctx.arc(x, y, rad, 0, Math.PI * 2);
+        if (square) {
+          ctx.rect(x - rad, y - rad, rad * 2, rad * 2);
+        } else {
+          ctx.moveTo(x + rad, y);
+          ctx.arc(x, y, rad, 0, Math.PI * 2);
+        }
       }
       ctx.fill();
 
@@ -327,6 +335,7 @@
     return {
       el,
       opts,
+      redraw: wake,
       destroy() {
         cancelAnimationFrame(raf);
         clearTimeout(resizeTimer);
