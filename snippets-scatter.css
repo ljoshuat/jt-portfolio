@@ -1,0 +1,158 @@
+<style>
+/* =========================================================
+   SNIPPETS: SCATTERED FULL-WIDTH LAYOUT
+   (lives in the HTML Embed inside .snippets_wrap)
+   The base look (radius, image max-height) is on the Webflow
+   classes snippets_wrap / snippets_track / snippets_list /
+   snippets_item / snippets_image. This embed turns the centred
+   grid into a loose, edge-to-edge scatter: pieces of different
+   sizes at irregular left offsets and heights, with a few
+   bleeding off the sides of the screen, plus touch handling,
+   the heading overlay, and hiding the footer on this page.
+   It sits in the page body (not the head) so it travels with
+   Barba, which never swaps <head>.
+========================================================= */
+
+.snippets_wrap {
+  height: 100dvh;
+  touch-action: none; /* the script handles touch drag */
+  overscroll-behavior: none;
+}
+
+.snippets_track {
+  will-change: transform;
+  row-gap: 0;
+}
+
+.snippets_image {
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+
+/* Full bleed: no max-width, no side padding, no fixed gaps.
+   Space comes from each piece's own margins below, so rows
+   never line up. Items hang from the top of their line, so
+   different top margins stagger them vertically. */
+.snippets_wrap .snippets_list {
+  max-width: none;
+  padding: 0 0 8rem;
+  justify-content: flex-start;
+  align-items: flex-start;
+  column-gap: 0;
+  row-gap: 0;
+}
+.snippets_wrap .snippets_item {
+  margin: 0;
+  justify-content: center;
+}
+
+/* ---------------------------------------------------------
+   The scatter: a 9-piece pattern (repeats every 9 items).
+   Each line adds up to about 100%, and a negative side margin
+   lets a piece run off the edge without breaking the line.
+   width = size, margin-left = where it starts,
+   margin-top = how far down it hangs.
+--------------------------------------------------------- */
+
+/* line 1: big left, smaller right that bleeds off the right */
+.snippets_item:nth-child(9n+1) { width: 42%; margin-left: 8%;  margin-top: 6rem; }
+.snippets_item:nth-child(9n+2) { width: 28%; margin-left: 24%; margin-top: 13rem; margin-right: -4%; }
+
+/* line 2: small bleeding off the left, medium, small */
+.snippets_item:nth-child(9n+3) { width: 24%; margin-left: -3%; margin-top: 3rem; }
+.snippets_item:nth-child(9n+4) { width: 35%; margin-left: 13%; margin-top: 10rem; }
+.snippets_item:nth-child(9n+5) { width: 20%; margin-left: 9%;  margin-top: 1rem; }
+
+/* line 3: one large piece pushed right of centre, a small one after */
+.snippets_item:nth-child(9n+6) { width: 44%; margin-left: 28%; margin-top: 7rem; }
+.snippets_item:nth-child(9n+7) { width: 20%; margin-left: 6%;  margin-top: 16rem; margin-right: -2%; }
+
+/* line 4: medium left of centre, large bleeding off the right */
+.snippets_item:nth-child(9n+8) { width: 32%; margin-left: 15%; margin-top: 5rem; }
+.snippets_item:nth-child(9n+9) { width: 40%; margin-left: 14%; margin-top: 14rem; margin-right: -6%; }
+
+/* Wide screen grabs never get a tiny slot; tall pieces never
+   get a huge one. The script tags each item with
+   data-snippets-shape (wide / tall / square). */
+.snippets_wrap .snippets_item[data-snippets-shape="wide"] {
+  min-width: 32%;
+}
+.snippets_wrap .snippets_item[data-snippets-shape="tall"] {
+  max-width: 26%;
+}
+.snippets_wrap .snippets_item[data-snippets-shape="square"] {
+  max-width: 30%;
+}
+.snippets_wrap .snippets_item[data-snippets-shape="tall"] .snippets_image {
+  max-height: 80vh;
+}
+
+/* ---------------------------------------------------------
+   Tablet: same idea, a little bigger and less extreme.
+--------------------------------------------------------- */
+@media (max-width: 991px) {
+  .snippets_item:nth-child(9n+1) { width: 50%; margin-left: 4%; }
+  .snippets_item:nth-child(9n+2) { width: 36%; margin-left: 12%; margin-right: -4%; }
+  .snippets_item:nth-child(9n+3) { width: 34%; margin-left: -4%; }
+  .snippets_item:nth-child(9n+4) { width: 48%; margin-left: 18%; margin-right: -2%; }
+  .snippets_item:nth-child(9n+5) { width: 40%; margin-left: 34%; }
+  .snippets_item:nth-child(9n+6) { width: 46%; margin-left: 6%; }
+  .snippets_item:nth-child(9n+7) { width: 40%; margin-left: 12%; margin-right: -4%; }
+  .snippets_item:nth-child(9n+8) { width: 32%; margin-left: 12%; }
+  .snippets_item:nth-child(9n+9) { width: 50%; margin-left: 10%; margin-right: -6%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="wide"] { min-width: 44%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="tall"] { max-width: 34%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="square"] { max-width: 40%; }
+}
+
+/* ---------------------------------------------------------
+   Phone: mostly one piece per line, swinging left and right,
+   with the odd pair, still running off the edges.
+--------------------------------------------------------- */
+@media (max-width: 767px) {
+  .snippets_wrap .snippets_item { min-width: 0; }
+  .snippets_item:nth-child(9n+1) { width: 66%; margin-left: 6%;  margin-top: 2.5rem; margin-right: 0; }
+  .snippets_item:nth-child(9n+2) { width: 62%; margin-left: 42%; margin-top: 2rem;   margin-right: -4%; }
+  .snippets_item:nth-child(9n+3) { width: 46%; margin-left: -4%; margin-top: 2.5rem; margin-right: 0; }
+  .snippets_item:nth-child(9n+4) { width: 44%; margin-left: 10%; margin-top: 5rem;   margin-right: 0; }
+  .snippets_item:nth-child(9n+5) { width: 72%; margin-left: 20%; margin-top: 2.5rem; margin-right: 0; }
+  .snippets_item:nth-child(9n+6) { width: 58%; margin-left: -6%; margin-top: 2rem;   margin-right: 0; }
+  .snippets_item:nth-child(9n+7) { width: 40%; margin-left: 52%; margin-top: 2.5rem; margin-right: 0; }
+  .snippets_item:nth-child(9n+8) { width: 52%; margin-left: 12%; margin-top: 2.5rem; margin-right: 0; }
+  .snippets_item:nth-child(9n+9) { width: 64%; margin-left: 40%; margin-top: 2rem;   margin-right: -6%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="wide"] { min-width: 72%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="tall"] { max-width: 52%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="square"] { max-width: 60%; }
+  .snippets_wrap .snippets_item[data-snippets-shape="tall"] .snippets_image { max-height: 70vh; }
+}
+
+/* "Bits & Pieces / SNIPPETS" sits centered BEHIND the images,
+   in the muted gray (Color/text-muted, which has Light and Vibe
+   values), so the scatter drifts over it. */
+.snippets_track {
+  position: relative;
+  z-index: 1;
+}
+.snippets_wrap > .section_hero {
+  position: absolute;
+  inset: 0;
+  z-index: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding-top: 0;
+  background-color: transparent;
+  pointer-events: none;
+}
+.snippets_wrap > .section_hero h1,
+.snippets_wrap > .section_hero h1 span {
+  color: var(--color--text-muted, #7d7d7d);
+}
+
+/* The page doesn't scroll, so nothing below the grid can be
+   reached. Hide whatever follows it (the footer). */
+.snippets_wrap ~ * {
+  display: none;
+}
+</style>
