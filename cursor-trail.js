@@ -43,6 +43,11 @@
       circles[i] = el;
     }
   
+    /* Optional text inside the dot, for elements with data-cursor-text */
+    const label = document.createElement("span");
+    label.className = "cursor-trail_label";
+    circles[0].appendChild(label);
+
     document.body.appendChild(wrap);
     if (HIDE_NATIVE_CURSOR) {
       document.documentElement.classList.add("has-cursor-trail");
@@ -92,9 +97,19 @@
     function setHover(on) {
       wrap.classList.toggle("is-hovering", on);
     }
+
+    /* Over [data-cursor-text] the dot grows into a solid circle with
+       that text in it (e.g. "View project" on slider cards) */
+    function setLabel(text) {
+      if (text) label.textContent = text;
+      wrap.classList.toggle("is-labelled", !!text);
+    }
   
     document.addEventListener("pointerover", (e) => {
-      if (e.target.closest && e.target.closest(HOVER_TARGETS)) setHover(true);
+      if (!e.target.closest) return;
+      if (e.target.closest(HOVER_TARGETS)) setHover(true);
+      const labelled = e.target.closest("[data-cursor-text]");
+      setLabel(labelled ? labelled.getAttribute("data-cursor-text") : "");
     });
     document.addEventListener("pointerout", (e) => {
       const from = e.target.closest && e.target.closest(HOVER_TARGETS);
@@ -104,7 +119,10 @@
     });
   
     if (typeof barba !== "undefined" && barba.hooks) {
-      barba.hooks.after(() => setHover(false));
+      barba.hooks.after(() => {
+        setHover(false);
+        setLabel("");
+      });
     }
   
   })();

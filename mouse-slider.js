@@ -1,10 +1,14 @@
 /* =========================================================
    MOUSE-FOLLOW SLIDER
-   A horizontal strip of images that pans with the mouse: move
-   the pointer left and the strip slides to its start, move it
-   right and it slides to its end, eased so it glides rather than
-   snaps. Images drift a little inside their frames (parallax) and
-   the strip leans slightly with its speed.
+   A horizontal strip of images or project cards that pans with
+   the mouse: move the pointer left and the strip slides to its
+   start, move it right and it slides to its end, eased so it
+   glides rather than snaps. Images can drift a little inside their
+   frames (parallax) and the strip can lean slightly with its speed.
+   Modelled on the project slider at n4.studio.
+
+   Project cards can also play a short slideshow on hover, with
+   story-style progress bars (see CARD SLIDESHOW below).
 
    Phones, tablets and reduced motion get a plain swipeable strip
    (native horizontal scroll with snap), so nothing fights the
@@ -31,6 +35,12 @@
                             keep this at 11 or less)
      data-edge="0.12"       dead zone at each side of the area
                             (0.12 = the outer 12% reach the ends)
+     data-start / data-end  set the two ends separately, as a share
+                            of the area's width. data-start="0.5"
+                            data-end="0.9" keeps the strip still
+                            over the left half and runs through it
+                            over the right (the n4 feel)
+     data-skew="4"          lean at full speed, in degrees (0 = off)
      data-fullscreen        the slider fills the page: Lenis is
                             paused while you're on it
 
@@ -44,7 +54,7 @@
   const DEFAULT_FOLLOW = 0.08;
   const DEFAULT_PARALLAX = 10; /* % of the image width */
   const DEFAULT_EDGE = 0.12;
-  const MAX_SKEW = 4; /* degrees, at full speed */
+  const DEFAULT_SKEW = 4; /* degrees, at full speed */
   const SKEW_SPEED = 2500; /* px per second that counts as full speed */
 
   const canHover = window.matchMedia("(hover: hover) and (pointer: fine)");
@@ -67,7 +77,17 @@
     const edge = wrap.hasAttribute("data-edge")
       ? Math.min(0.45, Math.max(0, parseFloat(wrap.getAttribute("data-edge")) || 0))
       : DEFAULT_EDGE;
+    const start = readShare("data-start", edge);
+    const end = Math.max(start + 0.05, readShare("data-end", 1 - edge));
+    const maxSkew = wrap.hasAttribute("data-skew")
+      ? parseFloat(wrap.getAttribute("data-skew")) || 0
+      : DEFAULT_SKEW;
     const fullscreen = wrap.hasAttribute("data-fullscreen");
+
+    function readShare(name, fallback) {
+      const v = parseFloat(wrap.getAttribute(name));
+      return isNaN(v) ? fallback : Math.min(1, Math.max(0, v));
+    }
 
     let items = [];
     let media = [];
@@ -105,7 +125,7 @@
       /* Map the pointer across the area (minus the dead zones)
          onto the strip, so both ends are easy to reach */
       const x = (e.clientX - wrapLeft) / wrapWidth;
-      target = clamp((x - edge) / (1 - edge * 2));
+      target = clamp((x - start) / (end - start));
     }
 
     function onKey(e) {
@@ -164,7 +184,7 @@
       const velocity = ((x - lastX) / Math.max(lag, 0.001)) * 60;
       lastX = x;
       const skewTarget =
-        Math.max(-1, Math.min(1, velocity / SKEW_SPEED)) * MAX_SKEW;
+        Math.max(-1, Math.min(1, velocity / SKEW_SPEED)) * maxSkew;
       skew += (skewTarget - skew) * 0.1;
       if (Math.abs(skew) < 0.01) skew = 0;
       setSkew(skew);
@@ -296,6 +316,109 @@
   }
 
   /* ---------------------------------------------
+     CARD SLIDESHOW
+     Hover a project card and it steps through a few images, with
+     a row of story-style progress bars along the top. Leave and it
+     goes back to its cover. Mouse devices only; works on any card,
+     inside a slider or not.
+
+     [data-card-slideshow]        the card (data-slide-time="2000"
+                                  sets ms per image)
+       [data-card-slide]          each image (stacked, hidden until
+                                  it's their turn)
+       [data-card-progress]       optional empty div; the script
+                                  fills it with one bar per image
+
+     The card gets .is-playing while hovered and the showing image
+     gets .is-active, so the fades live in the CSS.
+  --------------------------------------------- */
+
+  const DEFAULT_SLIDE_TIME = 2000;
+  let cardCleanups = [];
+
+  function initCardSlideshows(scope = document) {
+    if (!canHover.matches || reduceMotion.matches) return;
+
+    scope.querySelectorAll("[data-card-slideshow]").forEach((card) => {
+      if (card.dataset.cardSlideshowReady) return;
+      const slides = Array.from(card.querySelectorAll("[data-card-slide]"));
+      if (!slides.length) return;
+      card.dataset.cardSlideshowReady = "true";
+
+      const time =
+        parseFloat(card.getAttribute("data-slide-time")) || DEFAULT_SLIDE_TIME;
+
+      /* One bar per image */
+      const progress = card.querySelector("[data-card-progress]");
+      const bars = [];
+      if (progress) {
+        progress.innerHTML = "";
+        slides.forEach(() => {
+          const bar = document.createElement("div");
+          bar.className = "card-progress_bar";
+          const fill = document.createElement("div");
+          fill.className = "card-progress_fill";
+          bar.appendChild(fill);
+          progress.appendChild(bar);
+          bars.push(fill);
+        });
+      }
+
+      let index = 0;
+      let timer = null;
+
+      function show(i) {
+        index = i;
+        slides.forEach((slide, n) => slide.classList.toggle("is-active", n === i));
+        bars.forEach((fill, n) => {
+          fill.style.transition = "none";
+          fill.style.transform = `scaleX(${n < i ? 1 : 0})`;
+        });
+        const fill = bars[i];
+        if (fill) {
+          /* Next frame, so the reset above lands before the fill runs */
+          requestAnimationFrame(() => {
+            fill.style.transition = `transform ${time}ms linear`;
+            fill.style.transform = "scaleX(1)";
+          });
+        }
+        timer = setTimeout(() => show((index + 1) % slides.length), time);
+      }
+
+      function onEnter() {
+        clearTimeout(timer);
+        card.classList.add("is-playing");
+        show(0);
+      }
+
+      function onLeave() {
+        clearTimeout(timer);
+        card.classList.remove("is-playing");
+        slides.forEach((slide) => slide.classList.remove("is-active"));
+        bars.forEach((fill) => {
+          fill.style.transition = "none";
+          fill.style.transform = "scaleX(0)";
+        });
+      }
+
+      card.addEventListener("mouseenter", onEnter);
+      card.addEventListener("mouseleave", onLeave);
+
+      cardCleanups.push(() => {
+        onLeave();
+        card.removeEventListener("mouseenter", onEnter);
+        card.removeEventListener("mouseleave", onLeave);
+        delete card.dataset.cardSlideshowReady;
+      });
+    });
+  }
+
+  function destroyCardSlideshows() {
+    cardCleanups.forEach((fn) => fn());
+    cardCleanups = [];
+  }
+
+  /* ---------------------------------------------
      HELPERS
   --------------------------------------------- */
 
@@ -328,17 +451,23 @@
     });
   }
 
-  function destroyMouseSliders() {
-    sliders.slice().forEach((s) => s.destroy());
+  function initAll(scope = document) {
+    initMouseSliders(scope);
+    initCardSlideshows(scope);
   }
 
-  window.initMouseSliders = initMouseSliders;
+  function destroyMouseSliders() {
+    sliders.slice().forEach((s) => s.destroy());
+    destroyCardSlideshows();
+  }
+
+  window.initMouseSliders = initAll;
   window.destroyMouseSliders = destroyMouseSliders;
 
   if (document.readyState === "loading") {
-    document.addEventListener("DOMContentLoaded", () => initMouseSliders());
+    document.addEventListener("DOMContentLoaded", () => initAll());
   } else {
-    initMouseSliders();
+    initAll();
   }
 
   if (typeof barba !== "undefined" && barba.hooks) {
@@ -346,7 +475,7 @@
     barba.hooks.before(() => destroyMouseSliders());
 
     barba.hooks.after((data) => {
-      initMouseSliders(
+      initAll(
         data && data.next && data.next.container
           ? data.next.container
           : document
