@@ -32,6 +32,9 @@
    [data-launch-hide]) is on screen, so it never covers the footer
    CTA or links.
 
+   A badge inside the site menu (.menu-wrap) works too: it closes
+   the menu as the panel opens. Its styles live with it in the nav.
+
    Closes on the close button, Escape, or a page change. Tab stays
    inside the panel while it's open. Reduced motion: plain fade.
 
@@ -61,6 +64,13 @@
   function on(el, type, fn, opts) {
     el.addEventListener(type, fn, opts);
     cleanup.push(() => el.removeEventListener(type, fn, opts));
+  }
+
+  /* The page's own badges (not the one in the site menu) */
+  function cornerBadges() {
+    return Array.from(document.querySelectorAll("[data-launch-open]")).filter(
+      (btn) => !btn.closest(".menu-wrap")
+    );
   }
 
   function focusables() {
@@ -155,6 +165,13 @@
     if (!modal || modal.classList.contains(OPEN_CLASS)) return;
     lastFocus = e ? e.currentTarget : document.activeElement;
     setOrigin(lastFocus);
+
+    /* From the menu: the menu slides away under the flood. Focus goes
+       back to the corner badge on close, since the menu one is gone. */
+    if (lastFocus && lastFocus.closest && lastFocus.closest(".menu-wrap")) {
+      if (window.closeSiteMenu) window.closeSiteMenu();
+      lastFocus = cornerBadges()[0] || null;
+    }
     clearTimeout(closeTimer);
     loadCards();
 
@@ -240,7 +257,7 @@
         else showing.delete(entry.target);
       });
       const tuck = showing.size > 0;
-      document.querySelectorAll("[data-launch-open]").forEach((btn) => {
+      cornerBadges().forEach((btn) => {
         btn.classList.toggle(TUCKED_CLASS, tuck);
         /* Out of the tab order while it's hidden */
         if (tuck) btn.setAttribute("tabindex", "-1");
