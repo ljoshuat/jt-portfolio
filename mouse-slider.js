@@ -319,8 +319,9 @@
      CARD SLIDESHOW
      Hover a project card and it steps through a few images, with
      a row of story-style progress bars along the top. Leave and it
-     goes back to its cover. Mouse devices only; works on any card,
-     inside a slider or not.
+     goes back to its cover. On touch screens there's no hover, so a
+     card plays while it's mostly on screen instead. Works on any
+     card, inside a slider or not.
 
      [data-card-slideshow]        the card (data-slide-time="2000"
                                   sets ms per image)
@@ -337,7 +338,8 @@
   let cardCleanups = [];
 
   function initCardSlideshows(scope = document) {
-    if (!canHover.matches || reduceMotion.matches) return;
+    if (reduceMotion.matches) return;
+    const touch = !canHover.matches;
 
     scope.querySelectorAll("[data-card-slideshow]").forEach((card) => {
       if (card.dataset.cardSlideshowReady) return;
@@ -403,6 +405,27 @@
           fill.style.transition = "none";
           fill.style.transform = "scaleX(0)";
         });
+      }
+
+      if (touch) {
+        /* Swiped into view = play; swiped away = back to the cover */
+        const watch = new IntersectionObserver(
+          ([entry]) => {
+            if (entry.intersectionRatio >= 0.6) {
+              if (!card.classList.contains("is-playing")) onEnter();
+            } else if (card.classList.contains("is-playing")) {
+              onLeave();
+            }
+          },
+          { threshold: [0, 0.6, 1] }
+        );
+        watch.observe(card);
+        cardCleanups.push(() => {
+          watch.disconnect();
+          onLeave();
+          delete card.dataset.cardSlideshowReady;
+        });
+        return;
       }
 
       card.addEventListener("mouseenter", onEnter);

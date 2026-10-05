@@ -318,6 +318,9 @@
     if (title && !title.id) title.id = "launch-modal-title";
     if (title) modal.setAttribute("aria-labelledby", title.id);
     else modal.setAttribute("aria-label", "Recently launched");
+    /* Lenis is stopped while the panel is open, and a stopped Lenis
+       swallows touch moves; this lets the cards swipe on phones */
+    modal.setAttribute("data-lenis-prevent", "");
     modal.setAttribute("role", "dialog");
     modal.setAttribute("aria-modal", "true");
     modal.setAttribute("aria-hidden", "true");
