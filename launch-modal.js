@@ -2,8 +2,9 @@
    LAUNCH MODAL
    The yellow "Recently launched!" badge in the corner opens a
    full-screen panel with the launches slider (mouse-slider.js).
-   The panel grows out of the badge as a circle and shrinks back
-   into it on close.
+   Opening: a circle in the badge's color grows out of the badge
+   and floods the screen, then the panel opens over it the same
+   way. Closing runs it backwards into the badge.
 
    Built as a Webflow component ("Recently Launched") so it can sit
    on any page. Components can't hold a CMS list, so the cards live
@@ -49,6 +50,7 @@
   let closeTimer = null;
   let idleTimer = null;
   let portaled = null;
+  let wipe = null;
   const cleanup = [];
 
   function on(el, type, fn, opts) {
@@ -137,8 +139,11 @@
     if (!from || !from.getBoundingClientRect) return;
     const box = from.getBoundingClientRect();
     if (!box.width) return;
-    modal.style.setProperty("--launch-x", `${box.left + box.width / 2}px`);
-    modal.style.setProperty("--launch-y", `${box.top + box.height / 2}px`);
+    [modal, wipe].forEach((el) => {
+      if (!el) return;
+      el.style.setProperty("--launch-x", `${box.left + box.width / 2}px`);
+      el.style.setProperty("--launch-y", `${box.top + box.height / 2}px`);
+    });
   }
 
   function open(e) {
@@ -161,7 +166,10 @@
   function close(instant) {
     if (!modal || !modal.classList.contains(OPEN_CLASS)) return;
 
-    if (instant) modal.classList.add("is-instant");
+    if (instant) {
+      modal.classList.add("is-instant");
+      if (wipe) wipe.classList.add("is-instant");
+    }
     modal.classList.remove(OPEN_CLASS);
     modal.setAttribute("aria-hidden", "true");
     modal.inert = true;
@@ -170,7 +178,11 @@
 
     clearTimeout(closeTimer);
     const closing = modal;
-    closeTimer = setTimeout(() => closing.classList.remove("is-instant"), 50);
+    const closingWipe = wipe;
+    closeTimer = setTimeout(() => {
+      closing.classList.remove("is-instant");
+      if (closingWipe) closingWipe.classList.remove("is-instant");
+    }, 50);
 
     if (!instant && lastFocus && document.contains(lastFocus)) {
       lastFocus.focus({ preventScroll: true });
@@ -222,6 +234,13 @@
       portaled = root;
     }
 
+    /* The badge-colored circle that floods the screen first; the
+       panel then opens on top of it (styles: .launch-wipe) */
+    wipe = document.createElement("div");
+    wipe.className = "launch-wipe";
+    wipe.setAttribute("aria-hidden", "true");
+    modal.before(wipe);
+
     const title = modal.querySelector("[data-launch-title], h2");
     if (title && !title.id) title.id = "launch-modal-title";
     if (title) modal.setAttribute("aria-labelledby", title.id);
@@ -254,7 +273,9 @@
     if (modal) delete modal.dataset.launchModalReady;
     /* It was lifted out of the old page, so it leaves with it */
     if (portaled) portaled.remove();
+    else if (wipe) wipe.remove();
     portaled = null;
+    wipe = null;
     modal = null;
   }
 

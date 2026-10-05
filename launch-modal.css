@@ -80,9 +80,29 @@ body:has(.menu-wrap.is-open) .launch-bug,
 [data-launch-modal].is-open {
   visibility: visible;
   clip-path: circle(150vmax at var(--launch-x) var(--launch-y));
-  transition: clip-path 0.9s cubic-bezier(0.76, 0, 0.24, 1),
+  /* opens once the yellow has mostly flooded the screen */
+  transition: clip-path 0.9s cubic-bezier(0.76, 0, 0.24, 1) 0.35s,
     visibility 0s;
 }
+/* Badge-colored flood that runs ahead of the panel (added by the
+   script, sits just under the panel) */
+.launch-wipe {
+  --launch-x: calc(100vw - 5.75rem);
+  --launch-y: calc(100vh - 5.75rem);
+  position: fixed;
+  inset: 0;
+  z-index: 8999;
+  background: var(--color--accent, #e3ff00);
+  pointer-events: none;
+  clip-path: circle(0px at var(--launch-x) var(--launch-y));
+  /* closing: waits for the panel to shrink first */
+  transition: clip-path 0.7s cubic-bezier(0.76, 0, 0.24, 1) 0.35s;
+}
+.is-launch-open .launch-wipe {
+  clip-path: circle(150vmax at var(--launch-x) var(--launch-y));
+  transition: clip-path 0.8s cubic-bezier(0.76, 0, 0.24, 1);
+}
+.launch-wipe.is-instant,
 [data-launch-modal].is-instant,
 [data-launch-modal].is-instant * {
   transition: none !important;
@@ -102,8 +122,8 @@ html.is-launch-open body {
 [data-launch-modal].is-open [data-launches] {
   opacity: 1;
   transform: none;
-  transition: opacity 0.6s ease 0.35s,
-    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
+  transition: opacity 0.6s ease 0.7s,
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.7s;
 }
 
 /* Spinner while the cards load from /launches (usually done
@@ -191,6 +211,7 @@ html.is-launch-open body {
 
 @media (prefers-reduced-motion: reduce) {
   .launch-bug { animation: none; }
+  .launch-wipe { display: none; }
   [data-launch-modal],
   [data-launch-modal].is-open {
     clip-path: none;
