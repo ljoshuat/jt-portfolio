@@ -1,0 +1,107 @@
+<style>
+/* =========================================================
+   MOUSE-FOLLOW SLIDER (goes in an HTML Embed inside the slider
+   section, so it travels with Barba, which never swaps <head>)
+   Pairs with mouse-slider.js. Sizes are starting points; the
+   Webflow classes can carry the base look instead.
+========================================================= */
+
+[data-mouse-slider] {
+  position: relative;
+  overflow: hidden;
+  width: 100%;
+}
+
+/* Full-page version (Snippets): fill the screen, center the strip */
+[data-mouse-slider][data-fullscreen] {
+  height: 100dvh;
+  display: flex;
+  align-items: center;
+}
+
+[data-mouse-slider-track] {
+  display: flex;
+  align-items: center;
+  gap: 2.5rem;
+  width: max-content;
+  padding: 0 6vw;
+  will-change: transform;
+}
+
+/* Each frame keeps the image's own proportions at a set height */
+[data-mouse-slider-track] > * {
+  flex: none;
+  height: 56vh;
+  overflow: hidden;
+  border-radius: 0.5rem;
+}
+
+/* Images are wider than their frames so the parallax drift never
+   shows an edge (keep data-parallax at 11 or less) */
+[data-mouse-slider-track] img,
+[data-mouse-slider-track] video {
+  display: block;
+  height: 100%;
+  width: auto;
+  max-width: none;
+  object-fit: cover;
+  transform-origin: center;
+  user-select: none;
+  -webkit-user-drag: none;
+  pointer-events: none;
+}
+[data-mouse-slider][data-mouse-slider-mode="follow"] [data-mouse-slider-track] img,
+[data-mouse-slider][data-mouse-slider-mode="follow"] [data-mouse-slider-track] video {
+  scale: 1.3;
+}
+
+/* Optional progress bar along the bottom */
+[data-mouse-slider-progress] {
+  position: absolute;
+  left: 6vw;
+  right: 6vw;
+  bottom: 2.5rem;
+  height: 2px;
+  background: var(--color--accent, #daf40a);
+  transform: scaleX(0);
+  transform-origin: left center;
+  pointer-events: none;
+}
+
+/* Phones, tablets and reduced motion: a plain swipeable strip */
+[data-mouse-slider][data-mouse-slider-mode="swipe"] {
+  overflow-x: auto;
+  overflow-y: hidden;
+  scroll-snap-type: x mandatory;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+  overscroll-behavior-x: contain;
+}
+[data-mouse-slider][data-mouse-slider-mode="swipe"]::-webkit-scrollbar {
+  display: none;
+}
+[data-mouse-slider][data-mouse-slider-mode="swipe"] [data-mouse-slider-track] > * {
+  scroll-snap-align: center;
+}
+/* The bar tracks the mouse version only */
+[data-mouse-slider][data-mouse-slider-mode="swipe"] [data-mouse-slider-progress] {
+  display: none;
+}
+
+@media (max-width: 767px) {
+  [data-mouse-slider-track] {
+    gap: 1rem;
+    padding: 0 8vw;
+  }
+  [data-mouse-slider-track] > * {
+    height: auto;
+    width: 80vw;
+  }
+  [data-mouse-slider-track] img,
+  [data-mouse-slider-track] video {
+    width: 100%;
+    height: auto;
+    max-height: 70vh;
+  }
+}
+</style>
