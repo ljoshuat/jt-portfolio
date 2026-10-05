@@ -333,12 +333,12 @@
      The card gets .is-playing while hovered and the showing image
      gets .is-active, so the fades live in the CSS.
 
-     Video instead of images: put a video URL (e.g. a Bunny
+     A video as slide 1: put a video URL (e.g. a Bunny
      play_1080p.mp4 link, bound from the CMS) in data-card-video on
-     the card. When it's filled, hovering plays that video, muted
-     and looping, over the cover, with one progress bar that follows
-     it, and the image slides are skipped. When it's empty the card
-     works exactly as above.
+     the card. The video then plays first (muted, once through, its
+     bar following playback), then the images carry on as usual, and
+     the loop comes back round to the video. It loads nothing until
+     the first hover. Leave it empty and the card is images only.
   --------------------------------------------- */
 
   const DEFAULT_SLIDE_TIME = 2000;
@@ -350,23 +350,23 @@
 
     scope.querySelectorAll("[data-card-slideshow]").forEach((card) => {
       if (card.dataset.cardSlideshowReady) return;
-      const videoUrl = (card.getAttribute("data-card-video") || "").trim();
-      if (videoUrl) {
-        initCardVideo(card, videoUrl, touch);
-        return;
-      }
       /* Empty CMS image fields come out as .w-dyn-bind-empty; skip them
          so a card with two hover images gets two bars, not four */
       const slides = Array.from(
         card.querySelectorAll("[data-card-slide]")
       ).filter((slide) => !slide.classList.contains("w-dyn-bind-empty"));
+
+      const videoUrl = (card.getAttribute("data-card-video") || "").trim();
+      const video = videoUrl ? createCardVideo(card, slides[0]) : null;
+      if (video) slides.unshift(video);
+
       if (!slides.length) return;
       card.dataset.cardSlideshowReady = "true";
 
       const time =
         parseFloat(card.getAttribute("data-slide-time")) || DEFAULT_SLIDE_TIME;
 
-      /* One bar per image */
+      /* One bar per slide */
       const progress = card.querySelector("[data-card-progress]");
       const bars = [];
       if (progress) {
@@ -384,14 +384,60 @@
 
       let index = 0;
       let timer = null;
+      let raf = null;
+
+      function next() {
+        show((index + 1) % slides.length);
+      }
+
+      /* The video's bar follows its playback rather than a timer */
+      function trackVideo() {
+        const fill = bars[index];
+        if (fill && video.duration) {
+          fill.style.transform = `scaleX(${video.currentTime / video.duration})`;
+        }
+        raf = requestAnimationFrame(trackVideo);
+      }
+
+      function stopVideo() {
+        if (!video) return;
+        cancelAnimationFrame(raf);
+        video.pause();
+      }
 
       function show(i) {
+        clearTimeout(timer);
+        stopVideo();
         index = i;
-        slides.forEach((slide, n) => slide.classList.toggle("is-active", n === i));
+        const slide = slides[i];
+        slides.forEach((s, n) => {
+          /* The video fades in once it's actually playing (no black flash) */
+          if (s === video && n === i) return;
+          s.classList.toggle("is-active", n === i);
+        });
         bars.forEach((fill, n) => {
           fill.style.transition = "none";
           fill.style.transform = `scaleX(${n < i ? 1 : 0})`;
         });
+
+        if (slide === video) {
+          if (!video.getAttribute("src")) video.src = videoUrl;
+          try {
+            video.currentTime = 0;
+          } catch (e) {}
+          const playing = video.play();
+          if (playing && playing.catch) {
+            /* Can't play (e.g. still encoding): skip ahead */
+            playing.catch(() => {
+              if (slides[index] === video && slides.length > 1) next();
+            });
+          }
+          trackVideo();
+          /* Safety net if "ended" never fires */
+          timer = setTimeout(next, 30000);
+          return;
+        }
+
         const fill = bars[i];
         if (fill) {
           /* Next frame, so the reset above lands before the fill runs */
@@ -400,7 +446,25 @@
             fill.style.transform = "scaleX(1)";
           });
         }
-        timer = setTimeout(() => show((index + 1) % slides.length), time);
+        timer = setTimeout(next, time);
+      }
+
+      function onVideoPlaying() {
+        if (slides[index] === video && card.classList.contains("is-playing")) {
+          video.classList.add("is-active");
+        }
+      }
+
+      function onVideoEnded() {
+        if (slides[index] !== video) return;
+        /* Only slide: just go round again */
+        if (slides.length === 1) show(0);
+        else next();
+      }
+
+      if (video) {
+        video.addEventListener("playing", onVideoPlaying);
+        video.addEventListener("ended", onVideoEnded);
       }
 
       function onEnter() {
@@ -411,12 +475,20 @@
 
       function onLeave() {
         clearTimeout(timer);
+        stopVideo();
         card.classList.remove("is-playing");
         slides.forEach((slide) => slide.classList.remove("is-active"));
         bars.forEach((fill) => {
           fill.style.transition = "none";
           fill.style.transform = "scaleX(0)";
         });
+      }
+
+      function removeVideo() {
+        if (!video) return;
+        video.removeEventListener("playing", onVideoPlaying);
+        video.removeEventListener("ended", onVideoEnded);
+        video.remove();
       }
 
       if (touch) {
@@ -435,6 +507,7 @@
         cardCleanups.push(() => {
           watch.disconnect();
           onLeave();
+          removeVideo();
           delete card.dataset.cardSlideshowReady;
         });
         return;
@@ -447,18 +520,15 @@
         onLeave();
         card.removeEventListener("mouseenter", onEnter);
         card.removeEventListener("mouseleave", onLeave);
+        removeVideo();
         delete card.dataset.cardSlideshowReady;
       });
     });
   }
 
-  /* Hover video: one muted, looping video stacked over the cover
-     (where the image slides would go), with a single progress bar
-     that tracks its playback. Loads nothing until the first hover. */
-  function initCardVideo(card, url, touch) {
-    card.dataset.cardSlideshowReady = "true";
-
-    const firstSlide = card.querySelector("[data-card-slide]");
+  /* The video slide: stacked like the image slides, muted, plays once
+     per turn, and loads nothing until it's first shown */
+  function createCardVideo(card, firstSlide) {
     const holder =
       (firstSlide && firstSlide.parentElement) ||
       card.querySelector(".project-card_visual") ||
@@ -466,112 +536,26 @@
 
     const video = document.createElement("video");
     video.muted = true;
-    video.loop = true;
     video.playsInline = true;
+    video.preload = "none";
     video.setAttribute("muted", "");
     video.setAttribute("playsinline", "");
     video.setAttribute("aria-hidden", "true");
-    video.preload = "none";
     video.setAttribute("data-card-slide", "");
-    video.setAttribute("data-card-video-el", "");
     Object.assign(video.style, {
-      position: "absolute",
-      inset: "0",
       width: "100%",
       height: "100%",
       objectFit: "cover",
-      zIndex: "2",
       pointerEvents: "none",
     });
-    holder.insertBefore(video, card.querySelector("[data-card-progress]"));
 
     const progress = card.querySelector("[data-card-progress]");
-    let fill = null;
-    if (progress) {
-      progress.innerHTML = "";
-      const bar = document.createElement("div");
-      bar.className = "card-progress_bar";
-      fill = document.createElement("div");
-      fill.className = "card-progress_fill";
-      bar.appendChild(fill);
-      progress.appendChild(bar);
-      fill.style.transition = "none";
-      fill.style.transform = "scaleX(0)";
+    if (progress && progress.parentElement === holder) {
+      holder.insertBefore(video, progress);
+    } else {
+      holder.appendChild(video);
     }
-
-    let raf = null;
-    let shown = false;
-
-    function track() {
-      if (fill && video.duration) {
-        fill.style.transform = `scaleX(${video.currentTime / video.duration})`;
-      }
-      raf = requestAnimationFrame(track);
-    }
-
-    /* Fade the video in once a frame is ready, so there's no black flash */
-    function reveal() {
-      if (shown && card.classList.contains("is-playing")) {
-        video.classList.add("is-active");
-      }
-    }
-    video.addEventListener("playing", reveal);
-
-    function onEnter() {
-      card.classList.add("is-playing");
-      shown = true;
-      if (!video.getAttribute("src")) video.src = url;
-      try {
-        video.currentTime = 0;
-      } catch (e) {}
-      const playing = video.play();
-      if (playing && playing.catch) playing.catch(() => {});
-      cancelAnimationFrame(raf);
-      track();
-    }
-
-    function onLeave() {
-      card.classList.remove("is-playing");
-      shown = false;
-      video.classList.remove("is-active");
-      video.pause();
-      cancelAnimationFrame(raf);
-      if (fill) fill.style.transform = "scaleX(0)";
-    }
-
-    if (touch) {
-      const watch = new IntersectionObserver(
-        ([entry]) => {
-          if (entry.intersectionRatio >= 0.6) {
-            if (!card.classList.contains("is-playing")) onEnter();
-          } else if (card.classList.contains("is-playing")) {
-            onLeave();
-          }
-        },
-        { threshold: [0, 0.6, 1] }
-      );
-      watch.observe(card);
-      cardCleanups.push(() => {
-        watch.disconnect();
-        onLeave();
-        video.removeEventListener("playing", reveal);
-        video.remove();
-        delete card.dataset.cardSlideshowReady;
-      });
-      return;
-    }
-
-    card.addEventListener("mouseenter", onEnter);
-    card.addEventListener("mouseleave", onLeave);
-
-    cardCleanups.push(() => {
-      onLeave();
-      card.removeEventListener("mouseenter", onEnter);
-      card.removeEventListener("mouseleave", onLeave);
-      video.removeEventListener("playing", reveal);
-      video.remove();
-      delete card.dataset.cardSlideshowReady;
-    });
+    return video;
   }
 
   function destroyCardSlideshows() {
