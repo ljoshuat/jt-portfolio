@@ -15,7 +15,9 @@
    If the panel already holds a [data-launches] section, nothing
    is fetched.
 
-   Load after lenis-init.js and mouse-slider.js, site-wide.
+   Load after lenis-init.js and mouse-slider.js, site-wide. Place the
+   component inside the page (Barba container); the script moves it
+   to <body> so the panel can cover the nav, and removes it on leave.
 
    Markup (attributes, so classes stay free for styling):
      [data-launch-open]          the badge (a button)
@@ -46,6 +48,7 @@
   let lastFocus = null;
   let closeTimer = null;
   let idleTimer = null;
+  let portaled = null;
   const cleanup = [];
 
   function on(el, type, fn, opts) {
@@ -210,6 +213,15 @@
     if (!modal || modal.dataset.launchModalReady) return;
     modal.dataset.launchModalReady = "true";
 
+    /* The component sits inside the Barba container, whose stacking
+       context keeps it under the nav. Lift it to <body> so it can sit
+       on top; destroy() removes it again when the page changes. */
+    const root = modal.closest("[data-launch-root]") || modal;
+    if (root.parentElement !== document.body) {
+      document.body.appendChild(root);
+      portaled = root;
+    }
+
     const title = modal.querySelector("[data-launch-title], h2");
     if (title && !title.id) title.id = "launch-modal-title";
     if (title) modal.setAttribute("aria-labelledby", title.id);
@@ -240,6 +252,9 @@
     clearTimeout(idleTimer);
     cleanup.splice(0).forEach((fn) => fn());
     if (modal) delete modal.dataset.launchModalReady;
+    /* It was lifted out of the old page, so it leaves with it */
+    if (portaled) portaled.remove();
+    portaled = null;
     modal = null;
   }
 
