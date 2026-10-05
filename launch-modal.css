@@ -1,0 +1,158 @@
+<style>
+/* =========================================================
+   LAUNCH MODAL (pairs with launch-modal.js)
+   The yellow badge sits in the bottom-right corner; the panel
+   grows out of it as a circle. Can move to the site-wide head
+   once the badge is on every page.
+========================================================= */
+
+/* ---- Badge ---- */
+.launch-bug {
+  position: fixed;
+  right: 2rem;
+  bottom: 2rem;
+  z-index: 990;
+  width: 7.5rem;
+  height: 7.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: none;
+  cursor: pointer;
+  animation: launch-bug-float 4s ease-in-out infinite;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1),
+    opacity 0.3s ease;
+}
+.launch-bug svg {
+  display: block;
+  width: 100%;
+  height: 100%;
+  transition: transform 0.5s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.launch-bug:hover svg,
+.launch-bug:focus-visible svg {
+  transform: rotate(-10deg) scale(1.06);
+}
+.launch-bug:focus-visible {
+  outline: 2px solid currentColor;
+  outline-offset: 4px;
+}
+/* Tucks away while the panel is open */
+.is-launch-open .launch-bug {
+  transform: scale(0) rotate(-90deg);
+  opacity: 0;
+  pointer-events: none;
+}
+@keyframes launch-bug-float {
+  0%, 100% { translate: 0 0; }
+  50% { translate: 0 -6px; }
+}
+
+/* ---- Panel ---- */
+[data-launch-modal] {
+  --launch-x: calc(100vw - 5.75rem);
+  --launch-y: calc(100vh - 5.75rem);
+  position: fixed;
+  inset: 0;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  overflow: hidden;
+  background: var(--color--bg-primary, #0a0f12);
+  visibility: hidden;
+  clip-path: circle(0px at var(--launch-x) var(--launch-y));
+  transition: clip-path 0.8s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s linear 0.8s;
+}
+[data-launch-modal].is-open {
+  visibility: visible;
+  clip-path: circle(150vmax at var(--launch-x) var(--launch-y));
+  transition: clip-path 0.9s cubic-bezier(0.76, 0, 0.24, 1),
+    visibility 0s;
+}
+[data-launch-modal].is-instant,
+[data-launch-modal].is-instant * {
+  transition: none !important;
+}
+html.is-launch-open,
+html.is-launch-open body {
+  overflow: hidden;
+}
+
+/* Content rises in once the circle has mostly opened */
+[data-launch-modal] [data-launches] {
+  padding: 0;
+  opacity: 0;
+  transform: translateY(3rem);
+  transition: opacity 0.3s ease, transform 0.3s ease;
+}
+[data-launch-modal].is-open [data-launches] {
+  opacity: 1;
+  transform: none;
+  transition: opacity 0.6s ease 0.35s,
+    transform 0.9s cubic-bezier(0.16, 1, 0.3, 1) 0.35s;
+}
+
+/* ---- Close ---- */
+.launch-modal_close {
+  position: absolute;
+  top: 2rem;
+  right: 2rem;
+  z-index: 5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3.5rem;
+  height: 3.5rem;
+  padding: 0;
+  border: 0;
+  border-radius: 50%;
+  background: #e3ff00;
+  color: #000;
+  cursor: pointer;
+  transition: transform 0.4s cubic-bezier(0.34, 1.56, 0.64, 1);
+}
+.launch-modal_close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+}
+.launch-modal_close:hover,
+.launch-modal_close:focus-visible {
+  transform: rotate(90deg);
+}
+.launch-modal_close:focus-visible {
+  outline: 2px solid #e3ff00;
+  outline-offset: 4px;
+}
+
+@media (max-width: 767px) {
+  .launch-bug {
+    right: 1rem;
+    bottom: 1rem;
+    width: 5.5rem;
+    height: 5.5rem;
+  }
+  .launch-modal_close {
+    top: 1rem;
+    right: 1rem;
+    width: 3rem;
+    height: 3rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .launch-bug { animation: none; }
+  [data-launch-modal],
+  [data-launch-modal].is-open {
+    clip-path: none;
+    opacity: 0;
+    transition: opacity 0.3s ease, visibility 0s linear 0.3s;
+  }
+  [data-launch-modal].is-open {
+    opacity: 1;
+    transition: opacity 0.3s ease, visibility 0s;
+  }
+  [data-launch-modal] [data-launches] { transform: none; }
+}
+</style>
