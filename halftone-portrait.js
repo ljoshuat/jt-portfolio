@@ -70,7 +70,7 @@
     return (0.2126 * r + 0.7152 * g + 0.0722 * b) / 255;
   }
 
-  /* Page background behind the canvas (first non-transparent ancestor) */
+  /* Fallback when --color--bg-primary is missing: first opaque ancestor */
   function backgroundOf(el) {
     for (let n = el; n && n.nodeType === 1; n = n.parentElement) {
       const bg = getComputedStyle(n).backgroundColor;
@@ -110,7 +110,8 @@
     function readTheme() {
       color = getComputedStyle(el).getPropertyValue("--color--accent").trim() || "#daf40a";
       // Light dots on a dark page show light; dark dots on a light page show shadow
-      lightDots = luminance(color) > luminance(backgroundOf(el));
+      const bg = getComputedStyle(el).getPropertyValue("--color--bg-primary").trim() || backgroundOf(el);
+      lightDots = luminance(color) > luminance(bg);
     }
 
     function build() {
@@ -325,6 +326,7 @@
 
     return {
       el,
+      opts,
       destroy() {
         cancelAnimationFrame(raf);
         clearTimeout(resizeTimer);
