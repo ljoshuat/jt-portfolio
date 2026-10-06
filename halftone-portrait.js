@@ -11,6 +11,7 @@
 
    Optional attributes on [data-halftone]:
      data-spacing   grid gap in px between dot centers (default 5)
+     data-spacing-small  gap on phones, under 768px wide (default 3)
      data-radius    pointer reach in px (default 96)
      data-strength  how far dots get pushed, 0-2 (default 0.4)
      data-mode      "push" (default) or "swirl"
@@ -27,6 +28,7 @@
 (() => {
   const DEFAULTS = {
     spacing: 5,
+    spacingSmall: 3,
     radius: 96,
     strength: 0.4,
     mode: "push",
@@ -43,6 +45,7 @@
 
   const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const smallScreen = window.matchMedia("(max-width: 767px)");
 
   const instances = new Set();
 
@@ -54,6 +57,8 @@
     return {
       src: el.getAttribute("data-src"),
       spacing: Math.max(4, num("spacing", DEFAULTS.spacing)),
+      spacingLarge: Math.max(4, num("spacing", DEFAULTS.spacing)),
+      spacingSmall: Math.max(2.5, num("spacing-small", DEFAULTS.spacingSmall)),
       radius: num("radius", DEFAULTS.radius),
       strength: num("strength", DEFAULTS.strength),
       mode: el.getAttribute("data-mode") || DEFAULTS.mode,
@@ -129,6 +134,9 @@
       dpr = Math.min(window.devicePixelRatio || 1, 2);
       canvas.width = Math.round(w * dpr);
       canvas.height = Math.round(h * dpr);
+
+      // Phones get a finer grid so small features (eyes, teeth) hold up
+      opts.spacing = smallScreen.matches ? opts.spacingSmall : opts.spacingLarge;
 
       // Fit the image into the box, then sample one pixel per grid cell
       const s = opts.spacing;
