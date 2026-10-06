@@ -197,7 +197,10 @@
           if (opts.light) {
             const nx = sample(dep, px + 2, py) - sample(dep, px - 2, py);
             const ny = sample(dep, px, py + 2) - sample(dep, px, py - 2);
-            v *= 1 + 9 * (nx * tx + ny * ty);
+            // Cap the darkening: the depth map has steep steps at the head's
+            // outline, and full shading there draws a dark seam on hard turns
+            const shade = nx * tx + ny * ty;
+            v *= 1 + 9 * Math.max(-0.025, Math.min(0.06, shade));
           }
           v = Math.min(1, Math.max(0, v));
           if (v < MIN_DOT) continue;
