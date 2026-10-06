@@ -37,7 +37,7 @@
   const CONTRAST = 1.15;
   // Soft fade over the crown so the top of the head dissolves into the page
   // instead of ending on a hard outline (fraction of the image height)
-  const CROWN_FADE = 0.17;
+  const CROWN_FADE = 0.085;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const smallScreen = window.matchMedia("(max-width: 767px)");
