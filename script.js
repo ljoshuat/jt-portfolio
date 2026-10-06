@@ -74,7 +74,60 @@ function initTheme() {
      CHANGE THEME
   ----------------------------------------- */
 
+  /*
+   * Phones and tablets: .theme-transition fades
+   * every element on the page at once, which a
+   * phone can't keep up with, so the fade stalls
+   * and then snaps. There the browser cross-fades
+   * a snapshot of the old page into the new one
+   * instead (one layer, smooth). Desktop, and
+   * browsers without view transitions, keep the
+   * per-element fade.
+   */
+
+  const crossFade =
+    typeof document.startViewTransition === "function" &&
+    window.matchMedia("(max-width: 991px)").matches;
+
+
+  if (
+    crossFade &&
+    !document.getElementById("theme-crossfade-style")
+  ) {
+
+    const style =
+      document.createElement("style");
+
+    style.id = "theme-crossfade-style";
+
+    style.textContent =
+      "::view-transition-old(root),::view-transition-new(root){animation-duration:.7s;animation-timing-function:ease;}";
+
+    document.head.appendChild(style);
+
+  }
+
+
   function changeTheme(mode) {
+
+    localStorage.setItem(
+      "site-mode",
+      mode
+    );
+
+
+    if (crossFade) {
+
+      document.startViewTransition(() => {
+
+        applyTheme(mode);
+
+      });
+
+      return;
+
+    }
+
 
     body.classList.add(
       "theme-transition"
@@ -82,12 +135,6 @@ function initTheme() {
 
 
     applyTheme(mode);
-
-
-    localStorage.setItem(
-      "site-mode",
-      mode
-    );
 
 
     setTimeout(() => {
@@ -145,9 +192,16 @@ function initTheme() {
     if (!circle) return;
 
 
+    /* HOVER (mouse only: a tap fires mouseenter
+       too and would leave the circle stuck big) */
+
+    const canHover =
+      window.matchMedia("(hover: hover)").matches;
+
+
     /* HOVER IN */
 
-    item.addEventListener(
+    if (canHover) item.addEventListener(
       "mouseenter",
       () => {
 
@@ -167,7 +221,7 @@ function initTheme() {
 
     /* HOVER OUT */
 
-    item.addEventListener(
+    if (canHover) item.addEventListener(
       "mouseleave",
       () => {
 
