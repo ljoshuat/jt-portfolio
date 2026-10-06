@@ -6,7 +6,8 @@
 
    The body is built from shaded, tapered shapes (tee, shorts,
    bare feet, short swept-up hair) so the dots read as a person,
-   not a stick figure. Feet stay planted on the ground.
+   not a stick figure. Feet stay planted on the ground. He looks
+   at the viewer before and after the flip, profile in the air.
 
    Markup:
    section[data-backflip-track]          (tall, e.g. 420vh)
@@ -67,6 +68,12 @@
   // Light from upper left, a bit toward the viewer
   const LIGHT = (() => { const v = [-0.45, -0.75, 0.5]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
 
+  // Head turn: 1 = looking at the viewer, 0 = profile. He looks out at the
+  // viewer, turns his head as the flip starts, and looks back after landing.
+  const TURN = [[0.22, 0.34], [0.86, 0.97]];
+  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
+  const headTurn = (p) => 1 - smooth(TURN[0][0], TURN[0][1], p) + smooth(TURN[1][0], TURN[1][1], p);
+
   function catmull(p0, p1, p2, p3, t) {
     const t2 = t * t, t3 = t2 * t;
     return 0.5 * (2 * p1 + (-p0 + p2) * t + (2 * p0 - 5 * p1 + 4 * p2 - p3) * t2 + (-p0 + 3 * p1 - 3 * p2 + p3) * t3);
@@ -81,6 +88,7 @@
     const q = {};
     FIELDS.forEach((k) => (q[k] = catmull(a[k], b[k], c[k], d[k], t)));
     q.point = Math.min(1, Math.max(0, q.point));
+    q.turn = headTurn(p);
     return q;
   }
 
@@ -107,7 +115,7 @@
     const down = foot - 90;
     const heel = add(add(ankle, down, 3.5), foot, -4);
     const toe = add(add(ankle, down, 3.5), foot, 20);
-    return { R, dLow, dUp, dHead, ua, fa, th, shin, foot, hip, waist, shoulder, neck, head, elbow, wrist, knee, ankle, heel, toe };
+    return { turn: q.turn, R, dLow, dUp, dHead, ua, fa, th, shin, foot, hip, waist, shoulder, neck, head, elbow, wrist, knee, ankle, heel, toe };
   }
 
   // Lowest point of the body (largest y), used to put it on the floor
@@ -261,55 +269,106 @@
       fillShaded(band, MAT.pants, 0);
     }
 
-    function head(s) {
+    // Resample a closed polygon to n points spaced evenly along its edge,
+    // starting at pts[0], so two outlines can morph point by point.
+    function resample(pts, n) {
+      const segs = pts.map((a, i) => { const b = pts[(i + 1) % pts.length]; return [a, b, Math.hypot(b[0] - a[0], b[1] - a[1])]; });
+      const total = segs.reduce((t, q) => t + q[2], 0);
+      const out = [];
+      let i = 0, acc = 0;
+      for (let k = 0; k < n; k++) {
+        const d = (total * k) / n;
+        while (acc + segs[i][2] < d) { acc += segs[i][2]; i++; }
+        const [a, b, l] = segs[i];
+        const t = l ? (d - acc) / l : 0;
+        out.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
+      }
+      return out;
+    }
+    const morph = (a, b, m, n) => { const A = resample(a, n), B = resample(b, n); return A.map((p, i) => [lerp(p[0], B[i][0], m), lerp(p[1], B[i][1], m)]); };
+
+    // Head outlines in head space: [forward, up]. Profile faces forward,
+    // front faces the viewer. Both start at the top/back and run the same way.
+    const FACE_SIDE = [[0, 12.5], [8, 9], [10.6, 2], [13.2, -1], [10.6, -3.5], [9.4, -8], [7.2, -12], [1, -12.5], [-4.5, -8], [-9.6, -4], [-11, 4], [-7, 10]];
+    const FACE_FRONT = [[0, 12.8], [7, 10], [9.4, 4], [9.6, -1], [9.2, -4.5], [8, -8.5], [5, -12], [0, -13.4], [-5, -12], [-8, -8.5], [-9.2, -4.5], [-9.6, -1], [-9.4, 4], [-7, 10]];
+    const HAIR_SIDE = [[-9.8, -2.5], [-12.2, 3], [-11.2, 9], [-6.5, 13.6], [0, 15.6], [6, 14.8], [10.2, 11.6], [9.6, 8.6], [4.5, 10], [0.5, 8.5], [0, 3], [-4.5, 2.5], [-6.5, -1.5]];
+    // short, swept up, a little lighter on top, temples slightly back
+    const HAIR_FRONT = [[-10, 1.5], [-10.6, 7], [-8.6, 12.4], [-4, 15.6], [0.5, 16.4], [5, 15.8], [9, 12.8], [10.6, 7], [10, 1.5], [9.2, 3.5], [8.4, 7.6], [5.6, 9], [2, 9.8], [-1.5, 9.8], [-5, 9], [-8.4, 7.6], [-9.2, 3.5]];
+
+    function head(s, turn) {
       const up = s.dHead + 180, fwd = s.dHead + 90;
+      const c = s.head;
+      const at = (h, v) => add(add(c, up, v), fwd, h);
+      // yaw: 0 = looking at the viewer, 90 = profile (facing forward)
+      const yaw = 90 * (1 - turn) * D2R, cy = Math.cos(yaw), sy = Math.sin(yaw);
+      // 3D head point (x: his left, y: up, z: toward his face) -> [screen pt, depth toward viewer]
+      const P = (x, y, z) => [at(x * cy + z * sy, y), z * cy - x * sy];
       // neck
       limb(add(s.shoulder, s.dUp + 180, 1), add(s.neck, up, 6), [[0, 4.8, 4.8], [1, 4.4, 4.4]], MAT.skin * 0.9);
-      const c = s.head;
-      // skull + face, slightly egg shaped with jaw and nose
-      const face = [
-        add(c, up, 12.5),
-        add(add(c, up, 9), fwd, 8),
-        add(add(c, up, 2), fwd, 10.6),
-        add(add(c, up, -1), fwd, 13.2), // nose tip
-        add(add(c, up, -3.5), fwd, 10.6),
-        add(add(c, up, -8), fwd, 9.4), // mouth
-        add(add(c, up, -12), fwd, 7.2), // chin
-        add(add(c, up, -12.5), fwd, 1),
-        add(add(c, up, -8), fwd, -4.5), // jaw back
-        add(add(c, up, -4), fwd, -9.6),
-        add(add(c, up, 4), fwd, -11),
-        add(add(c, up, 10), fwd, -7),
-      ];
-      const lc = add(c, 0, 0);
-      const grad = g.createRadialGradient(lc[0] + LIGHT[0] * 6, lc[1] + LIGHT[1] * 6, 1, lc[0], lc[1], 14);
+
+      function ear(x) {
+        const [e, d] = P(x * 9.3, 0, -0.5);
+        const w = 1.2 + 1.2 * Math.abs(Math.sin(Math.atan2(x * 9.3, -0.5) - yaw + Math.PI / 2)) ;
+        g.fillStyle = gray(MAT.skin * (d > 0 ? 0.62 : 0.45));
+        g.beginPath(); g.ellipse(e[0], e[1], Math.min(2.4, w), 3.4, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
+      }
+      // ears that sit behind the face outline
+      if (turn > 0.35) { ear(1); ear(-1); }
+
+      // skull + face
+      const face = morph(FACE_SIDE, FACE_FRONT, turn, 48).map(([h, v]) => at(h, v));
+      // facing the viewer the face stays bright so the eyes and smile read
+      const grad = g.createRadialGradient(c[0] + LIGHT[0] * 6, c[1] + LIGHT[1] * 6, 1, c[0], c[1], lerp(14, 20, turn));
       grad.addColorStop(0, gray(MAT.skin));
       grad.addColorStop(0.65, gray(MAT.skin * 0.8));
       grad.addColorStop(1, gray(MAT.skin * 0.35));
       smoothPath(g, face);
       g.fillStyle = grad;
       g.fill();
-      // ear
-      const ear = add(add(c, up, 0), fwd, -2.5);
-      g.fillStyle = gray(MAT.skin * 0.55);
-      g.beginPath(); g.ellipse(ear[0], ear[1], 2.2, 3.2, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
-      // short, full crop that hugs the head
-      const hair = [
-        add(add(c, up, -2.5), fwd, -9.8), // nape
-        add(add(c, up, 3), fwd, -12.2),
-        add(add(c, up, 9), fwd, -11.2),
-        add(add(c, up, 13.6), fwd, -6.5),
-        add(add(c, up, 15.6), fwd, 0),
-        add(add(c, up, 14.8), fwd, 6),
-        add(add(c, up, 11.6), fwd, 10.2), // front of the crop
-        add(add(c, up, 8.6), fwd, 9.6), // hairline at the forehead
-        add(add(c, up, 10), fwd, 4.5),
-        add(add(c, up, 8.5), fwd, 0.5),
-        add(add(c, up, 3), fwd, 0), // sideburn
-        add(add(c, up, 2.5), fwd, -4.5), // above the ear
-        add(add(c, up, -1.5), fwd, -6.5),
-      ];
-      const hg = g.createLinearGradient(...add(c, up, 16), ...add(c, up, -2));
+      if (turn <= 0.35) ear(-1); // near ear, on top in profile
+
+      const dark = (v) => gray(MAT.skin * v);
+      const vis = (d) => Math.min(1, Math.max(0, d / 2));
+      // eyes: smiling, a little squinted, with brows above
+      [-1, 1].forEach((side) => {
+        const [e, d] = P(side * 3.7, 1.8, 8.4);
+        const k = vis(d);
+        if (k <= 0) return;
+        const rx = 2.3 * Math.max(0.35, Math.abs(Math.cos(yaw - side * 0.42)));
+        g.fillStyle = dark(lerp(0.8, 0.12, k));
+        g.beginPath(); g.ellipse(e[0], e[1], rx, 1.5, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
+        const b0 = P(side * 1.6, 4.4, 9.3)[0], b1 = P(side * 3.8, 5, 9)[0], b2 = P(side * 6, 4.3, 7.6)[0];
+        g.strokeStyle = dark(lerp(0.8, 0.15, k)); g.lineWidth = 1.8;
+        g.beginPath(); g.moveTo(...b0); g.quadraticCurveTo(...b1, ...b2); g.stroke();
+      });
+      // nose: shadow down the side away from the light
+      if (turn > 0.1) {
+        const n0 = P(1.1, 3, 10.2)[0], n1 = P(1.9, -1.6, 10.8)[0], n2 = P(0.4, -3.2, 10.6)[0];
+        g.strokeStyle = dark(lerp(0.8, 0.45, turn)); g.lineWidth = 1.1;
+        g.beginPath(); g.moveTo(...n0); g.quadraticCurveTo(...n1, ...n2); g.stroke();
+      }
+      // big smile with teeth showing
+      const top = [], bot = [], teeth = [];
+      for (let i = 0; i <= 8; i++) {
+        const x = -5 + (10 * i) / 8, u = x / 5;
+        const z = 9.2 - 0.12 * x * x;
+        top.push(P(x, -6.2 + 1.4 * u * u, z));
+        bot.push(P(x, -6.2 + 1.4 * u * u - 4.6 * (1 - u * u), z - 0.3));
+        teeth.push(P(x * 0.66, -6.6 + 0.8 * u * u - 1.1 * (1 - u * u), z));
+      }
+      const mouthVis = vis(Math.max(...top.map((q) => q[1])) + 2);
+      const keep = (arr) => arr.filter((q) => q[1] > -0.5).map((q) => q[0]);
+      const mt = keep(top), mb = keep(bot), tt = keep(teeth);
+      if (mt.length > 2 && mouthVis > 0) {
+        g.fillStyle = dark(lerp(0.8, 0.08, mouthVis));
+        g.beginPath(); g.moveTo(...mt[0]); mt.forEach((q) => g.lineTo(...q)); mb.slice().reverse().forEach((q) => g.lineTo(...q)); g.closePath(); g.fill();
+        g.fillStyle = gray(lerp(MAT.skin * 0.8, 1, mouthVis));
+        g.beginPath(); g.moveTo(...mt[0]); mt.forEach((q) => g.lineTo(...q)); tt.slice().reverse().forEach((q) => g.lineTo(...q)); g.closePath(); g.fill();
+      }
+
+      // short crop, swept up
+      const hair = morph(HAIR_SIDE, HAIR_FRONT, turn, 56).map(([h, v]) => at(h, v));
+      const hg = g.createLinearGradient(...at(0, 16), ...at(0, -2));
       hg.addColorStop(0, gray(MAT.hair * 1.35));
       hg.addColorStop(1, gray(MAT.hair * 0.8));
       smoothPath(g, hair);
@@ -328,7 +387,7 @@
     return function draw(s) {
       far(() => { group(0, () => arm(s, FAR)); group(0, () => leg(s, FAR)); });
       torso(s);
-      head(s);
+      head(s, s.turn);
       group(2.6, () => leg(s, 1));
       group(2.6, () => arm(s, 1));
     };
