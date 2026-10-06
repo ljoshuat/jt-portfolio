@@ -62,7 +62,7 @@
   ];
 
   // Material brightness (dots get bigger with brightness)
-  const MAT = { skin: 1, tee: 0.86, pants: 0.5, hair: 0.5 };
+  const MAT = { skin: 1, tee: 0.86, pants: 0.5, hair: 0.42 };
   const FAR = 0.55; // far-side limbs are dimmer
   // Light from upper left, a bit toward the viewer
   const LIGHT = (() => { const v = [-0.45, -0.75, 0.5]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
@@ -112,12 +112,13 @@
 
   // Lowest point of the body (largest y), used to put it on the floor
   function lowest(s) {
+    // [point, radius of the body there] so the sole touches the floor exactly
     const pts = [
-      add(s.heel, s.foot - 90, 3.6), add(s.toe, s.foot - 90, 2.4),
-      add(s.knee, s.shin, 0), add(s.wrist, s.fa, 10), add(s.head, s.dHead, 13), add(s.head, s.dHead + 180, 13),
-      add(s.waist, s.dUp + 180, 0), add(s.shoulder, s.dUp + 180, 10),
+      [add(add(s.heel, s.foot, 2), s.foot - 90, 3.4), 0], [add(add(s.toe, s.foot, -2), s.foot - 90, 2.2), 0],
+      [s.knee, 5.6], [add(s.wrist, s.fa, 9), 2.6], [s.head, 13.5], [add(s.head, s.dHead + 180, 3), 14],
+      [s.waist, 9.5], [s.shoulder, 9], [s.hip, 10.5],
     ];
-    return Math.max(...pts.map((p) => p[1] + 4));
+    return Math.max(...pts.map(([p, r]) => p[1] + r));
   }
 
   // Where the hips sit in ground space. Feet stay planted on the floor
@@ -292,23 +293,25 @@
       const ear = add(add(c, up, 0), fwd, -2.5);
       g.fillStyle = gray(MAT.skin * 0.55);
       g.beginPath(); g.ellipse(ear[0], ear[1], 2.2, 3.2, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
-      // short hair, swept up at the front
+      // short, full crop that hugs the head
       const hair = [
-        add(add(c, up, 6), fwd, -10.6),
-        add(add(c, up, 11), fwd, -8),
-        add(add(c, up, 14.5), fwd, -2),
-        add(add(c, up, 16.2), fwd, 4),
-        add(add(c, up, 15), fwd, 9.6), // quiff
-        add(add(c, up, 10.5), fwd, 9.8),
-        add(add(c, up, 11.5), fwd, 5),
-        add(add(c, up, 10), fwd, 0),
-        add(add(c, up, 5), fwd, -4),
-        add(add(c, up, 0), fwd, -5.5),
-        add(add(c, up, 1), fwd, -10),
+        add(add(c, up, -2.5), fwd, -9.8), // nape
+        add(add(c, up, 3), fwd, -12.2),
+        add(add(c, up, 9), fwd, -11.2),
+        add(add(c, up, 13.6), fwd, -6.5),
+        add(add(c, up, 15.6), fwd, 0),
+        add(add(c, up, 14.8), fwd, 6),
+        add(add(c, up, 11.6), fwd, 10.2), // front of the crop
+        add(add(c, up, 8.6), fwd, 9.6), // hairline at the forehead
+        add(add(c, up, 10), fwd, 4.5),
+        add(add(c, up, 8.5), fwd, 0.5),
+        add(add(c, up, 3), fwd, 0), // sideburn
+        add(add(c, up, 2.5), fwd, -4.5), // above the ear
+        add(add(c, up, -1.5), fwd, -6.5),
       ];
-      const hg = g.createLinearGradient(...add(c, up, 16), ...add(c, up, 0));
-      hg.addColorStop(0, gray(MAT.hair * 1.5));
-      hg.addColorStop(1, gray(MAT.hair * 0.7));
+      const hg = g.createLinearGradient(...add(c, up, 16), ...add(c, up, -2));
+      hg.addColorStop(0, gray(MAT.hair * 1.35));
+      hg.addColorStop(1, gray(MAT.hair * 0.8));
       smoothPath(g, hair);
       g.fillStyle = hg;
       g.fill();
@@ -317,7 +320,7 @@
     // Far side limbs sit a few units behind and above, dimmer
     function far(fn) {
       g.save();
-      g.translate(-5, -2.5);
+      g.translate(-5, -1);
       fn();
       g.restore();
     }
@@ -368,10 +371,10 @@
       // Floor line and shadow (ground space)
       octx.setTransform(scale, 0, 0, scale, gx, gy);
       octx.fillStyle = gray(0.18);
-      octx.fillRect(-80, 2, 160, 1.6 / scale);
+      octx.fillRect(-80, 0, 160, 1.6 / scale);
       const sh = Math.max(0.2, 1 - air / 110);
       octx.fillStyle = gray(0.42 * sh);
-      octx.beginPath(); octx.ellipse(x - 2, 1.5, 30 * sh, 4 * sh, 0, 0, Math.PI * 2); octx.fill();
+      octx.beginPath(); octx.ellipse(x - 2, 0.5, 30 * sh, 3.5 * sh, 0, 0, Math.PI * 2); octx.fill();
 
       // Body
       octx.setTransform(scale, 0, 0, scale, gx + x * scale, gy + y * scale);
