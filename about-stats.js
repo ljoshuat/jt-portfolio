@@ -1,8 +1,8 @@
 /* =========================================================
    ABOUT STATS CARDS
-   Hover: an accent fill sweeps in from the side the cursor
-   enters, with a curved leading edge, and leaves out the
-   side it exits. Numbers count up when the grid scrolls in.
+   Hover: a halftone dot fill in the accent color sweeps in from
+   the side the cursor enters, dots growing behind a curved
+   leading edge, and leaves out the side it exits. Numbers count up when the grid scrolls in.
 
    Markup (Webflow):
    div[data-stat-card]
@@ -31,20 +31,38 @@
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-  // Fill shape anchored at `side`, its edge `e` (0-100) in from that side,
-  // the edge bowed by `c` in the direction of travel.
-  function pathFor(side, e, c) {
-    const f = (n) => n.toFixed(2);
-    switch (side) {
-      case "left":
-        return `M0 0H${f(e)}Q${f(e + c)} 50 ${f(e)} 100H0Z`;
-      case "right":
-        return `M100 0H${f(100 - e)}Q${f(100 - e - c)} 50 ${f(100 - e)} 100H100Z`;
-      case "top":
-        return `M0 0V${f(e)}Q50 ${f(e + c)} 100 ${f(e)}V0Z`;
-      default:
-        return `M0 100V${f(100 - e)}Q50 ${f(100 - e - c)} 100 ${f(100 - e)}V100Z`;
+  // Halftone fill. Dots sit on a fixed grid; each dot's size comes from
+  // how far it is behind the moving edge. `e` (0-100) is how far the edge
+  // has travelled in from `side`, `c` bows it in the direction of travel.
+  const DOT = { spacing: 9, max: 0.47, ramp: 22 };
+
+  function drawFill(ctx, w, h, dpr, color, side, e, c) {
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+    ctx.clearRect(0, 0, w, h);
+    if (e <= 0.01) return;
+    ctx.fillStyle = color;
+    const sp = DOT.spacing, rMax = sp * DOT.max;
+    // Push the edge past 100 so a full card has full dots right to the far side.
+    const edge = (e / 100) * (100 + DOT.ramp);
+    ctx.beginPath();
+    for (let y = sp / 2; y < h; y += sp) {
+      for (let x = sp / 2; x < w; x += sp) {
+        const px = (x / w) * 100, py = (y / h) * 100;
+        // u: distance from the anchor side; v: position along that side (0-1)
+        let u, v;
+        if (side === "left") { u = px; v = py / 100; }
+        else if (side === "right") { u = 100 - px; v = py / 100; }
+        else if (side === "top") { u = py; v = px / 100; }
+        else { u = 100 - py; v = px / 100; }
+        const at = edge + 2 * v * (1 - v) * c;
+        const k = Math.min(1, Math.max(0, (at - u) / DOT.ramp));
+        if (k <= 0.04) continue;
+        const rad = rMax * Math.sqrt(k);
+        ctx.moveTo(x + rad, y);
+        ctx.arc(x, y, rad, 0, Math.PI * 2);
+      }
     }
+    ctx.fill();
   }
 
   function nearestSide(el, x, y) {
@@ -72,21 +90,28 @@
       }
     }
 
-    let svg = card.querySelector(".about_stat-fill");
-    if (!svg) {
-      svg = document.createElementNS("http://www.w3.org/2000/svg", "svg");
-      svg.setAttribute("viewBox", "0 0 100 100");
-      svg.setAttribute("preserveAspectRatio", "none");
-      svg.setAttribute("aria-hidden", "true");
-      svg.classList.add("about_stat-fill");
+    let canvas = card.querySelector(".about_stat-fill");
+    if (canvas && canvas.tagName.toLowerCase() !== "canvas") { canvas.remove(); canvas = null; }
+    if (!canvas) {
+      canvas = document.createElement("canvas");
+      canvas.setAttribute("aria-hidden", "true");
+      canvas.classList.add("about_stat-fill");
       // Inline so it works without a Webflow class for injected markup.
-      svg.style.cssText =
-        "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0;fill:var(--color--accent)";
-      svg.appendChild(document.createElementNS("http://www.w3.org/2000/svg", "path"));
-      card.prepend(svg);
+      canvas.style.cssText =
+        "position:absolute;inset:0;width:100%;height:100%;pointer-events:none;z-index:0";
+      card.prepend(canvas);
     }
-    const path = svg.querySelector("path");
-    path.setAttribute("d", pathFor("left", 0, 0));
+    const ctx = canvas.getContext("2d");
+    let w = 0, h = 0, dpr = 1;
+    const size = () => {
+      const r = card.getBoundingClientRect();
+      dpr = Math.min(2, window.devicePixelRatio || 1);
+      w = r.width; h = r.height;
+      canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
+    };
+    const accent = () => getComputedStyle(card).getPropertyValue("--color--accent").trim() || "#daf40a";
+    const paint = (side, e, c) => drawFill(ctx, w, h, dpr, accent(), side, e, c);
+    size();
 
     // e: 0 = empty, 100 = full. Each hover tweens e and picks a side.
     const state = { side: "left", e: 0, raf: 0 };
@@ -103,7 +128,7 @@
         state.e = from + span * k;
         // Bow the edge forward while moving, flat at rest.
         const bow = Math.sin(Math.PI * t) * 28 * Math.sign(span || 1);
-        path.setAttribute("d", pathFor(side, state.e, bow));
+        paint(side, state.e, bow);
         if (t < 1) state.raf = requestAnimationFrame(tick);
       };
       state.raf = requestAnimationFrame(tick);
@@ -112,8 +137,8 @@
     const onEnter = (ev) => {
       if (reduceMotion()) {
         card.classList.add("is-hover");
-        path.setAttribute("d", pathFor("left", 100, 0));
         state.e = 100;
+        paint("left", 100, 0);
         return;
       }
       card.classList.add("is-hover");
@@ -126,8 +151,8 @@
     const onLeave = (ev) => {
       card.classList.remove("is-hover");
       if (reduceMotion()) {
-        path.setAttribute("d", pathFor("left", 0, 0));
         state.e = 0;
+        paint("left", 0, 0);
         return;
       }
       // When full, collapse out through the exit side (anchor there and
@@ -143,8 +168,16 @@
       card.addEventListener("mouseleave", onLeave);
     }
 
+    // Keep the grid sharp on resize and the color right on theme switch.
+    const ro = new ResizeObserver(() => { size(); paint(state.side, state.e, 0); });
+    ro.observe(card);
+    const mo = new MutationObserver(() => paint(state.side, state.e, 0));
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
+    if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
+
     return () => {
       cancelAnimationFrame(state.raf);
+      ro.disconnect(); mo.disconnect();
       card.removeEventListener("mouseenter", onEnter);
       card.removeEventListener("mouseleave", onLeave);
     };
