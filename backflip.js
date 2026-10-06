@@ -4,8 +4,8 @@
    halftone dots in --color--accent. Progress (0-1) comes from
    scroll through the parent [data-backflip-track].
 
-   The body is built from shaded, tapered shapes (tee, joggers,
-   sneakers, short swept-up hair) so the dots read as a person,
+   The body is built from shaded, tapered shapes (tee, shorts,
+   bare feet, short swept-up hair) so the dots read as a person,
    not a stick figure. Feet stay planted on the ground.
 
    Markup:
@@ -33,23 +33,26 @@
   // sh: arm angle from the torso (0 down, 90 forward, 180 overhead, negative behind)
   // el: elbow bend; hip: thigh toward chest; knee: shin folds back
   // point: 0 = foot flat on the floor, 1 = toes pointed; rot: backward rotation
+  // Shaped after Josh's own beach back flip: arms up, swing down into a
+  // squat, jump with an arched open body, legs over, land folded forward.
   const KEYS = [
-    { p: 0.0, lean: 0, spine: 0, nod: 0, sh: 6, el: 12, hip: 0, knee: 0, point: 0, rot: 0 },
-    { p: 0.12, lean: 3, spine: 2, nod: 0, sh: 70, el: 10, hip: 4, knee: 8, point: 0, rot: 0 },
-    { p: 0.3, lean: 36, spine: 10, nod: 6, sh: -55, el: 16, hip: 80, knee: 96, point: 0, rot: 0 },
-    { p: 0.385, lean: -4, spine: -10, nod: -18, sh: 172, el: 6, hip: -6, knee: 2, point: 0.9, rot: 6 },
-    { p: 0.46, lean: 0, spine: 18, nod: 4, sh: 150, el: 22, hip: 75, knee: 75, point: 1, rot: 80 },
-    { p: 0.53, lean: 0, spine: 42, nod: 22, sh: 48, el: 30, hip: 128, knee: 148, point: 0.8, rot: 155 },
-    { p: 0.6, lean: 0, spine: 42, nod: 22, sh: 46, el: 32, hip: 130, knee: 150, point: 0.8, rot: 245 },
-    { p: 0.675, lean: 0, spine: 14, nod: 4, sh: 110, el: 26, hip: 58, knee: 52, point: 0.5, rot: 322 },
-    { p: 0.745, lean: 8, spine: 4, nod: 0, sh: 105, el: 14, hip: 32, knee: 44, point: 0, rot: 360 },
-    { p: 0.83, lean: 32, spine: 12, nod: 4, sh: 84, el: 12, hip: 84, knee: 100, point: 0, rot: 360 },
-    { p: 0.93, lean: 2, spine: 0, nod: -6, sh: 168, el: 6, hip: 2, knee: 2, point: 0, rot: 360 },
-    { p: 1.0, lean: 0, spine: -3, nod: -6, sh: 174, el: 4, hip: 0, knee: 0, point: 0, rot: 360 },
+    { p: 0.0, lean: 0, spine: 0, nod: 0, sh: 12, el: 14, hip: 0, knee: 0, point: 0, rot: 0 },
+    { p: 0.09, lean: -3, spine: -4, nod: -8, sh: 172, el: 8, hip: 0, knee: 2, point: 0, rot: 0 },
+    { p: 0.18, lean: 10, spine: 4, nod: 0, sh: 70, el: 10, hip: 18, knee: 24, point: 0, rot: 0 },
+    { p: 0.28, lean: 40, spine: 12, nod: 6, sh: -50, el: 14, hip: 86, knee: 100, point: 0, rot: 0 },
+    { p: 0.37, lean: -4, spine: -14, nod: -20, sh: 170, el: 6, hip: -6, knee: 2, point: 0.9, rot: 4 },
+    { p: 0.45, lean: 0, spine: -12, nod: -18, sh: 160, el: 34, hip: 40, knee: 78, point: 1, rot: 72 },
+    { p: 0.53, lean: 0, spine: 16, nod: 4, sh: 140, el: 22, hip: 92, knee: 110, point: 0.9, rot: 152 },
+    { p: 0.61, lean: 0, spine: 28, nod: 14, sh: 92, el: 30, hip: 112, knee: 118, point: 0.8, rot: 248 },
+    { p: 0.68, lean: 0, spine: 16, nod: 6, sh: 60, el: 20, hip: 64, knee: 62, point: 0.5, rot: 320 },
+    { p: 0.745, lean: 30, spine: 12, nod: 6, sh: 30, el: 14, hip: 62, knee: 62, point: 0, rot: 360 },
+    { p: 0.82, lean: 68, spine: 24, nod: 12, sh: 18, el: 12, hip: 116, knee: 96, point: 0, rot: 360 },
+    { p: 0.91, lean: 30, spine: 8, nod: 2, sh: 10, el: 14, hip: 44, knee: 28, point: 0, rot: 360 },
+    { p: 1.0, lean: 0, spine: 0, nod: -4, sh: 18, el: 24, hip: 0, knee: 0, point: 0, rot: 360 },
   ];
   const FIELDS = ["lean", "spine", "nod", "sh", "el", "hip", "knee", "point", "rot"];
   const FLIGHT = [0.385, 0.745];
-  const PEAK = 80; // how high the hips rise above a straight line during flight
+  const PEAK = 72; // how high the hips rise above a straight line during flight
   const TRAVEL = -16; // a back tuck lands a little behind where it took off
   const PHASES = [
     [0.0, "Set"],
@@ -59,7 +62,7 @@
   ];
 
   // Material brightness (dots get bigger with brightness)
-  const MAT = { skin: 1, tee: 0.9, pants: 0.76, shoe: 1, hair: 0.5 };
+  const MAT = { skin: 1, tee: 0.86, pants: 0.5, hair: 0.5 };
   const FAR = 0.55; // far-side limbs are dimmer
   // Light from upper left, a bit toward the viewer
   const LIGHT = (() => { const v = [-0.45, -0.75, 0.5]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
@@ -110,7 +113,7 @@
   // Lowest point of the body (largest y), used to put it on the floor
   function lowest(s) {
     const pts = [
-      add(s.heel, s.foot - 90, 4.5), add(s.toe, s.foot - 90, 3.5),
+      add(s.heel, s.foot - 90, 3.6), add(s.toe, s.foot - 90, 2.4),
       add(s.knee, s.shin, 0), add(s.wrist, s.fa, 10), add(s.head, s.dHead, 13), add(s.head, s.dHead + 180, 13),
       add(s.waist, s.dUp + 180, 0), add(s.shoulder, s.dUp + 180, 10),
     ];
@@ -230,9 +233,11 @@
     }
 
     function leg(s, k) {
-      limb(s.knee, s.ankle, [[0, 5.6, 5.8], [0.3, 5.2, 7.2], [0.8, 3.9, 4.2], [1, 3.8, 3.8]], MAT.pants * k);
-      limb(s.hip, s.knee, [[0, 9.6, 10.4], [0.35, 8.6, 8.8], [1, 6, 5.8]], MAT.pants * k);
-      limb(s.heel, s.toe, [[0, 4.6, 4.4], [0.55, 4.2, 4], [1, 3.2, 3]], MAT.shoe * k);
+      // bare legs and feet, shorts over the top of the thigh
+      limb(s.knee, s.ankle, [[0, 5.2, 5.4], [0.3, 4.8, 6.8], [0.8, 3.5, 3.8], [1, 3.3, 3.3]], MAT.skin * k);
+      limb(s.hip, s.knee, [[0, 9.2, 10], [0.35, 8.2, 8.4], [1, 5.6, 5.4]], MAT.skin * k);
+      limb(s.hip, add(s.hip, s.th, LEN.thigh * 0.62), [[0, 10.4, 11.2], [1, 9.4, 9.6]], MAT.pants * k);
+      limb(add(s.heel, s.foot, 2), add(s.toe, s.foot, -2), [[0, 3.6, 3.4], [0.6, 3.2, 3], [1, 2.4, 2.2]], MAT.skin * 0.9 * k);
     }
 
     function torso(s) {
@@ -357,8 +362,8 @@
       octx.setTransform(1, 0, 0, 1, 0, 0);
       octx.fillStyle = "#000"; octx.fillRect(0, 0, cols, rows);
       // Fit the whole move (standing arms up, flight peak) in the canvas
-      const scale = Math.min((rows * 0.9) / 285, (cols * 0.95) / 170);
-      const gx = cols * 0.55, gy = rows * 0.93;
+      const scale = Math.min((rows * 0.9) / 285, (cols * 0.9) / 190);
+      const gx = cols * 0.6, gy = rows * 0.93;
 
       // Floor line and shadow (ground space)
       octx.setTransform(scale, 0, 0, scale, gx, gy);
