@@ -388,23 +388,43 @@
             fill.style.transform = "scaleX(1)";
           });
         }
-        timer = setTimeout(() => show((index + 1) % slides.length), time);
+        /* Phones loop back through the cover so the logo gets seen */
+        const next = index + 1;
+        timer = setTimeout(
+          () =>
+            touch && next === slides.length
+              ? showCover()
+              : show(next % slides.length),
+          time
+        );
       }
 
-      function onEnter() {
-        clearTimeout(timer);
-        card.classList.add("is-playing");
-        show(0);
-      }
-
-      function onLeave() {
-        clearTimeout(timer);
-        card.classList.remove("is-playing");
+      /* Cover only: no slide active, all bars empty */
+      function clearSlides() {
         slides.forEach((slide) => slide.classList.remove("is-active"));
         bars.forEach((fill) => {
           fill.style.transition = "none";
           fill.style.transform = "scaleX(0)";
         });
+      }
+
+      function showCover() {
+        clearSlides();
+        timer = setTimeout(() => show(0), time);
+      }
+
+      function onEnter() {
+        clearTimeout(timer);
+        card.classList.add("is-playing");
+        /* Phones hold on the cover first; mouse hover skips straight in */
+        if (touch) showCover();
+        else show(0);
+      }
+
+      function onLeave() {
+        clearTimeout(timer);
+        card.classList.remove("is-playing");
+        clearSlides();
       }
 
       if (touch) {
