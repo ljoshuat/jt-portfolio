@@ -35,6 +35,9 @@
   // Same tone curve as the halftone portrait, so the dark shirt drops out
   // and the lit planes cut the shape
   const CONTRAST = 1.15;
+  // Soft fade over the crown so the top of the head dissolves into the page
+  // instead of ending on a hard outline (fraction of the image height)
+  const CROWN_FADE = 0.17;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const smallScreen = window.matchMedia("(max-width: 767px)");
@@ -117,6 +120,7 @@
 
     let face = null, dep = null; // source pixels
     let SW = 0, SH = 0;
+    let crownTop = 0; // first source row with any opaque pixel
     let w = 0, h = 0, dpr = 1, spacing = opts.spacingLarge;
     let scale = 1, ox = 0, oy = 0; // source -> box (contain fit)
     let color = "#daf40a";
@@ -189,7 +193,8 @@
               if (m > 0.01) { px -= m * 5 * tx; py -= m * 3 * ty; }
             }
           }
-          const a = sample(face.alpha, px, py);
+          const c = Math.min(1, Math.max(0, (py - crownTop) / (SH * CROWN_FADE)));
+          const a = sample(face.alpha, px, py) * c * c * (3 - 2 * c);
           if (a < 0.1) continue;
           let g = sample(face.gray, px, py);
           g = Math.min(1, Math.max(0, (g - 0.5) * CONTRAST + 0.5));
@@ -281,6 +286,10 @@
       dep = pixels(d).gray;
       SW = face.w;
       SH = face.h;
+      crownTop = 0;
+      for (let i = 0; i < face.alpha.length; i += 1) {
+        if (face.alpha[i] > 0.5) { crownTop = Math.floor(i / SW); break; }
+      }
       resize();
     }).catch(() => {});
 
