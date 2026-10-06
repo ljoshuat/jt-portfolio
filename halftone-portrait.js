@@ -10,9 +10,9 @@
    Give the div a size in Designer (e.g. width 100%, height 90vh).
 
    Optional attributes on [data-halftone]:
-     data-spacing   grid gap in px between dot centers (default 9)
-     data-radius    pointer reach in px (default 140)
-     data-strength  how far dots get pushed, 0-2 (default 1)
+     data-spacing   grid gap in px between dot centers (default 5)
+     data-radius    pointer reach in px (default 96)
+     data-strength  how far dots get pushed, 0-2 (default 0.4)
      data-mode      "push" (default) or "swirl"
      data-shape     "circle" (default), "square" for pixel dots, or
                     "ascii" for characters that scramble near the pointer
@@ -26,9 +26,9 @@
    ========================================================== */
 (() => {
   const DEFAULTS = {
-    spacing: 9,
-    radius: 140,
-    strength: 1,
+    spacing: 5,
+    radius: 96,
+    strength: 0.4,
     mode: "push",
     shape: "circle",
     chars: " .:-=+*#%@",
