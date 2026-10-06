@@ -31,7 +31,10 @@
   const HEAD = [0.5222, 0.3313];
   const EASE = 0.12;       // how quickly the head catches up to the cursor
   const IDLE_MS = 2500;    // drift on its own after this long without the cursor
-  const MIN_DOT = 0.05;    // tones below this (0-1) draw nothing
+  const MIN_DOT = 0.06;    // tones below this (0-1) draw nothing
+  // Same tone curve as the halftone portrait, so the dark shirt drops out
+  // and the lit planes cut the shape
+  const CONTRAST = 1.15;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const smallScreen = window.matchMedia("(max-width: 767px)");
@@ -165,7 +168,7 @@
       ctx.fillStyle = color;
       const strength = opts.turn;
       const tx = cur.x, ty = cur.y * 0.7;
-      const max = spacing * 0.56;
+      const max = spacing * 0.5;
       const inv = 1 / scale;
       const ex = EYES.map(([x, y]) => [x * SW, y * SH]);
       ctx.beginPath();
@@ -188,7 +191,8 @@
           }
           const a = sample(face.alpha, px, py);
           if (a < 0.1) continue;
-          const g = sample(face.gray, px, py);
+          let g = sample(face.gray, px, py);
+          g = Math.min(1, Math.max(0, (g - 0.5) * CONTRAST + 0.5));
           let v = (lightDots ? g : 1 - g) * a;
           if (opts.light) {
             const nx = sample(dep, px + 2, py) - sample(dep, px - 2, py);
