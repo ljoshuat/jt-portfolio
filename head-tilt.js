@@ -14,7 +14,7 @@
 
    Optional attributes on [data-head-tilt]:
      data-turn          how far the head turns, 0-40 (default 18)
-     data-spacing       grid gap in px between dot centers (default 5)
+     data-spacing       grid gap in px between dot centers (default 4)
      data-spacing-small gap on phones, under 768px wide (default 3)
      data-eyes          "false" to stop the eyes leading the turn
      data-light         "false" to keep the shading fixed
@@ -25,7 +25,7 @@
    after Barba; re-inits on Barba page changes.
    ========================================================== */
 (() => {
-  const DEFAULTS = { turn: 18, spacing: 5, spacingSmall: 3 };
+  const DEFAULTS = { turn: 18, spacing: 4, spacingSmall: 3 };
   // Eye centers and head center as fractions of the source image
   const EYES = [[0.4389, 0.3112], [0.6, 0.3133]];
   const HEAD = [0.5222, 0.3313];
