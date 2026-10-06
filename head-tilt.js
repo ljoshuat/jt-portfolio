@@ -20,7 +20,8 @@
      data-light         "false" to keep the shading fixed
 
    The face and depth images must be the same size and framing.
-   With no cursor (or on touch) it drifts slowly on its own.
+   With no cursor for a moment it drifts slowly on its own. On touch
+   screens it faces straight ahead and looks down as the page scrolls.
    Reduced motion = still portrait. Load site-wide (footer)
    after Barba; re-inits on Barba page changes.
    ========================================================== */
@@ -40,6 +41,7 @@
   const CROWN_FADE = 0.085;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
+  const finePointer = window.matchMedia("(hover: hover) and (pointer: fine)");
   const smallScreen = window.matchMedia("(max-width: 767px)");
 
   const instances = new Set();
@@ -222,8 +224,20 @@
       if (destroyed || !visible || !face) return;
       const animate = !reducedMotion.matches;
       if (animate) {
-        // With no cursor for a moment, drift slowly so the head stays alive
-        if (t - lastMove > IDLE_MS) {
+        if (!finePointer.matches) {
+          // Touch: face straight ahead, then look down as the page scrolls past
+          // 0 where the head sits with the page at the top (or mid-screen if
+          // lower), 1 once the head nears the top of the screen
+          const rect = el.getBoundingClientRect();
+          const headY = rect.top + oy + HEAD[1] * SH * scale;
+          const vh = window.innerHeight;
+          const start = Math.min(vh / 2, headY + window.scrollY);
+          const end = vh * 0.12;
+          const p = start - end < 40 ? 0 : Math.min(1, Math.max(0, (start - headY) / (start - end)));
+          target.x = 0;
+          target.y = p;
+        } else if (t - lastMove > IDLE_MS) {
+          // With no cursor for a moment, drift slowly so the head stays alive
           target.x = Math.sin(t / 1900) * 0.8;
           target.y = Math.sin(t / 2700) * 0.45;
         }
