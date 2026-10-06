@@ -1,8 +1,9 @@
 /* =========================================================
    ABOUT STATS CARDS
-   Hover: a halftone dot fill in the accent color sweeps in from
-   the side the cursor enters, dots growing behind a curved
-   leading edge, and leaves out the side it exits. Numbers count up when the grid scrolls in.
+   Hover: an accent fill sweeps in from the side the cursor
+   enters. Its curved leading edge breaks into halftone dots that
+   grow until they merge into solid color, so the card rests on a
+   solid fill (text stays readable). It leaves out the exit side. Numbers count up when the grid scrolls in.
 
    Markup (Webflow):
    div[data-stat-card]
@@ -31,16 +32,18 @@
 
   const ease = (t) => (t < 0.5 ? 4 * t * t * t : 1 - Math.pow(-2 * t + 2, 3) / 2);
 
-  // Halftone fill. Dots sit on a fixed grid; each dot's size comes from
-  // how far it is behind the moving edge. `e` (0-100) is how far the edge
+  // Halftone edge. Dots sit on a fixed grid; each dot's size comes from
+  // how far it is behind the moving edge, and at full size they overlap
+  // into solid color. `e` (0-100) is how far the edge
   // has travelled in from `side`, `c` bows it in the direction of travel.
-  const DOT = { spacing: 9, max: 0.47, ramp: 22 };
+  const DOT = { spacing: 9, max: 0.75, ramp: 26 };
 
   function drawFill(ctx, w, h, dpr, color, side, e, c) {
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
     ctx.clearRect(0, 0, w, h);
     if (e <= 0.01) return;
     ctx.fillStyle = color;
+    if (e >= 99.9) { ctx.fillRect(0, 0, w, h); return; }
     const sp = DOT.spacing, rMax = sp * DOT.max;
     // Push the edge past 100 so a full card has full dots right to the far side.
     const edge = (e / 100) * (100 + DOT.ramp);
