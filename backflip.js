@@ -6,10 +6,7 @@
 
    The body is built from shaded, tapered shapes (tee, shorts,
    bare feet, short swept-up hair) so the dots read as a person,
-   not a stick figure. Feet stay planted on the ground. He looks
-   at the viewer before and after the flip, profile in the air.
-   Facing the viewer, his real face (from his headshot) shows in
-   the same dots as the rest of him.
+   not a stick figure. Feet stay planted on the ground.
 
    Markup:
    section[data-backflip-track]          (tall, e.g. 420vh)
@@ -64,25 +61,11 @@
     [0.745, "Stick"],
   ];
 
-  // Josh's own face (from his B&W studio headshot, cut out, 64x75 gray +
-  // alpha, contrast pushed so eyes, nose and smile survive as dots) shown
-  // whenever he is looking at the viewer.
-  const FACE_PHOTO = new Image();
-  FACE_PHOTO.src = "data:image/png;base64,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";
-  // Where the photo sits in head space: left edge, top edge, size (units)
-  const PHOTO = { h: -14, v: 16.4, w: 27.4, ht: 32.1 };
-
   // Material brightness (dots get bigger with brightness)
   const MAT = { skin: 1, tee: 0.86, pants: 0.5, hair: 0.42 };
   const FAR = 0.55; // far-side limbs are dimmer
   // Light from upper left, a bit toward the viewer
   const LIGHT = (() => { const v = [-0.45, -0.75, 0.5]; const m = Math.hypot(...v); return v.map((n) => n / m); })();
-
-  // Head turn: 1 = looking at the viewer, 0 = profile. He looks out at the
-  // viewer, turns his head as the flip starts, and looks back after landing.
-  const TURN = [[0.22, 0.34], [0.86, 0.97]];
-  const smooth = (a, b, x) => { const t = Math.min(1, Math.max(0, (x - a) / (b - a))); return t * t * (3 - 2 * t); };
-  const headTurn = (p) => 1 - smooth(TURN[0][0], TURN[0][1], p) + smooth(TURN[1][0], TURN[1][1], p);
 
   function catmull(p0, p1, p2, p3, t) {
     const t2 = t * t, t3 = t2 * t;
@@ -98,7 +81,6 @@
     const q = {};
     FIELDS.forEach((k) => (q[k] = catmull(a[k], b[k], c[k], d[k], t)));
     q.point = Math.min(1, Math.max(0, q.point));
-    q.turn = headTurn(p);
     return q;
   }
 
@@ -125,7 +107,7 @@
     const down = foot - 90;
     const heel = add(add(ankle, down, 3.5), foot, -4);
     const toe = add(add(ankle, down, 3.5), foot, 20);
-    return { turn: q.turn, R, dLow, dUp, dHead, ua, fa, th, shin, foot, hip, waist, shoulder, neck, head, elbow, wrist, knee, ankle, heel, toe };
+    return { R, dLow, dUp, dHead, ua, fa, th, shin, foot, hip, waist, shoulder, neck, head, elbow, wrist, knee, ankle, heel, toe };
   }
 
   // Lowest point of the body (largest y), used to put it on the floor
@@ -279,122 +261,60 @@
       fillShaded(band, MAT.pants, 0);
     }
 
-    // Resample a closed polygon to n points spaced evenly along its edge,
-    // starting at pts[0], so two outlines can morph point by point.
-    function resample(pts, n) {
-      const segs = pts.map((a, i) => { const b = pts[(i + 1) % pts.length]; return [a, b, Math.hypot(b[0] - a[0], b[1] - a[1])]; });
-      const total = segs.reduce((t, q) => t + q[2], 0);
-      const out = [];
-      let i = 0, acc = 0;
-      for (let k = 0; k < n; k++) {
-        const d = (total * k) / n;
-        while (acc + segs[i][2] < d) { acc += segs[i][2]; i++; }
-        const [a, b, l] = segs[i];
-        const t = l ? (d - acc) / l : 0;
-        out.push([lerp(a[0], b[0], t), lerp(a[1], b[1], t)]);
-      }
-      return out;
-    }
-    const morph = (a, b, m, n) => { const A = resample(a, n), B = resample(b, n); return A.map((p, i) => [lerp(p[0], B[i][0], m), lerp(p[1], B[i][1], m)]); };
-
-    // Head outlines in head space: [forward, up]. Profile faces forward,
-    // front faces the viewer. Both start at the top/back and run the same way.
-    const FACE_SIDE = [[0, 12.5], [8, 9], [10.6, 2], [13.2, -1], [10.6, -3.5], [9.4, -8], [7.2, -12], [1, -12.5], [-4.5, -8], [-9.6, -4], [-11, 4], [-7, 10]];
-    const FACE_FRONT = [[0, 12.8], [7, 10], [9.4, 4], [9.6, -1], [9.2, -4.5], [8, -8.5], [5, -12], [0, -13.4], [-5, -12], [-8, -8.5], [-9.2, -4.5], [-9.6, -1], [-9.4, 4], [-7, 10]];
-    const HAIR_SIDE = [[-9.8, -2.5], [-12.2, 3], [-11.2, 9], [-6.5, 13.6], [0, 15.6], [6, 14.8], [10.2, 11.6], [9.6, 8.6], [4.5, 10], [0.5, 8.5], [0, 3], [-4.5, 2.5], [-6.5, -1.5]];
-    // short, swept up, a little lighter on top, temples slightly back
-    const HAIR_FRONT = [[-10, 1.5], [-10.6, 7], [-8.6, 12.4], [-4, 15.6], [0.5, 16.4], [5, 15.8], [9, 12.8], [10.6, 7], [10, 1.5], [9.2, 3.5], [8.4, 7.6], [5.6, 9], [2, 9.8], [-1.5, 9.8], [-5, 9], [-8.4, 7.6], [-9.2, 3.5]];
-
-    function head(s, turn) {
+    function head(s) {
       const up = s.dHead + 180, fwd = s.dHead + 90;
-      const c = s.head;
-      const at = (h, v) => add(add(c, up, v), fwd, h);
-      // yaw: 0 = looking at the viewer, 90 = profile (facing forward)
-      const yaw = 90 * (1 - turn) * D2R, cy = Math.cos(yaw), sy = Math.sin(yaw);
-      // 3D head point (x: his left, y: up, z: toward his face) -> [screen pt, depth toward viewer]
-      const P = (x, y, z) => [at(x * cy + z * sy, y), z * cy - x * sy];
       // neck
       limb(add(s.shoulder, s.dUp + 180, 1), add(s.neck, up, 6), [[0, 4.8, 4.8], [1, 4.4, 4.4]], MAT.skin * 0.9);
-
-      function ear(x) {
-        const [e, d] = P(x * 9.3, 0, -0.5);
-        const w = 1.2 + 1.2 * Math.abs(Math.sin(Math.atan2(x * 9.3, -0.5) - yaw + Math.PI / 2)) ;
-        g.fillStyle = gray(MAT.skin * (d > 0 ? 0.62 : 0.45));
-        g.beginPath(); g.ellipse(e[0], e[1], Math.min(2.4, w), 3.4, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
-      }
-      // ears that sit behind the face outline
-      if (turn > 0.35) { ear(1); ear(-1); }
-
-      // skull + face
-      const face = morph(FACE_SIDE, FACE_FRONT, turn, 48).map(([h, v]) => at(h, v));
-      // facing the viewer the face stays bright so the eyes and smile read
-      const grad = g.createRadialGradient(c[0] + LIGHT[0] * 6, c[1] + LIGHT[1] * 6, 1, c[0], c[1], lerp(14, 20, turn));
+      const c = s.head;
+      // skull + face, slightly egg shaped with jaw and nose
+      const face = [
+        add(c, up, 12.5),
+        add(add(c, up, 9), fwd, 8),
+        add(add(c, up, 2), fwd, 10.6),
+        add(add(c, up, -1), fwd, 13.2), // nose tip
+        add(add(c, up, -3.5), fwd, 10.6),
+        add(add(c, up, -8), fwd, 9.4), // mouth
+        add(add(c, up, -12), fwd, 7.2), // chin
+        add(add(c, up, -12.5), fwd, 1),
+        add(add(c, up, -8), fwd, -4.5), // jaw back
+        add(add(c, up, -4), fwd, -9.6),
+        add(add(c, up, 4), fwd, -11),
+        add(add(c, up, 10), fwd, -7),
+      ];
+      const lc = add(c, 0, 0);
+      const grad = g.createRadialGradient(lc[0] + LIGHT[0] * 6, lc[1] + LIGHT[1] * 6, 1, lc[0], lc[1], 14);
       grad.addColorStop(0, gray(MAT.skin));
       grad.addColorStop(0.65, gray(MAT.skin * 0.8));
       grad.addColorStop(1, gray(MAT.skin * 0.35));
       smoothPath(g, face);
       g.fillStyle = grad;
       g.fill();
-      if (turn <= 0.35) ear(-1); // near ear, on top in profile
-
-      const dark = (v) => gray(MAT.skin * v);
-      const vis = (d) => Math.min(1, Math.max(0, d / 2));
-      // eyes: smiling, a little squinted, with brows above
-      [-1, 1].forEach((side) => {
-        const [e, d] = P(side * 3.7, 1.8, 8.4);
-        const k = vis(d);
-        if (k <= 0) return;
-        const rx = 2.3 * Math.max(0.35, Math.abs(Math.cos(yaw - side * 0.42)));
-        g.fillStyle = dark(lerp(0.8, 0.12, k));
-        g.beginPath(); g.ellipse(e[0], e[1], rx, 1.5, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
-        const b0 = P(side * 1.6, 4.4, 9.3)[0], b1 = P(side * 3.8, 5, 9)[0], b2 = P(side * 6, 4.3, 7.6)[0];
-        g.strokeStyle = dark(lerp(0.8, 0.15, k)); g.lineWidth = 1.8;
-        g.beginPath(); g.moveTo(...b0); g.quadraticCurveTo(...b1, ...b2); g.stroke();
-      });
-      // nose: shadow down the side away from the light
-      if (turn > 0.1) {
-        const n0 = P(1.1, 3, 10.2)[0], n1 = P(1.9, -1.6, 10.8)[0], n2 = P(0.4, -3.2, 10.6)[0];
-        g.strokeStyle = dark(lerp(0.8, 0.45, turn)); g.lineWidth = 1.1;
-        g.beginPath(); g.moveTo(...n0); g.quadraticCurveTo(...n1, ...n2); g.stroke();
-      }
-      // big smile with teeth showing
-      const top = [], bot = [], teeth = [];
-      for (let i = 0; i <= 8; i++) {
-        const x = -5 + (10 * i) / 8, u = x / 5;
-        const z = 9.2 - 0.12 * x * x;
-        top.push(P(x, -6.2 + 1.4 * u * u, z));
-        bot.push(P(x, -6.2 + 1.4 * u * u - 4.6 * (1 - u * u), z - 0.3));
-        teeth.push(P(x * 0.66, -6.6 + 0.8 * u * u - 1.1 * (1 - u * u), z));
-      }
-      const mouthVis = vis(Math.max(...top.map((q) => q[1])) + 2);
-      const keep = (arr) => arr.filter((q) => q[1] > -0.5).map((q) => q[0]);
-      const mt = keep(top), mb = keep(bot), tt = keep(teeth);
-      if (mt.length > 2 && mouthVis > 0) {
-        g.fillStyle = dark(lerp(0.8, 0.08, mouthVis));
-        g.beginPath(); g.moveTo(...mt[0]); mt.forEach((q) => g.lineTo(...q)); mb.slice().reverse().forEach((q) => g.lineTo(...q)); g.closePath(); g.fill();
-        g.fillStyle = gray(lerp(MAT.skin * 0.8, 1, mouthVis));
-        g.beginPath(); g.moveTo(...mt[0]); mt.forEach((q) => g.lineTo(...q)); tt.slice().reverse().forEach((q) => g.lineTo(...q)); g.closePath(); g.fill();
-      }
-
-      // short crop, swept up
-      const hair = morph(HAIR_SIDE, HAIR_FRONT, turn, 56).map(([h, v]) => at(h, v));
-      const hg = g.createLinearGradient(...at(0, 16), ...at(0, -2));
+      // ear
+      const ear = add(add(c, up, 0), fwd, -2.5);
+      g.fillStyle = gray(MAT.skin * 0.55);
+      g.beginPath(); g.ellipse(ear[0], ear[1], 2.2, 3.2, -s.dHead * D2R, 0, Math.PI * 2); g.fill();
+      // short, full crop that hugs the head
+      const hair = [
+        add(add(c, up, -2.5), fwd, -9.8), // nape
+        add(add(c, up, 3), fwd, -12.2),
+        add(add(c, up, 9), fwd, -11.2),
+        add(add(c, up, 13.6), fwd, -6.5),
+        add(add(c, up, 15.6), fwd, 0),
+        add(add(c, up, 14.8), fwd, 6),
+        add(add(c, up, 11.6), fwd, 10.2), // front of the crop
+        add(add(c, up, 8.6), fwd, 9.6), // hairline at the forehead
+        add(add(c, up, 10), fwd, 4.5),
+        add(add(c, up, 8.5), fwd, 0.5),
+        add(add(c, up, 3), fwd, 0), // sideburn
+        add(add(c, up, 2.5), fwd, -4.5), // above the ear
+        add(add(c, up, -1.5), fwd, -6.5),
+      ];
+      const hg = g.createLinearGradient(...add(c, up, 16), ...add(c, up, -2));
       hg.addColorStop(0, gray(MAT.hair * 1.35));
       hg.addColorStop(1, gray(MAT.hair * 0.8));
       smoothPath(g, hair);
       g.fillStyle = hg;
       g.fill();
-
-      // his real face fades in over the drawn one as he looks at the viewer
-      const k = smooth(0.5, 0.9, turn);
-      if (k > 0 && FACE_PHOTO.complete && FACE_PHOTO.naturalWidth) {
-        const f = dir(fwd), u = dir(up), o = at(PHOTO.h, PHOTO.v);
-        g.save();
-        g.globalAlpha = k;
-        g.transform(f[0], f[1], -u[0], -u[1], o[0], o[1]);
-        g.drawImage(FACE_PHOTO, 0, 0, PHOTO.w, PHOTO.ht);
-        g.restore();
-      }
     }
 
     // Far side limbs sit a few units behind and above, dimmer
@@ -408,7 +328,7 @@
     return function draw(s) {
       far(() => { group(0, () => arm(s, FAR)); group(0, () => leg(s, FAR)); });
       torso(s);
-      head(s, s.turn);
+      head(s);
       group(2.6, () => leg(s, 1));
       group(2.6, () => arm(s, 1));
     };
@@ -436,18 +356,17 @@
       w = r.width; h = r.height;
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
       cols = Math.max(1, Math.ceil(w / spacing)); rows = Math.max(1, Math.ceil(h / spacing));
-      // drawn at 2x and averaged per dot, so small detail (his face) survives
-      off.width = cols * 2; off.height = rows * 2;
+      off.width = cols; off.height = rows;
       last = -1;
     }
 
     function drawFigure(p) {
       const { s, x, y, air } = placement(p);
       octx.setTransform(1, 0, 0, 1, 0, 0);
-      octx.fillStyle = "#000"; octx.fillRect(0, 0, cols * 2, rows * 2);
+      octx.fillStyle = "#000"; octx.fillRect(0, 0, cols, rows);
       // Fit the whole move (standing arms up, flight peak) in the canvas
-      const scale = 2 * Math.min((rows * 0.9) / 285, (cols * 0.9) / 190);
-      const gx = cols * 2 * 0.6, gy = rows * 2 * 0.93;
+      const scale = Math.min((rows * 0.9) / 285, (cols * 0.9) / 190);
+      const gx = cols * 0.6, gy = rows * 0.93;
 
       // Floor line and shadow (ground space)
       octx.setTransform(scale, 0, 0, scale, gx, gy);
@@ -466,9 +385,7 @@
     function render(p) {
       if (!cols || !rows) return;
       drawFigure(p);
-      const W = cols * 2;
-      const data = octx.getImageData(0, 0, W, rows * 2).data;
-      const px = (x, y) => data[(y * W + x) * 4] / 255;
+      const data = octx.getImageData(0, 0, cols, rows).data;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = readAccent(canvas);
@@ -476,7 +393,7 @@
       ctx.beginPath();
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const v = (px(c * 2, r * 2) + px(c * 2 + 1, r * 2) + px(c * 2, r * 2 + 1) + px(c * 2 + 1, r * 2 + 1)) / 4;
+          const v = data[(r * cols + c) * 4] / 255;
           if (v < 0.05) continue;
           const rad = Math.sqrt(v) * max;
           const cx = c * spacing + spacing / 2, cy = r * spacing + spacing / 2;
@@ -530,7 +447,6 @@
 
     const api = {
       render,
-      refresh() { last = -1; render(shown); },
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect();
         window.removeEventListener("scroll", onScroll);
@@ -550,7 +466,6 @@
     while (instances.length) instances.pop().destroy();
     document.querySelectorAll("canvas[data-backflip]").forEach((c) => delete c.__backflip);
   }
-  FACE_PHOTO.addEventListener("load", () => instances.forEach((i) => i.refresh()));
   window.BackflipDots = { init, destroyAll, pose, placement };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => init());
