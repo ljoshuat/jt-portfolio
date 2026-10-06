@@ -8,6 +8,8 @@
    bare feet, short swept-up hair) so the dots read as a person,
    not a stick figure. Feet stay planted on the ground. He looks
    at the viewer before and after the flip, profile in the air.
+   Facing the viewer, his real face (from his headshot) shows in
+   finer half-size dots on the head.
 
    Markup:
    section[data-backflip-track]          (tall, e.g. 420vh)
@@ -61,6 +63,13 @@
     [0.385, "Rotate"],
     [0.745, "Stick"],
   ];
+
+  // Josh's own face (from his B&W studio headshot, cut out, 64x75 gray +
+  // alpha) shown in dots whenever he is looking at the viewer.
+  const FACE_PHOTO = new Image();
+  FACE_PHOTO.src = "data:image/png;base64,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";
+  // Where the photo sits in head space: left edge, top edge, size (units)
+  const PHOTO = { h: -14, v: 16.4, w: 27.4, ht: 32.1 };
 
   // Material brightness (dots get bigger with brightness)
   const MAT = { skin: 1, tee: 0.86, pants: 0.5, hair: 0.42 };
@@ -374,6 +383,17 @@
       smoothPath(g, hair);
       g.fillStyle = hg;
       g.fill();
+
+      // his real face fades in over the drawn one as he looks at the viewer
+      const k = smooth(0.5, 0.9, turn);
+      if (k > 0 && FACE_PHOTO.complete && FACE_PHOTO.naturalWidth) {
+        const f = dir(fwd), u = dir(up), o = at(PHOTO.h, PHOTO.v);
+        g.save();
+        g.globalAlpha = k;
+        g.transform(f[0], f[1], -u[0], -u[1], o[0], o[1]);
+        g.drawImage(FACE_PHOTO, 0, 0, PHOTO.w, PHOTO.ht);
+        g.restore();
+      }
     }
 
     // Far side limbs sit a few units behind and above, dimmer
@@ -415,17 +435,18 @@
       w = r.width; h = r.height;
       canvas.width = Math.round(w * dpr); canvas.height = Math.round(h * dpr);
       cols = Math.max(1, Math.ceil(w / spacing)); rows = Math.max(1, Math.ceil(h / spacing));
-      off.width = cols; off.height = rows;
+      // drawn at 2x so the head can use finer dots (his face needs the detail)
+      off.width = cols * 2; off.height = rows * 2;
       last = -1;
     }
 
     function drawFigure(p) {
       const { s, x, y, air } = placement(p);
       octx.setTransform(1, 0, 0, 1, 0, 0);
-      octx.fillStyle = "#000"; octx.fillRect(0, 0, cols, rows);
+      octx.fillStyle = "#000"; octx.fillRect(0, 0, cols * 2, rows * 2);
       // Fit the whole move (standing arms up, flight peak) in the canvas
-      const scale = Math.min((rows * 0.9) / 285, (cols * 0.9) / 190);
-      const gx = cols * 0.6, gy = rows * 0.93;
+      const scale = 2 * Math.min((rows * 0.9) / 285, (cols * 0.9) / 190);
+      const gx = cols * 2 * 0.6, gy = rows * 2 * 0.93;
 
       // Floor line and shadow (ground space)
       octx.setTransform(scale, 0, 0, scale, gx, gy);
@@ -439,12 +460,17 @@
       octx.setTransform(scale, 0, 0, scale, gx + x * scale, gy + y * scale);
       octx.lineJoin = "round"; octx.lineCap = "round";
       drawBody(s);
+      // head circle in coarse cells, for the fine dots
+      const hc = add(s.head, s.dHead + 180, 1.5);
+      return { hx: (gx + (x + hc[0]) * scale) / 2, hy: (gy + (y + hc[1]) * scale) / 2, hr: (17 * scale) / 2 };
     }
 
     function render(p) {
       if (!cols || !rows) return;
-      drawFigure(p);
-      const data = octx.getImageData(0, 0, cols, rows).data;
+      const { hx, hy, hr } = drawFigure(p);
+      const W = cols * 2;
+      const data = octx.getImageData(0, 0, W, rows * 2).data;
+      const px = (x, y) => data[(y * W + x) * 4] / 255;
       ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = readAccent(canvas);
@@ -452,7 +478,20 @@
       ctx.beginPath();
       for (let r = 0; r < rows; r++) {
         for (let c = 0; c < cols; c++) {
-          const v = data[(r * cols + c) * 4] / 255;
+          if (Math.hypot(c + 0.5 - hx, r + 0.5 - hy) < hr) {
+            // head: four half-size dots per cell
+            for (let k = 0; k < 4; k++) {
+              const sx = c * 2 + (k & 1), sy = r * 2 + (k >> 1);
+              const v = px(sx, sy);
+              if (v < 0.05) continue;
+              const rad = Math.sqrt(v) * max * 0.5;
+              const cx = (sx + 0.5) * (spacing / 2), cy = (sy + 0.5) * (spacing / 2);
+              ctx.moveTo(cx + rad, cy);
+              ctx.arc(cx, cy, rad, 0, Math.PI * 2);
+            }
+            continue;
+          }
+          const v = (px(c * 2, r * 2) + px(c * 2 + 1, r * 2) + px(c * 2, r * 2 + 1) + px(c * 2 + 1, r * 2 + 1)) / 4;
           if (v < 0.05) continue;
           const rad = Math.sqrt(v) * max;
           const cx = c * spacing + spacing / 2, cy = r * spacing + spacing / 2;
@@ -506,6 +545,7 @@
 
     const api = {
       render,
+      refresh() { last = -1; render(shown); },
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect();
         window.removeEventListener("scroll", onScroll);
@@ -525,6 +565,7 @@
     while (instances.length) instances.pop().destroy();
     document.querySelectorAll("canvas[data-backflip]").forEach((c) => delete c.__backflip);
   }
+  FACE_PHOTO.addEventListener("load", () => instances.forEach((i) => i.refresh()));
   window.BackflipDots = { init, destroyAll, pose, placement };
 
   if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", () => init());
