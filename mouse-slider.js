@@ -386,8 +386,26 @@
       let timer = null;
       let raf = null;
 
+      /* Phones loop back through the cover so the logo gets seen */
       function next() {
-        show((index + 1) % slides.length);
+        if (touch && index + 1 === slides.length) showCover();
+        else show((index + 1) % slides.length);
+      }
+
+      /* Cover only: no slide active, all bars empty */
+      function clearSlides() {
+        slides.forEach((slide) => slide.classList.remove("is-active"));
+        bars.forEach((fill) => {
+          fill.style.transition = "none";
+          fill.style.transform = "scaleX(0)";
+        });
+      }
+
+      function showCover() {
+        clearTimeout(timer);
+        stopVideo();
+        clearSlides();
+        timer = setTimeout(() => show(0), time);
       }
 
       /* The video's bar follows its playback rather than a timer */
@@ -458,7 +476,7 @@
       function onVideoEnded() {
         if (slides[index] !== video) return;
         /* Only slide: just go round again */
-        if (slides.length === 1) show(0);
+        if (slides.length === 1 && !touch) show(0);
         else next();
       }
 
@@ -470,18 +488,16 @@
       function onEnter() {
         clearTimeout(timer);
         card.classList.add("is-playing");
-        show(0);
+        /* Phones hold on the cover first; mouse hover skips straight in */
+        if (touch) showCover();
+        else show(0);
       }
 
       function onLeave() {
         clearTimeout(timer);
         stopVideo();
         card.classList.remove("is-playing");
-        slides.forEach((slide) => slide.classList.remove("is-active"));
-        bars.forEach((fill) => {
-          fill.style.transition = "none";
-          fill.style.transform = "scaleX(0)";
-        });
+        clearSlides();
       }
 
       function removeVideo() {
