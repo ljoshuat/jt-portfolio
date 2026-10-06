@@ -14,6 +14,8 @@
      reveal  halftone dots everywhere; a soft circle around the
              pointer reveals the two-tone photo underneath
      rgb     the colour channels pull apart when the pointer moves fast
+     dots-rgb  halftone dots that split into red/green/blue around
+             the pointer (more when it moves fast)
    Optional: data-radius (px, default 160), data-spacing (dot gap in
    px for reveal, default 9), data-fit "contain" (default) or "cover".
 
@@ -22,7 +24,7 @@
    Load site-wide (footer) after Barba; re-inits on Barba changes.
    ========================================================== */
 (() => {
-  const EFFECTS = { liquid: 0, reveal: 1, rgb: 2 };
+  const EFFECTS = { liquid: 0, reveal: 1, rgb: 2, "dots-rgb": 3 };
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const instances = new Set();
 
@@ -57,6 +59,13 @@
       float l = dot(c.rgb, vec3(0.2126, 0.7152, 0.0722));
       return mix(1.0 - l, l, uLightDots);
     }
+    // Halftone dot coverage at a pixel (0-1)
+    float dots(vec2 px) {
+      vec2 cell = floor(px / uSpacing) * uSpacing + uSpacing * 0.5;
+      vec4 c = photo(cell / uRes);
+      float r = sqrt(tone(c) * c.a) * uSpacing * 0.5;
+      return smoothstep(r + 0.6, r - 0.6, length(px - cell)) * step(0.35, r);
+    }
     vec4 duo(vec4 c) {
       return vec4(mix(uBg, uAccent, tone(c)) * c.a, c.a);
     }
@@ -88,6 +97,27 @@
         // slight bulge inside the lens
         vec4 full = duo(photo((uMouse + d * (1.0 - 0.12 * lens)) / uRes));
         gl_FragColor = mix(dots, full, lens);
+        return;
+      }
+
+      if (uEffect == 3) {
+        // Dots whose channels separate near the pointer: radial spread,
+        // pushed further along the direction of movement
+        float speed = clamp(length(uVel) / 25.0, 0.0, 1.0);
+        vec2 radial = dist > 0.0 ? d / dist : vec2(0.0);
+        vec2 motion = length(uVel) > 0.0 ? normalize(uVel) : vec2(0.0);
+        vec2 off = (radial + motion * speed * 1.4) * falloff * (9.0 + 14.0 * speed);
+        float cr = dots(px + off);
+        float cg = dots(px);
+        float cb = dots(px - off);
+        float both = min(min(cr, cg), cb);
+        float a = max(max(cr, cg), cb);
+        vec3 cov = vec3(cr, cg, cb);
+        // Dark: light adds up (red/green/blue fringes). Light: ink subtracts (cyan/magenta/yellow).
+        vec3 col = uLightDots > 0.5
+          ? uAccent * both + (cov - both)
+          : a * uBg - cov * (uBg - uAccent);
+        gl_FragColor = vec4(col, a);
         return;
       }
 
