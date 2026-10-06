@@ -332,6 +332,13 @@
 
      The card gets .is-playing while hovered and the showing image
      gets .is-active, so the fades live in the CSS.
+
+     A video as slide 1: put a video URL (e.g. a Bunny
+     play_1080p.mp4 link, bound from the CMS) in data-card-video on
+     the card. The video then plays first (muted, once through, its
+     bar following playback), then the images carry on as usual, and
+     the loop comes back round to the video. It loads nothing until
+     the first hover. Leave it empty and the card is images only.
   --------------------------------------------- */
 
   const DEFAULT_SLIDE_TIME = 2000;
@@ -348,13 +355,18 @@
       const slides = Array.from(
         card.querySelectorAll("[data-card-slide]")
       ).filter((slide) => !slide.classList.contains("w-dyn-bind-empty"));
+
+      const videoUrl = (card.getAttribute("data-card-video") || "").trim();
+      const video = videoUrl ? createCardVideo(card, slides[0]) : null;
+      if (video) slides.unshift(video);
+
       if (!slides.length) return;
       card.dataset.cardSlideshowReady = "true";
 
       const time =
         parseFloat(card.getAttribute("data-slide-time")) || DEFAULT_SLIDE_TIME;
 
-      /* One bar per image */
+      /* One bar per slide */
       const progress = card.querySelector("[data-card-progress]");
       const bars = [];
       if (progress) {
@@ -372,31 +384,13 @@
 
       let index = 0;
       let timer = null;
+      let raf = null;
 
-      function show(i) {
-        index = i;
-        slides.forEach((slide, n) => slide.classList.toggle("is-active", n === i));
-        bars.forEach((fill, n) => {
-          fill.style.transition = "none";
-          fill.style.transform = `scaleX(${n < i ? 1 : 0})`;
-        });
-        const fill = bars[i];
-        if (fill) {
-          /* Next frame, so the reset above lands before the fill runs */
-          requestAnimationFrame(() => {
-            fill.style.transition = `transform ${time}ms linear`;
-            fill.style.transform = "scaleX(1)";
-          });
-        }
-        /* Phones loop back through the cover so the logo gets seen */
-        const next = index + 1;
-        timer = setTimeout(
-          () =>
-            touch && next === slides.length
-              ? showCover()
-              : show(next % slides.length),
-          time
-        );
+      /* Phones loop back through the cover so the logo gets seen */
+      function next() {
+        const n = index + 1;
+        if (touch && n === slides.length) showCover();
+        else show(n % slides.length);
       }
 
       /* Cover only: no slide active, all bars empty */
@@ -409,8 +403,87 @@
       }
 
       function showCover() {
+        clearTimeout(timer);
+        stopVideo();
         clearSlides();
         timer = setTimeout(() => show(0), time);
+      }
+
+      /* The video's bar follows its playback rather than a timer */
+      function trackVideo() {
+        const fill = bars[index];
+        if (fill && video.duration) {
+          fill.style.transform = `scaleX(${video.currentTime / video.duration})`;
+        }
+        raf = requestAnimationFrame(trackVideo);
+      }
+
+      function stopVideo() {
+        if (!video) return;
+        cancelAnimationFrame(raf);
+        video.pause();
+      }
+
+      function show(i) {
+        clearTimeout(timer);
+        stopVideo();
+        index = i;
+        const slide = slides[i];
+        slides.forEach((s, n) => {
+          /* The video fades in once it's actually playing (no black flash) */
+          if (s === video && n === i) return;
+          s.classList.toggle("is-active", n === i);
+        });
+        bars.forEach((fill, n) => {
+          fill.style.transition = "none";
+          fill.style.transform = `scaleX(${n < i ? 1 : 0})`;
+        });
+
+        if (slide === video) {
+          if (!video.getAttribute("src")) video.src = videoUrl;
+          try {
+            video.currentTime = 0;
+          } catch (e) {}
+          const playing = video.play();
+          if (playing && playing.catch) {
+            /* Can't play (e.g. still encoding): skip ahead */
+            playing.catch(() => {
+              if (slides[index] === video && slides.length > 1) next();
+            });
+          }
+          trackVideo();
+          /* Safety net if "ended" never fires */
+          timer = setTimeout(next, 30000);
+          return;
+        }
+
+        const fill = bars[i];
+        if (fill) {
+          /* Next frame, so the reset above lands before the fill runs */
+          requestAnimationFrame(() => {
+            fill.style.transition = `transform ${time}ms linear`;
+            fill.style.transform = "scaleX(1)";
+          });
+        }
+        timer = setTimeout(next, time);
+      }
+
+      function onVideoPlaying() {
+        if (slides[index] === video && card.classList.contains("is-playing")) {
+          video.classList.add("is-active");
+        }
+      }
+
+      function onVideoEnded() {
+        if (slides[index] !== video) return;
+        /* Only slide: just go round again */
+        if (slides.length === 1 && !touch) show(0);
+        else next();
+      }
+
+      if (video) {
+        video.addEventListener("playing", onVideoPlaying);
+        video.addEventListener("ended", onVideoEnded);
       }
 
       function onEnter() {
@@ -423,8 +496,16 @@
 
       function onLeave() {
         clearTimeout(timer);
+        stopVideo();
         card.classList.remove("is-playing");
         clearSlides();
+      }
+
+      function removeVideo() {
+        if (!video) return;
+        video.removeEventListener("playing", onVideoPlaying);
+        video.removeEventListener("ended", onVideoEnded);
+        video.remove();
       }
 
       if (touch) {
@@ -443,6 +524,7 @@
         cardCleanups.push(() => {
           watch.disconnect();
           onLeave();
+          removeVideo();
           delete card.dataset.cardSlideshowReady;
         });
         return;
@@ -455,9 +537,42 @@
         onLeave();
         card.removeEventListener("mouseenter", onEnter);
         card.removeEventListener("mouseleave", onLeave);
+        removeVideo();
         delete card.dataset.cardSlideshowReady;
       });
     });
+  }
+
+  /* The video slide: stacked like the image slides, muted, plays once
+     per turn, and loads nothing until it's first shown */
+  function createCardVideo(card, firstSlide) {
+    const holder =
+      (firstSlide && firstSlide.parentElement) ||
+      card.querySelector(".project-card_visual") ||
+      card;
+
+    const video = document.createElement("video");
+    video.muted = true;
+    video.playsInline = true;
+    video.preload = "none";
+    video.setAttribute("muted", "");
+    video.setAttribute("playsinline", "");
+    video.setAttribute("aria-hidden", "true");
+    video.setAttribute("data-card-slide", "");
+    Object.assign(video.style, {
+      width: "100%",
+      height: "100%",
+      objectFit: "cover",
+      pointerEvents: "none",
+    });
+
+    const progress = card.querySelector("[data-card-progress]");
+    if (progress && progress.parentElement === holder) {
+      holder.insertBefore(video, progress);
+    } else {
+      holder.appendChild(video);
+    }
+    return video;
   }
 
   function destroyCardSlideshows() {
