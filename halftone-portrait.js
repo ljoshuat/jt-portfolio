@@ -14,7 +14,9 @@
      data-radius    pointer reach in px (default 140)
      data-strength  how far dots get pushed, 0-2 (default 1)
      data-mode      "push" (default) or "swirl"
-     data-shape     "circle" (default) or "square" for pixel dots
+     data-shape     "circle" (default), "square" for pixel dots, or
+                    "ascii" for characters that scramble near the pointer
+     data-chars     ASCII ramp from faint to dense (default " .:-=+*#%@")
      data-fit       "contain" (default) or "cover"
      data-contrast  boosts tone contrast, 0.5-2 (default 1.15)
 
@@ -29,6 +31,7 @@
     strength: 1,
     mode: "push",
     shape: "circle",
+    chars: " .:-=+*#%@",
     fit: "contain",
     contrast: 1.15
   };
@@ -55,6 +58,7 @@
       strength: num("strength", DEFAULTS.strength),
       mode: el.getAttribute("data-mode") || DEFAULTS.mode,
       shape: el.getAttribute("data-shape") || DEFAULTS.shape,
+      chars: el.getAttribute("data-chars") || DEFAULTS.chars,
       fit: el.getAttribute("data-fit") || DEFAULTS.fit,
       contrast: num("contrast", DEFAULTS.contrast)
     };
@@ -168,6 +172,9 @@
 
       const animate = !reducedMotion.matches;
       const square = opts.shape === "square";
+      const ascii = opts.shape === "ascii";
+      const ramp = opts.chars;
+      const last = ramp.length - 1;
       const R = opts.radius;
       const push = R * 0.4 * opts.strength;
       const maxSize = opts.spacing * 0.5;
@@ -184,6 +191,11 @@
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = color;
       ctx.beginPath();
+      if (ascii) {
+        ctx.font = "600 " + Math.round(opts.spacing * 1.3) + "px ui-monospace, Menlo, Consolas, monospace";
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+      }
 
       let moving = intro < 1 || pointer.active || ripples.length > 0;
       const cx = w / 2, cy = h / 2, maxD = Math.hypot(cx, cy);
@@ -257,6 +269,14 @@
 
         const rad = size * (1 + grow) * reveal;
         if (rad < 0.25) continue;
+        if (ascii) {
+          // Dot size back to tone, then pick a character from the ramp
+          const t = Math.min(1, Math.pow(rad / maxSize, 2));
+          let k = Math.round(t * last);
+          if (grow > 0.03 && Math.random() < grow * 1.6) k = 1 + Math.floor(Math.random() * last);
+          if (k > 0) ctx.fillText(ramp[k], x, y);
+          continue;
+        }
         if (square) {
           ctx.rect(x - rad, y - rad, rad * 2, rad * 2);
         } else {
