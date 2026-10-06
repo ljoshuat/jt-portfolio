@@ -38,6 +38,10 @@
   // Soft fade over the crown so the top of the head dissolves into the page
   // instead of ending on a hard outline (fraction of the image height)
   const CROWN_FADE = 0.17;
+  // Looking down: the head nods toward the chest. NECK is where the nod
+  // blends out (fraction of the image height), NOD is the drop in source px.
+  const NECK = 0.52;
+  const NOD = 16;
 
   const reducedMotion = window.matchMedia("(prefers-reduced-motion: reduce)");
   const smallScreen = window.matchMedia("(max-width: 767px)");
@@ -171,14 +175,21 @@
       ctx.clearRect(0, 0, w, h);
       ctx.fillStyle = color;
       const strength = opts.turn;
-      const tx = cur.x, ty = cur.y * 0.7;
+      const tx = cur.x, ty = cur.y * (cur.y > 0 ? 1 : 0.7);
+      const nod = Math.max(0, cur.y) * NOD;
       const max = spacing * 0.5;
       const inv = 1 / scale;
       const ex = EYES.map(([x, y]) => [x * SW, y * SH]);
       ctx.beginPath();
       for (let y = spacing / 2; y < h; y += spacing) {
         for (let x = spacing / 2; x < w; x += spacing) {
-          const ix = (x - ox) * inv, iy = (y - oy) * inv;
+          const ix = (x - ox) * inv;
+          let iy = (y - oy) * inv;
+          if (nod) {
+            // Head above the neck drops; the band near the neck squashes into it
+            const k = Math.min(1, Math.max(0, (SH * NECK - iy) / (SH * 0.12)));
+            iy -= nod * k * k * (3 - 2 * k);
+          }
           // Parallax: nearer surfaces move further toward the cursor.
           // Two passes so the depth used is the depth of the point that lands here.
           let d = sample(dep, ix, iy);
