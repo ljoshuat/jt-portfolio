@@ -1,0 +1,355 @@
+<style>
+/* =========================================================
+   CONTACT PANEL (pairs with contact-panel.js)
+   A side shelf that slides in from the right over a dimmed
+   overlay. Colors and fonts come from the Base variables, so it
+   follows Dark, Light and Vibe. Lives in an HTML Embed inside the
+   "Global Component" so every page has it.
+========================================================= */
+
+.contact_component {
+  --contact-ease: cubic-bezier(0.76, 0, 0.24, 1);
+  --contact-out: cubic-bezier(0.22, 1, 0.36, 1);
+  --contact-line: color-mix(in srgb, var(--color--text-primary) 18%, transparent);
+  --contact-soft: color-mix(in srgb, var(--color--text-primary) 60%, transparent);
+  position: fixed;
+  inset: 0;
+  z-index: 9000; /* over the nav; the cursor trail stays on top */
+  visibility: hidden;
+  pointer-events: none;
+  transition: visibility 0s linear 0.9s;
+}
+.contact_component.is-open {
+  visibility: visible;
+  pointer-events: auto;
+  transition: none;
+}
+
+/* ---- Overlay ---- */
+.contact_overlay {
+  position: absolute;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  -webkit-backdrop-filter: blur(6px);
+  backdrop-filter: blur(6px);
+  opacity: 0;
+  cursor: pointer;
+  transition: opacity 0.7s var(--contact-ease);
+}
+.is-open .contact_overlay { opacity: 1; }
+
+/* ---- Shelf ---- */
+.contact_main {
+  position: absolute;
+  top: 0;
+  right: 0;
+  bottom: 0;
+  display: flex;
+  flex-direction: column;
+  width: min(36rem, 100vw);
+  background: var(--color--bg-primary);
+  color: var(--color--text-primary);
+  font-family: var(--typography--font-primary), sans-serif;
+  border-left: 1px solid var(--contact-line);
+  transform: translate3d(100%, 0, 0);
+  transition: transform 0.9s var(--contact-ease),
+    background-color 0.4s ease, color 0.4s ease;
+}
+.is-open .contact_main { transform: translate3d(0, 0, 0); }
+
+.contact_inner {
+  flex: 1;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+  padding: 6.5rem 3rem 2.5rem;
+}
+
+/* ---- Close button ---- */
+.contact_close {
+  position: absolute;
+  top: 1.75rem;
+  right: 2rem;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 3rem;
+  height: 3rem;
+  padding: 0;
+  border: 1px solid var(--contact-line);
+  border-radius: 50%;
+  background: transparent;
+  color: var(--color--text-primary);
+  cursor: pointer;
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.contact_close svg {
+  width: 1.25rem;
+  height: 1.25rem;
+  transition: transform 0.5s var(--contact-out);
+}
+.contact_close:hover,
+.contact_close:focus-visible {
+  background: var(--color--accent);
+  border-color: var(--color--accent);
+  color: var(--color--bg-primary);
+}
+.contact_close:hover svg,
+.contact_close:focus-visible svg { transform: rotate(90deg); }
+.contact_close:focus-visible { outline: 2px solid var(--color--accent); outline-offset: 3px; }
+
+/* ---- Title ---- */
+.contact_title {
+  margin: 0 0 2.5rem;
+  font-family: var(--typography--font-display), sans-serif;
+  font-size: clamp(2.25rem, 4.2vw, 3.5rem);
+  font-weight: 400;
+  line-height: 0.95;
+  text-transform: uppercase;
+  color: var(--color--text-primary);
+}
+
+/* ---- Form ---- */
+.contact_form-block { margin: 0; }
+.contact_form {
+  display: flex;
+  flex-direction: column;
+  gap: 2rem;
+}
+.contact_fields-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+  gap: 2rem 1.5rem;
+}
+.contact_field {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+  margin: 0;
+}
+.contact_label {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0;
+  font-size: 0.8125rem;
+  font-weight: 400;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--color--text-primary);
+}
+.contact_label .contact_req { color: var(--contact-soft); }
+
+.contact_input,
+.contact_textarea {
+  width: 100%;
+  height: auto;
+  margin: 0;
+  padding: 0.75rem 0;
+  border: 0;
+  border-bottom: 1px solid var(--contact-line);
+  border-radius: 0;
+  background: transparent;
+  color: var(--color--text-primary);
+  font-family: inherit;
+  font-size: 1.125rem;
+  line-height: 1.4;
+  box-shadow: none;
+  transition: border-color 0.3s ease;
+}
+.contact_input::placeholder,
+.contact_textarea::placeholder { color: var(--contact-soft); opacity: 1; }
+.contact_input:hover,
+.contact_textarea:hover { border-bottom-color: var(--contact-soft); }
+.contact_input:focus,
+.contact_textarea:focus {
+  outline: none;
+  border-bottom-color: var(--color--accent);
+}
+.contact_textarea {
+  min-height: 8.5rem;
+  resize: vertical;
+}
+
+/* Radios as pills; the native input stays for keyboard + required */
+.contact_radio-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.625rem;
+}
+.contact_radio {
+  position: relative;
+  display: inline-flex;
+  align-items: center;
+  margin: 0;
+  padding: 0;
+  font-weight: 400;
+  cursor: pointer;
+}
+.contact_radio input {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  margin: 0;
+  opacity: 0;
+  cursor: pointer;
+}
+.contact_radio-label {
+  display: block;
+  margin: 0;
+  padding: 0.7rem 1.1rem;
+  border: 1px solid var(--contact-line);
+  border-radius: 999px;
+  font-size: 0.9375rem;
+  line-height: 1;
+  color: var(--contact-soft);
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+.contact_radio:hover .contact_radio-label { border-color: var(--contact-soft); color: var(--color--text-primary); }
+.contact_radio input:focus-visible + .contact_radio-label { outline: 2px solid var(--color--accent); outline-offset: 2px; }
+.contact_radio input:checked + .contact_radio-label {
+  background: var(--color--accent);
+  border-color: var(--color--accent);
+  color: var(--color--bg-primary);
+}
+
+/* ---- Send button ---- */
+.contact_submit {
+  align-self: flex-start;
+  margin-top: 0.5rem;
+  padding: 1.1rem 2rem;
+  border: 0;
+  border-radius: 999px;
+  background: var(--color--accent);
+  color: var(--color--bg-primary);
+  font-family: inherit;
+  font-size: 0.875rem;
+  letter-spacing: 0.08em;
+  line-height: 1;
+  text-transform: uppercase;
+  cursor: pointer;
+  transition: transform 0.4s var(--contact-out), opacity 0.3s ease;
+}
+.contact_submit:hover { transform: scale(1.04); }
+.contact_submit:focus-visible { outline: 2px solid var(--color--accent); outline-offset: 3px; }
+
+/* ---- Success / error ---- */
+.contact_success {
+  padding: 2.5rem 0 0;
+  background: transparent;
+  text-align: left;
+}
+.contact_success-title {
+  margin: 0 0 0.75rem;
+  font-family: var(--typography--font-display), sans-serif;
+  font-size: clamp(1.75rem, 3vw, 2.5rem);
+  font-weight: 400;
+  line-height: 1;
+  text-transform: uppercase;
+  color: var(--color--accent);
+}
+.contact_success-text { color: var(--contact-soft); font-size: 1rem; }
+.contact_error {
+  margin-top: 1.25rem;
+  padding: 1rem 1.25rem;
+  border: 1px solid #ff5a4f;
+  border-radius: 0.75rem;
+  background: transparent;
+  color: var(--color--text-primary);
+  font-size: 0.9375rem;
+}
+
+/* ---- "Don't like forms?" ---- */
+.contact_alt {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  margin: 0;
+  padding: 1.5rem 3rem;
+  border-top: 1px solid var(--contact-line);
+  color: var(--color--text-primary);
+  font-size: 0.8125rem;
+  letter-spacing: 0.06em;
+  line-height: 1;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+.contact_alt-q { color: var(--contact-soft); }
+.contact_alt-link {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.5rem;
+  text-decoration: underline;
+  text-underline-offset: 0.3em;
+  transition: color 0.3s ease;
+}
+.contact_alt:hover .contact_alt-link { color: var(--color--accent); }
+
+/* ---- Field icons (line art, color follows the theme) ---- */
+.contact_icon {
+  display: inline-flex;
+  flex: none;
+  width: 1.25rem;
+  height: 1.25rem;
+  color: var(--color--text-primary);
+}
+.contact_icon svg { display: block; width: 100%; height: 100%; overflow: visible; }
+.contact_icon [data-draw] {
+  stroke-dasharray: 1;
+  stroke-dashoffset: 1;
+  transition: stroke-dashoffset 0.9s var(--contact-out);
+  transition-delay: calc(0.45s + var(--i, 0) * 0.08s);
+}
+.is-open .contact_icon [data-draw] { stroke-dashoffset: 0; }
+.contact_icon .ci-part { transform-box: fill-box; transform-origin: center; }
+
+/* Each icon has its own little move while its field is hovered or focused */
+.contact_field:is(:hover, :focus-within) .ci-head { animation: ci-nod 0.7s var(--contact-out); }
+.contact_field:is(:hover, :focus-within) .ci-flap { animation: ci-redraw 0.8s var(--contact-out); }
+.contact_field:is(:hover, :focus-within) .ci-env { animation: ci-wiggle 0.6s ease; }
+.contact_field:is(:hover, :focus-within) .ci-sq { animation: ci-turn 0.7s var(--contact-out) both; }
+.contact_field:is(:hover, :focus-within) .ci-sq:nth-of-type(2) { animation-delay: 0.06s; }
+.contact_field:is(:hover, :focus-within) .ci-sq:nth-of-type(3) { animation-delay: 0.12s; }
+.contact_field:is(:hover, :focus-within) .ci-sq:nth-of-type(4) { animation-delay: 0.18s; }
+.contact_field:is(:hover, :focus-within) .ci-dot { animation: ci-type 0.9s ease infinite; }
+.contact_field:is(:hover, :focus-within) .ci-dot:nth-of-type(2) { animation-delay: 0.15s; }
+.contact_field:is(:hover, :focus-within) .ci-dot:nth-of-type(3) { animation-delay: 0.3s; }
+
+@keyframes ci-nod { 0%, 100% { transform: translateY(0); } 40% { transform: translateY(-1.5px) scale(1.12); } }
+@keyframes ci-redraw { 0% { stroke-dashoffset: 1; } 100% { stroke-dashoffset: 0; } }
+@keyframes ci-wiggle { 0%, 100% { transform: rotate(0); } 30% { transform: rotate(-8deg); } 60% { transform: rotate(5deg); } }
+@keyframes ci-turn { 0% { transform: rotate(0) scale(1); } 50% { transform: rotate(45deg) scale(0.8); } 100% { transform: rotate(90deg) scale(1); } }
+@keyframes ci-type { 0%, 60%, 100% { transform: translateY(0); } 30% { transform: translateY(-2px); } }
+
+/* ---- Content fades up as the shelf lands ---- */
+.contact_reveal {
+  opacity: 0;
+  transform: translate3d(2.5rem, 0, 0);
+  transition: opacity 0.6s ease, transform 0.9s var(--contact-out);
+}
+.is-open .contact_reveal {
+  opacity: 1;
+  transform: none;
+  transition-delay: calc(0.3s + var(--i, 0) * 0.07s);
+}
+
+html.is-contact-open,
+html.is-contact-open body { overflow: hidden; }
+
+/* ---- Phones ---- */
+@media (max-width: 767px) {
+  .contact_inner { padding: 5.5rem 1.25rem 2rem; }
+  .contact_close { top: 1.25rem; right: 1.25rem; }
+  .contact_fields-grid { grid-template-columns: minmax(0, 1fr); }
+  .contact_alt { padding: 1.25rem; flex-wrap: wrap; }
+  .contact_input, .contact_textarea { font-size: 1rem; }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .contact_main, .contact_overlay, .contact_reveal, .contact_icon [data-draw] { transition-duration: 0.01s !important; transition-delay: 0s !important; }
+  .contact_component *, .contact_component *::before { animation: none !important; }
+}
+</style>
