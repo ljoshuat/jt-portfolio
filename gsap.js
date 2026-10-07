@@ -1756,12 +1756,20 @@ function initScrollAnimations(container) {
               ".principles-lead-text-wrap"
             ) || heading;
 
+          /* Safari draws a blurred block unblurred
+             for a frame when it first gets its own
+             layer, so give it the layer up front.
+             Plays once (no reverse) so the phone
+             toolbar resizing the screen can't
+             replay it. */
+
           gsap.fromTo(
             introWrap,
             {
               y: 45,
               opacity: 0,
-              filter: "blur(12px)"
+              filter: "blur(12px)",
+              willChange: "transform, opacity, filter"
             },
             {
               y: 0,
@@ -1772,6 +1780,13 @@ function initScrollAnimations(container) {
 
               ease: "power3.out",
 
+              immediateRender: true,
+
+              onComplete: () =>
+                gsap.set(introWrap, {
+                  clearProps: "willChange,filter"
+                }),
+
               scrollTrigger: {
 
                 trigger: introWrap,
@@ -1779,10 +1794,7 @@ function initScrollAnimations(container) {
                 start: "top 80%",
 
                 toggleActions:
-                  "play none none reverse",
-
-                invalidateOnRefresh:
-                  true
+                  "play none none none"
 
               }
 
