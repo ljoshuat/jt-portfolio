@@ -339,6 +339,7 @@
      bar following playback), then the images carry on as usual, and
      the loop comes back round to the video. It loads nothing until
      the first hover. Leave it empty and the card is images only.
+     A second URL in data-card-video-2 plays right after the first.
   --------------------------------------------- */
 
   const DEFAULT_SLIDE_TIME = 2000;
@@ -356,9 +357,19 @@
         card.querySelectorAll("[data-card-slide]")
       ).filter((slide) => !slide.classList.contains("w-dyn-bind-empty"));
 
-      const videoUrl = (card.getAttribute("data-card-video") || "").trim();
-      const video = videoUrl ? createCardVideo(card, slides[0]) : null;
-      if (video) slides.unshift(video);
+      /* Up to two videos (data-card-video, data-card-video-2) play
+         first, in that order, then the images */
+      const firstImage = slides[0];
+      const videos = ["data-card-video", "data-card-video-2"]
+        .map((name) => (card.getAttribute(name) || "").trim())
+        .filter(Boolean)
+        .map((url) => {
+          const v = createCardVideo(card, firstImage);
+          v.dataset.src = url;
+          return v;
+        });
+      slides.unshift(...videos);
+      const isVideo = (el) => videos.includes(el);
 
       if (!slides.length) return;
       card.dataset.cardSlideshowReady = "true";
@@ -408,19 +419,19 @@
         timer = setTimeout(() => show(0), time);
       }
 
-      /* The video's bar follows its playback rather than a timer */
+      /* A video's bar follows its playback rather than a timer */
       function trackVideo() {
         const fill = bars[index];
-        if (fill && video.duration) {
+        const video = slides[index];
+        if (fill && isVideo(video) && video.duration) {
           fill.style.transform = `scaleX(${video.currentTime / video.duration})`;
         }
         raf = requestAnimationFrame(trackVideo);
       }
 
       function stopVideo() {
-        if (!video) return;
         cancelAnimationFrame(raf);
-        video.pause();
+        videos.forEach((v) => v.pause());
       }
 
       function show(i) {
@@ -429,8 +440,8 @@
         index = i;
         const slide = slides[i];
         slides.forEach((s, n) => {
-          /* The video fades in once it's actually playing (no black flash) */
-          if (s === video && n === i) return;
+          /* A video fades in once it's actually playing (no black flash) */
+          if (isVideo(s) && n === i) return;
           s.classList.toggle("is-active", n === i);
         });
         bars.forEach((fill, n) => {
@@ -438,8 +449,9 @@
           fill.style.transform = `scaleX(${n < i ? 1 : 0})`;
         });
 
-        if (slide === video) {
-          if (!video.getAttribute("src")) video.src = videoUrl;
+        if (isVideo(slide)) {
+          const video = slide;
+          if (!video.getAttribute("src")) video.src = video.dataset.src;
           try {
             video.currentTime = 0;
           } catch (e) {}
@@ -450,6 +462,7 @@
               if (slides[index] === video && slides.length > 1) next();
             });
           }
+          cancelAnimationFrame(raf);
           trackVideo();
           /* Safety net if "ended" never fires */
           timer = setTimeout(next, 30000);
@@ -467,23 +480,24 @@
         timer = setTimeout(next, time);
       }
 
-      function onVideoPlaying() {
+      function onVideoPlaying(e) {
+        const video = e.currentTarget;
         if (slides[index] === video && card.classList.contains("is-playing")) {
           video.classList.add("is-active");
         }
       }
 
-      function onVideoEnded() {
-        if (slides[index] !== video) return;
+      function onVideoEnded(e) {
+        if (slides[index] !== e.currentTarget) return;
         /* Only slide: just go round again */
         if (slides.length === 1 && !touch) show(0);
         else next();
       }
 
-      if (video) {
+      videos.forEach((video) => {
         video.addEventListener("playing", onVideoPlaying);
         video.addEventListener("ended", onVideoEnded);
-      }
+      });
 
       function onEnter() {
         clearTimeout(timer);
@@ -501,10 +515,11 @@
       }
 
       function removeVideo() {
-        if (!video) return;
-        video.removeEventListener("playing", onVideoPlaying);
-        video.removeEventListener("ended", onVideoEnded);
-        video.remove();
+        videos.forEach((video) => {
+          video.removeEventListener("playing", onVideoPlaying);
+          video.removeEventListener("ended", onVideoEnded);
+          video.remove();
+        });
       }
 
       if (touch) {
