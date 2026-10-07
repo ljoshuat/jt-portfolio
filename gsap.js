@@ -1739,18 +1739,57 @@ function initScrollAnimations(container) {
          PRINCIPLES LEAD IS CONTROLLED
          BY principles-gsap.js ON DESKTOP.
          principles-gsap.js doesn't run below 992,
-         so phones and tablets animate it here.
+         so phones and tablets get the same
+         whole-block blur-up here.
       ----------------------------------------- */
 
-      const isPrinciplesLead =
+      if (
         heading.classList.contains(
           "principles-lead"
-        );
-
-      if (
-        isPrinciplesLead &&
-        window.innerWidth >= 992
+        )
       ) {
+
+        if (window.innerWidth < 992) {
+
+          const introWrap =
+            heading.closest(
+              ".principles-lead-text-wrap"
+            ) || heading;
+
+          gsap.fromTo(
+            introWrap,
+            {
+              y: 45,
+              opacity: 0,
+              filter: "blur(12px)"
+            },
+            {
+              y: 0,
+              opacity: 1,
+              filter: "blur(0px)",
+
+              duration: 1,
+
+              ease: "power3.out",
+
+              scrollTrigger: {
+
+                trigger: introWrap,
+
+                start: "top 80%",
+
+                toggleActions:
+                  "play none none reverse",
+
+                invalidateOnRefresh:
+                  true
+
+              }
+
+            }
+          );
+
+        }
 
         return;
 
@@ -1836,11 +1875,7 @@ function initScrollAnimations(container) {
 
             trigger: heading,
 
-            /* The tall principles lead starts as it scrolls into view */
-            start:
-              isPrinciplesLead
-                ? "top 70%"
-                : "top 35%",
+            start: "top 35%",
 
             invalidateOnRefresh:
               true
