@@ -160,6 +160,89 @@ function initBunnyVideos(container = document) {
 
 
 /* =========================================================
+   TAP TO PLAY (iPhone Low Power Mode)
+
+   Low Power Mode blocks autoplay, so iOS shows its own
+   play button on each video. A tap on that button often
+   lands on whatever sits on top of the video instead, so
+   nothing plays. Any tap now starts the paused autoplay
+   videos on screen (a tap is a user gesture, which iOS
+   allows), plus any video right under the finger.
+   Sliders, slideshows and the JT player run their own
+   playback and are left alone.
+========================================================= */
+
+(() => {
+
+  if (window.jtTapToPlay) return;
+
+  window.jtTapToPlay = true;
+
+
+  const SKIP =
+    ".jt-player, [data-mouse-slider], [data-card-slideshow]";
+
+
+  function onScreen(video) {
+
+    const r = video.getBoundingClientRect();
+
+    return (
+      r.width > 0 &&
+      r.height > 0 &&
+      r.bottom > 0 &&
+      r.right > 0 &&
+      r.top < window.innerHeight &&
+      r.left < window.innerWidth
+    );
+
+  }
+
+
+  function start(video) {
+
+    if (!video.paused || video.closest(SKIP)) return;
+
+    video.muted = true;
+    video.playsInline = true;
+
+    const p = video.play();
+
+    if (p && p.catch) p.catch(() => {});
+
+  }
+
+
+  document.addEventListener(
+    "click",
+    (e) => {
+
+      if (document.elementsFromPoint) {
+
+        document
+          .elementsFromPoint(e.clientX, e.clientY)
+          .forEach((el) => {
+            if (el.tagName === "VIDEO" && el.hasAttribute("autoplay")) {
+              start(el);
+            }
+          });
+
+      }
+
+      document
+        .querySelectorAll("video[autoplay]")
+        .forEach((video) => {
+          if (onScreen(video)) start(video);
+        });
+
+    },
+    true
+  );
+
+})();
+
+
+/* =========================================================
    INITIAL BROWSER LOAD
 ========================================================= */
 
