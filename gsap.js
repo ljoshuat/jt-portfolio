@@ -1737,13 +1737,19 @@ function initScrollAnimations(container) {
 
       /* -----------------------------------------
          PRINCIPLES LEAD IS CONTROLLED
-         BY principles-gsap.js
+         BY principles-gsap.js ON DESKTOP.
+         principles-gsap.js doesn't run below 992,
+         so phones and tablets animate it here.
       ----------------------------------------- */
 
-      if (
+      const isPrinciplesLead =
         heading.classList.contains(
           "principles-lead"
-        )
+        );
+
+      if (
+        isPrinciplesLead &&
+        window.innerWidth >= 992
       ) {
 
         return;
@@ -1830,7 +1836,11 @@ function initScrollAnimations(container) {
 
             trigger: heading,
 
-            start: "top 35%",
+            /* The tall principles lead starts as it scrolls into view */
+            start:
+              isPrinciplesLead
+                ? "top 70%"
+                : "top 35%",
 
             invalidateOnRefresh:
               true
