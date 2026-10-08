@@ -1841,10 +1841,11 @@ function initScrollAnimations(container) {
 
                 trigger: introWrap,
 
-                /* Low enough that it starts before
-                   the first principle under it
-                   scrolls into view on tablets. */
-                start: "top 95%",
+                /* High enough that the phone's
+                   bottom toolbar can't hide it; the
+                   principles under it wait their
+                   turn (LOWER HOME FADE-UPS). */
+                start: "top 85%",
 
                 toggleActions:
                   "play none none none"
@@ -2211,9 +2212,137 @@ function initScrollAnimations(container) {
   }
 
 
+  initLowerHomeFadeUps(container);
+
+
   requestAnimationFrame(() => {
 
     ScrollTrigger.refresh();
+
+  });
+
+}
+
+
+/* =========================================================
+   LOWER HOME FADE-UPS ON TABLET + PHONE
+   From the principles down (principle number,
+   title, video, text, logos, Kind Words, footer)
+   each block fades up as it scrolls in. They
+   queue in page order, so nothing lower starts
+   before everything above it has, and the last
+   footer items still play at the very bottom.
+========================================================= */
+
+function initLowerHomeFadeUps(container) {
+
+  if (
+    window.innerWidth >= 992 ||
+    !container.querySelector(".section_principles")
+  ) return;
+
+  const items = gsap.utils.toArray(
+    [
+      ".section_principles .principles_item_wrap > *",
+      ".section_principles .principles_item_layout > *",
+      ".section_logos .heading-wrap",
+      ".section_logos .logo-wrap",
+      ".section_testimonial .testimonial_wrap > *",
+      ".footer .work-together-wrap",
+      ".footer .footer-layout > :not(.work-together-wrap)"
+    ].join(", "),
+    container
+  ).filter(el =>
+    !el.classList.contains("principles_item_layout") &&
+    el.getBoundingClientRect().height > 0
+  ).sort((a, b) => {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return ra.top - rb.top || ra.left - rb.left;
+  });
+
+  if (!items.length) return;
+
+  const tweens = items.map(el =>
+    gsap.fromTo(
+      el,
+      {
+        opacity: 0,
+        y: 40
+      },
+      {
+        opacity: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out",
+
+        paused: true,
+
+        onComplete: () =>
+          gsap.set(el, {
+            clearProps: "transform"
+          })
+      }
+    )
+  );
+
+  /* Side-by-side items (a logo row, the footer
+     columns) start together. */
+  const tops = items.map(el =>
+    Math.round(el.getBoundingClientRect().top)
+  );
+
+  let next = 0;
+  let lastStart = 0;
+
+  const revealThrough = index => {
+
+    while (next <= index) {
+
+      const i = next++;
+      const tween = tweens[i];
+      const now = gsap.ticker.time;
+      const sameRow =
+        i > 0 && Math.abs(tops[i] - tops[i - 1]) < 8;
+      const at = Math.max(
+        now,
+        sameRow ? lastStart : lastStart + 0.1
+      );
+
+      lastStart = at;
+
+      gsap.delayedCall(at - now, () => tween.play());
+
+    }
+
+  };
+
+  items.forEach((el, i) => {
+
+    ScrollTrigger.create({
+
+      trigger: el,
+
+      /* 85% down the screen, or the bottom of
+         the page for footer items that never
+         get that high. */
+      start: () =>
+        Math.min(
+          el.getBoundingClientRect().top +
+            window.scrollY -
+            window.innerHeight * 0.85,
+          ScrollTrigger.maxScroll(window) - 2
+        ),
+
+      once: true,
+
+      invalidateOnRefresh: true,
+
+      onEnter: () => revealThrough(i)
+
+    });
 
   });
 
