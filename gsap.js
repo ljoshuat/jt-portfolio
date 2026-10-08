@@ -1789,73 +1789,20 @@ function initScrollAnimations(container) {
          PRINCIPLES LEAD IS CONTROLLED
          BY principles-gsap.js ON DESKTOP.
          principles-gsap.js doesn't run below 992,
-         so phones and tablets get the same
-         whole-block blur-up here.
+         so phones and tablets get the same word
+         blur-up as "I partner with..." below,
+         started a little lower (top 70%).
       ----------------------------------------- */
 
-      if (
+      const isLead =
         heading.classList.contains(
           "principles-lead"
-        )
+        );
+
+      if (
+        isLead &&
+        window.innerWidth >= 992
       ) {
-
-        if (window.innerWidth < 992) {
-
-          const introWrap =
-            heading.closest(
-              ".principles-lead-text-wrap"
-            ) || heading;
-
-          /* Safari draws a blurred block unblurred
-             for a frame when it first gets its own
-             layer, so give it the layer up front.
-             Plays once (no reverse) so the phone
-             toolbar resizing the screen can't
-             replay it. */
-
-          gsap.fromTo(
-            introWrap,
-            {
-              y: 45,
-              opacity: 0,
-              filter: "blur(12px)",
-              willChange: "transform, opacity, filter"
-            },
-            {
-              y: 0,
-              opacity: 1,
-              filter: "blur(0px)",
-
-              duration: 1,
-
-              ease: "power3.out",
-
-              immediateRender: true,
-
-              onComplete: () =>
-                gsap.set(introWrap, {
-                  clearProps: "willChange,filter"
-                }),
-
-              scrollTrigger: {
-
-                trigger: introWrap,
-
-                /* Once the text is well up the
-                   screen (Josh found 85% early);
-                   the principles under it still
-                   come after it. */
-                start: "top 70%",
-
-                toggleActions:
-                  "play none none none"
-
-              }
-
-            }
-          );
-
-        }
 
         return;
 
@@ -1941,7 +1888,9 @@ function initScrollAnimations(container) {
 
             trigger: heading,
 
-            start: "top 35%",
+            start: isLead
+              ? "top 70%"
+              : "top 35%",
 
             invalidateOnRefresh:
               true
@@ -2212,7 +2161,7 @@ function initScrollAnimations(container) {
   }
 
 
-  initLowerHomeFadeUps(container);
+  initLowerHomeFadeUps(container, stagTweens);
 
 
   requestAnimationFrame(() => {
@@ -2234,7 +2183,7 @@ function initScrollAnimations(container) {
    footer items still play at the very bottom.
 ========================================================= */
 
-function initLowerHomeFadeUps(container) {
+function initLowerHomeFadeUps(container, stagTweens) {
 
   if (
     window.innerWidth >= 992 ||
@@ -2297,7 +2246,41 @@ function initLowerHomeFadeUps(container) {
   let next = 0;
   let lastStart = 0;
 
+  /* The principles wait for the Great Work
+     words above them to finish. */
+  const leadHeading =
+    container.querySelector(".principles-lead");
+
+  const leadTween =
+    leadHeading && stagTweens.get(leadHeading);
+
+  const waitForLead = () => {
+
+    if (!leadTween) return;
+
+    if (leadTween.progress() === 0) {
+
+      if (leadTween.scrollTrigger) {
+        leadTween.scrollTrigger.kill(false, true);
+      }
+
+      leadTween.play();
+
+    }
+
+    const leadStart =
+      gsap.ticker.time - leadTween.totalTime();
+
+    lastStart = Math.max(
+      lastStart,
+      leadStart + stagRevealTime(leadHeading) - 0.1
+    );
+
+  };
+
   const revealThrough = index => {
+
+    if (next === 0) waitForLead();
 
     while (next <= index) {
 
