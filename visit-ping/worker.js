@@ -1,15 +1,21 @@
-// Visit ping: receives one beacon per browser session from jtcreative.design
-// and posts a short Slack message with the visitor's approximate location.
+// Visit ping: receives page-view beacons from jtcreative.design. The first
+// page of a visit posts a Slack message with the visitor's approximate
+// location; later pages in the same visit are added as thread replies under it.
 // Location comes from Cloudflare's own edge data (request.cf); the raw IP is
 // never stored or forwarded.
 //
 // Env:
-//   SLACK_WEBHOOK_URL  (secret) Slack incoming webhook for the channel
+//   SLACK_BOT_TOKEN    (secret) xoxb- token with chat:write; enables page threads
+//   SLACK_CHANNEL      channel id for chat.postMessage (e.g. C0C7NJ40V9R)
+//   SLACK_WEBHOOK_URL  (secret) fallback when no bot token: first page only, no threads
+//   VISITS             KV namespace: visit id -> Slack thread ts, IP-hash dedupe
 //   ALLOWED_ORIGINS    comma list, default "https://www.jtcreative.design,https://jtcreative.design"
-//   MAX_PER_HOUR       optional cap on Slack posts per hour, default 30
+//   MAX_PER_HOUR       optional cap on new-visitor posts per hour, default 30
 
 const BOT_RE = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|lighthouse|pingdom|uptime|python|curl|wget|httpclient|axios|node-fetch|go-http|java\/|facebookexternalhit|embedly|whatsapp|telegram|discord|slack/i;
 const DEDUPE_SECONDS = 30 * 60;
+const VISIT_SECONDS = 6 * 60 * 60;
+const MAX_PAGES = 30;
 
 let hourKey = '';
 let hourCount = 0;
@@ -36,35 +42,69 @@ export default {
 
     let body = {};
     try { body = JSON.parse(await request.text()); } catch (e) { return done(400); }
+    const sid = /^[a-z0-9]{8,40}$/i.test(body.sid || '') ? body.sid : '';
+    const n = Number(body.n) || 1;
+    const kv = env.VISITS || memoryKV;
 
-    // Server-side dedupe on a hash of IP + UA, kept only in the edge cache.
+    // Later page of a known visit: reply in that visit's thread.
+    if (n > 1) {
+      if (!sid || !env.SLACK_BOT_TOKEN || n > MAX_PAGES) return done();
+      const ts = await kv.get('visit:' + sid);
+      if (!ts) return done();
+      ctx.waitUntil(slackPost(env, { text: `→ ${clean(body.path) || '/'}`, thread_ts: ts }));
+      return done();
+    }
+
+    // First page: dedupe repeat visitors on a hash of IP + UA (never the IP itself).
     const ip = request.headers.get('CF-Connecting-IP') || '';
     const fp = await sha256(ip + '|' + ua);
-    const cache = typeof caches !== 'undefined' ? caches.default : null;
-    const dedupeKey = new Request('https://visit-ping.internal/seen/' + fp);
-    if (cache && await cache.match(dedupeKey)) return done();
+    if (await kv.get('seen:' + fp)) return done();
 
-    // Flood guard per worker instance.
     const nowHour = new Date().toISOString().slice(0, 13);
     if (nowHour !== hourKey) { hourKey = nowHour; hourCount = 0; }
     if (hourCount >= Number(env.MAX_PER_HOUR || 30)) return done();
     hourCount++;
 
-    if (cache) {
-      ctx.waitUntil(cache.put(dedupeKey, new Response('1', {
-        headers: { 'Cache-Control': 'max-age=' + DEDUPE_SECONDS },
-      })));
-    }
-
     const text = formatMessage(request.cf || {}, body, ua);
-    ctx.waitUntil(fetch(env.SLACK_WEBHOOK_URL, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ text, unfurl_links: false, unfurl_media: false }),
-    }));
+    ctx.waitUntil((async () => {
+      await kv.put('seen:' + fp, '1', { expirationTtl: DEDUPE_SECONDS });
+      if (env.SLACK_BOT_TOKEN) {
+        const ts = await slackPost(env, { text });
+        if (ts && sid) await kv.put('visit:' + sid, ts, { expirationTtl: VISIT_SECONDS });
+      } else {
+        await fetch(env.SLACK_WEBHOOK_URL, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ text, unfurl_links: false, unfurl_media: false }),
+        });
+      }
+    })());
     return done();
   },
 };
+
+async function slackPost(env, msg) {
+  const res = await fetch('https://slack.com/api/chat.postMessage', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json; charset=utf-8',
+      Authorization: 'Bearer ' + env.SLACK_BOT_TOKEN,
+    },
+    body: JSON.stringify({ channel: env.SLACK_CHANNEL, unfurl_links: false, unfurl_media: false, ...msg }),
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!data.ok) console.log('slack error', data.error);
+  return data.ok ? data.ts : '';
+}
+
+// Used only when no KV namespace is bound (local tests).
+const memoryKV = (() => {
+  const m = new Map();
+  return {
+    async get(k) { const v = m.get(k); return v && v.exp > Date.now() ? v.val : null; },
+    async put(k, val, o = {}) { m.set(k, { val, exp: Date.now() + (o.expirationTtl || 60) * 1000 }); },
+  };
+})();
 
 export function formatMessage(cf, body, ua) {
   const place = [cf.city, cf.region, cf.country].filter(Boolean).join(', ') || 'Unknown location';

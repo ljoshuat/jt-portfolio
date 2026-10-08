@@ -1,4 +1,5 @@
-<!-- Visit ping: one Slack message per new visitor session. No cookies, no Google Analytics.
+<!-- Visit ping: Slack message for each new visitor, with the pages they view as thread replies.
+     No cookies, no Google Analytics.
      Skip your own visits: open https://www.jtcreative.design/?noping once on each of your browsers.
      Turn it back on with ?ping -->
 <script>
@@ -10,15 +11,26 @@
     if (/[?&]ping\b/.test(q)) localStorage.removeItem('jt-noping');
     if (localStorage.getItem('jt-noping') || navigator.webdriver) return;
     if (!/(^|\.)jtcreative\.design$/.test(location.hostname)) return;
-    if (sessionStorage.getItem('jt-pinged')) return;
-    sessionStorage.setItem('jt-pinged', '1');
-    fetch(ENDPOINT, {
-      method: 'POST',
-      mode: 'cors',
-      keepalive: true,
-      headers: { 'Content-Type': 'text/plain' },
-      body: JSON.stringify({ path: location.pathname, ref: document.referrer })
-    }).catch(function () {});
+    var ss = sessionStorage;
+    var sid = ss.getItem('jt-visit');
+    if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); ss.setItem('jt-visit', sid); }
+    var send = function () {
+      var path = location.pathname;
+      if (ss.getItem('jt-last') === path) return;
+      ss.setItem('jt-last', path);
+      var n = (+ss.getItem('jt-n') || 0) + 1;
+      ss.setItem('jt-n', n);
+      fetch(ENDPOINT, {
+        method: 'POST', mode: 'cors', keepalive: true,
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ sid: sid, n: n, path: path, ref: n === 1 ? document.referrer : '' })
+      }).catch(function () {});
+    };
+    send();
+    // Page transitions that change the URL without a full reload.
+    var push = history.pushState;
+    history.pushState = function () { var r = push.apply(this, arguments); setTimeout(send, 0); return r; };
+    addEventListener('popstate', function () { setTimeout(send, 0); });
   } catch (e) {}
 })();
 </script>
