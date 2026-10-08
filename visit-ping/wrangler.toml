@@ -7,4 +7,6 @@ ALLOWED_ORIGINS = "https://www.jtcreative.design,https://jtcreative.design"
 MAX_PER_HOUR = "30"
 SLACK_CHANNEL = "C0C7NJ40V9R"
 
-# kv_namespaces filled in after: npx wrangler kv namespace create VISITS
+[[kv_namespaces]]
+binding = "VISITS"
+id = "9eb3aacd1a8f45f082e69bdd3a45c347"

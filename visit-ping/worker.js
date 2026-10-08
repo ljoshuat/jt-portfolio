@@ -67,17 +67,25 @@ export default {
 
     const text = formatMessage(request.cf || {}, body, ua);
     ctx.waitUntil((async () => {
-      await kv.put('seen:' + fp, '1', { expirationTtl: DEDUPE_SECONDS });
+      let posted = false;
       if (env.SLACK_BOT_TOKEN) {
         const ts = await slackPost(env, { text });
-        if (ts && sid) await kv.put('visit:' + sid, ts, { expirationTtl: VISIT_SECONDS });
-      } else {
-        await fetch(env.SLACK_WEBHOOK_URL, {
+        if (ts) {
+          posted = true;
+          if (sid) await kv.put('visit:' + sid, ts, { expirationTtl: VISIT_SECONDS });
+        }
+      }
+      // No bot token, or the bot post failed: fall back to the webhook (no threads).
+      if (!posted && env.SLACK_WEBHOOK_URL) {
+        const res = await fetch(env.SLACK_WEBHOOK_URL, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ text, unfurl_links: false, unfurl_media: false }),
         });
+        posted = res.ok;
       }
+      // Only count the visitor as seen once Slack actually has the message.
+      if (posted) await kv.put('seen:' + fp, '1', { expirationTtl: DEDUPE_SECONDS });
     })());
     return done();
   },
