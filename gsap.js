@@ -1841,11 +1841,11 @@ function initScrollAnimations(container) {
 
                 trigger: introWrap,
 
-                /* High enough that the phone's
-                   bottom toolbar can't hide it; the
-                   principles under it wait their
-                   turn (LOWER HOME FADE-UPS). */
-                start: "top 85%",
+                /* Once the text is well up the
+                   screen (Josh found 85% early);
+                   the principles under it still
+                   come after it. */
+                start: "top 70%",
 
                 toggleActions:
                   "play none none none"
