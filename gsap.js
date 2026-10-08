@@ -1709,6 +1709,51 @@ function revealHero(container) {
 
   }
 
+
+  /* -----------------------------------------
+     DEMO VIDEO ON PHONES + TABLETS
+     It sits in the first screen under the
+     hero, so fade it up after the heading
+     and eyebrow instead of showing first.
+  ----------------------------------------- */
+
+  const demoVid =
+    window.innerWidth < 992 &&
+    container.querySelector(
+      ".section_demo-vid"
+    );
+
+
+  if (demoVid) {
+
+    gsap.set(
+      demoVid,
+      {
+        opacity: 0,
+        y: 30
+      }
+    );
+
+    tl.to(
+      demoVid,
+      {
+        opacity: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out",
+
+        onComplete: () =>
+          gsap.set(demoVid, {
+            clearProps: "transform"
+          })
+      },
+      "-=0.4"
+    );
+
+  }
+
 }
 
 
@@ -1729,6 +1774,11 @@ function initScrollAnimations(container) {
     "STAG BLUR HEADINGS:",
     headings.length
   );
+
+
+  /* Word tweens by heading, so a catch-up
+     below can speed one up. */
+  const stagTweens = new Map();
 
 
   headings.forEach(
@@ -1791,7 +1841,10 @@ function initScrollAnimations(container) {
 
                 trigger: introWrap,
 
-                start: "top 80%",
+                /* Low enough that it starts before
+                   the first principle under it
+                   scrolls into view on tablets. */
+                start: "top 95%",
 
                 toggleActions:
                   "play none none none"
@@ -1870,7 +1923,7 @@ function initScrollAnimations(container) {
          SCROLL ANIMATION
       ----------------------------------------- */
 
-      gsap.to(
+      const wordsTween = gsap.to(
         splitWords,
         {
           opacity: 1,
@@ -1897,6 +1950,8 @@ function initScrollAnimations(container) {
         }
       );
 
+      stagTweens.set(heading, wordsTween);
+
     }
   );
 
@@ -1907,6 +1962,10 @@ function initScrollAnimations(container) {
      heading's words, [Since 2003] once they finish.
      Only shown on phones (data-mobile-copy).
   ----------------------------------------- */
+
+  /* Reveals that wait on a delay, so the
+     catch-up under the rings can hurry them. */
+  const delayedReveals = [];
 
   [
     ["welcome", false],
@@ -1931,7 +1990,7 @@ function initScrollAnimations(container) {
         ? stagRevealTime(heading)
         : 0;
 
-    gsap.fromTo(
+    const eyebrowTween = gsap.fromTo(
       eyebrow,
       {
         autoAlpha: 0,
@@ -1947,11 +2006,20 @@ function initScrollAnimations(container) {
 
         ease: "power2.out",
 
+        /* ScrollTrigger's default "play" skips a
+           tween's delay; "restart" keeps it. Once,
+           so it can't replay. */
+
         scrollTrigger: {
 
           trigger: heading || eyebrow,
 
           start: "top 35%",
+
+          toggleActions:
+            "restart none none none",
+
+          once: true,
 
           invalidateOnRefresh:
             true
@@ -1960,6 +2028,8 @@ function initScrollAnimations(container) {
 
       }
     );
+
+    if (delay) delayedReveals.push(eyebrowTween);
 
   });
 
@@ -2005,14 +2075,20 @@ function initScrollAnimations(container) {
         }
       );
 
-      gsap.to(
+      const ringsTween = gsap.to(
         rings,
         {
           opacity: 1,
           y: 0,
           filter: "blur(0px)",
 
-          stagger: 0.12,
+          /* Top-down: the center ring's label sits
+             highest, then the side rings with the
+             overlap shape that sits across them. */
+          stagger: (i, el) =>
+            el.classList.contains("center")
+              ? 0
+              : 0.12,
 
           duration: 0.8,
 
@@ -2026,12 +2102,20 @@ function initScrollAnimations(container) {
           onStart: () =>
             drawRingLotties(ringsSection),
 
+          /* "restart" so the delay holds
+             (see the eyebrows above). */
+
           scrollTrigger: {
 
             trigger:
               ringsHeading || ringsSection,
 
             start: "top 35%",
+
+            toggleActions:
+              "restart none none none",
+
+            once: true,
 
             invalidateOnRefresh:
               true
@@ -2040,6 +2124,87 @@ function initScrollAnimations(container) {
 
         }
       );
+
+      delayedReveals.push(ringsTween);
+
+    }
+
+
+    /* Catch-up: if a fast scroll brings the next
+       section close while the heading's words,
+       [Since 2003] or the rings are still waiting,
+       hurry them (in order) so nothing below shows
+       before them. */
+
+    if (ringsSection && delayedReveals.length) {
+
+      ScrollTrigger.create({
+
+        trigger: ringsSection,
+
+        /* 150px before the next section shows,
+           but never before the heading starts. */
+        start: () => {
+
+          const headingTrigger =
+            stagTweens.get(ringsHeading) &&
+            stagTweens.get(ringsHeading).scrollTrigger;
+
+          const nextShows =
+            ringsSection.getBoundingClientRect().bottom +
+            window.scrollY -
+            window.innerHeight;
+
+          return Math.max(
+            headingTrigger ? headingTrigger.start + 60 : 0,
+            nextShows - 150
+          );
+
+        },
+
+        invalidateOnRefresh: true,
+
+        once: true,
+
+        onEnter: () => {
+
+          const wordsTween =
+            stagTweens.get(ringsHeading);
+
+          if (
+            wordsTween &&
+            wordsTween.progress() < 1
+          ) {
+
+            if (wordsTween.scrollTrigger) {
+              wordsTween.scrollTrigger.kill(false, true);
+            }
+
+            wordsTween.timeScale(3).play();
+
+          }
+
+          delayedReveals.forEach((tween, i) => {
+
+            if (
+              tween.progress() > 0 ||
+              tween.isActive()
+            ) return;
+
+            if (tween.scrollTrigger) {
+              tween.scrollTrigger.kill(false, true);
+            }
+
+            tween
+              .timeScale(1.5)
+              .delay(0.15 + i * 0.15)
+              .restart(true);
+
+          });
+
+        }
+
+      });
 
     }
 
