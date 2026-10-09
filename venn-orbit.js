@@ -1,10 +1,10 @@
 /* =========================================================
    VENN ORBIT ("Pull + Orbit") for the home circles section
 
-   Desktop only (>= 992px). The three rings spin as a tilted
-   gyroscope; bringing the cursor to the middle pulls them flat
-   into the Venn, and scrolling the section does the same, so
-   everyone sees the lock. At the lock the lime center pulses and
+   The three rings spin as a tilted gyroscope; bringing the cursor
+   to the middle pulls them flat into the Venn, and scrolling the
+   section does the same, so everyone sees the lock. On phones and
+   tablets (no cursor) scrolling does it alone. At the lock the lime center pulses and
    the JT mark draws on (the "Pull" version: the J trims on from
    its tail, then the square slides out and drags the notch in).
 
@@ -19,7 +19,6 @@
      data-venn="classic" on .section_circles in the Designer
 ========================================================= */
 (() => {
-  const MIN_W = 992;
   // where Josh's interaction moves the side circles to form the Venn (em)
   const VENN_OFFSETS = [[9, 11.5], [0, 0], [-9, 11.5]];
   const RING = 0.985; // ring radius as a share of half the circle box
@@ -27,7 +26,7 @@
   const CSS = `
 .venn-orbit-on .circle_lottie-line,.venn-orbit-on .circle-intersect{visibility:hidden!important}
 .venn-orbit-on .circle_scroll{transform:translate3d(var(--vo-x,0px),var(--vo-y,0px),0)!important;translate:none!important;rotate:none!important;scale:none!important;opacity:var(--vo-o,1)!important}
-.vo-layer{position:absolute;inset:0;pointer-events:none}
+.vo-layer{position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none}
 .vo-layer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .vo-mark{position:absolute;transform:translate(-50%,-50%);will-change:transform}
 .vo-mark svg{display:block;width:100%;height:auto;overflow:visible}`;
@@ -123,7 +122,11 @@
     const applied = circles.map(() => [0, 0]);
 
     function fit() {
-      const r = host.getBoundingClientRect();
+      // span the whole section width (padding included) so the side rings never clip on phones
+      const sr = section.getBoundingClientRect(), hr0 = host.getBoundingClientRect();
+      layer.style.left = (sr.left - hr0.left) + 'px';
+      layer.style.width = sr.width + 'px';
+      const r = layer.getBoundingClientRect();
       dpr = Math.min(2, window.devicePixelRatio || 1);
       w = r.width; h = r.height;
       for (const c of [canvas, off]) { c.width = Math.round(w * dpr); c.height = Math.round(h * dpr); }
@@ -162,20 +165,30 @@
       const dt = Math.min(0.05, (time - last) / 1000 || 0); last = time;
       const still = reduce.matches;
 
-      // geometry (in host coordinates), measured from where the circles sit before our offset
-      const hr = host.getBoundingClientRect();
+      // geometry (in layer coordinates), measured from where the circles sit before our offset
+      const hr = layer.getBoundingClientRect();
       const em = parseFloat(getComputedStyle(circles[0]).fontSize) || 16;
+      // on phones the circle row is scaled down (.circle-layout scale .8): work in screen pixels
+      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) || 1;
       const nat = circles.map((c, i) => {
         const r = c.getBoundingClientRect();
         return [r.left + r.width / 2 - hr.left - applied[i][0], r.top + r.height / 2 - hr.top - applied[i][1]];
       });
-      const R = (circles[1].offsetWidth / 2) * RING;
-      const V = nat.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em, n[1] + VENN_OFFSETS[i][1] * em]);
+      const R = (circles[1].offsetWidth / 2) * RING * sc;
+      const V = nat.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em * sc, n[1] + VENN_OFFSETS[i][1] * em * sc]);
       const hub = [(V[0][0] + V[1][0] + V[2][0]) / 3, (V[0][1] + V[1][1] + V[2][1]) / 3];
 
-      // scroll progress over the same range as Josh's interaction: wrapper top at top -> wrapper middle at top
-      const wr = wrapper.getBoundingClientRect();
-      const scroll = clamp(-wr.top / (wr.height * 0.5));
+      // scroll progress. Pinned (desktop/tablet): the same range as Josh's interaction, wrapper top at
+      // top -> wrapper middle at top. Not pinned (phones): from the Venn entering the bottom of the
+      // screen to its middle reaching 60% of the screen height.
+      let scroll;
+      if (getComputedStyle(host).position === 'sticky') {
+        const wr = wrapper.getBoundingClientRect();
+        scroll = clamp(-wr.top / (wr.height * 0.5 * 0.88)); // locks a little before the end, then holds
+      } else {
+        const vh = window.innerHeight, hubY = hr.top + hub[1];
+        scroll = clamp((vh + R - hubY) / (vh * 0.4 + R));
+      }
       // cursor pull toward the middle
       const px = pointer.x - hr.left, py = pointer.y - hr.top;
       const inside = pointer.seen && px >= 0 && py >= 0 && px <= w && py <= h;
@@ -200,8 +213,8 @@
       circles.forEach((c, i) => {
         const x = P[i][0] - nat[i][0], y = P[i][1] - nat[i][1];
         applied[i] = [x, y];
-        c.style.setProperty('--vo-x', x.toFixed(2) + 'px');
-        c.style.setProperty('--vo-y', y.toFixed(2) + 'px');
+        c.style.setProperty('--vo-x', (x / sc).toFixed(2) + 'px');
+        c.style.setProperty('--vo-y', (y / sc).toFixed(2) + 'px');
         c.style.setProperty('--vo-o', iconAlpha.toFixed(3));
       });
 
@@ -263,7 +276,7 @@
       host.prepend(layer);
       fit();
       readColors();
-      ro.observe(host);
+      ro.observe(host); ro.observe(section);
       io.observe(section);
     }
     function disable() {
@@ -275,11 +288,8 @@
       section.classList.remove('venn-orbit-on');
       circles.forEach((c, i) => { ['--vo-x', '--vo-y', '--vo-o'].forEach((v) => c.style.removeProperty(v)); applied[i] = [0, 0]; });
     }
-    const mq = window.matchMedia(`(min-width: ${MIN_W}px)`);
-    const sync = () => (mq.matches ? enable() : disable());
-    mq.addEventListener('change', sync);
-    sync();
-    return { destroy() { mq.removeEventListener('change', sync); disable(); } };
+    enable();
+    return { destroy: disable };
   }
 
   let instances = [];
