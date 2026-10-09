@@ -37,26 +37,28 @@
       '<path d="M8 21H14M11 21V17"/>',
   };
 
-  // Boomerang: each leg goes from the full icon to undrawn, and
-  // `alternate` plays it back, so the loop is seamless with a hold at
-  // full and a short beat at empty. Runs only while the card is in view.
+  // Each leg goes from the full icon to undrawn. On scroll-in the leg
+  // plays once in reverse, so the icon draws on and settles. On hover it
+  // runs `alternate`, a seamless boomerang that always finishes back at
+  // the full icon after the cursor leaves.
   const ICON_CSS = `
 .about-stat-ico .d1,.about-stat-ico .d2,.about-stat-ico .d3{stroke-dasharray:1 2;stroke-dashoffset:0}
 .about-stat-ico .pop{transform-box:fill-box;transform-origin:center}
 .about-stat-ico .pop-tip{transform-box:view-box;transform-origin:18px 13px}
 .about-stat-ico .spin{transform-box:view-box;transform-origin:11px 11px}
-.about-stat-ico.is-playing *{animation-duration:2.2s;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:cubic-bezier(.65,0,.35,1);animation-delay:var(--ico-delay,0s)}
-.about-stat-ico.is-playing .d1{animation-name:about-ico-d1}
-.about-stat-ico.is-playing .d2{animation-name:about-ico-d2}
-.about-stat-ico.is-playing .d3{animation-name:about-ico-d3}
-.about-stat-ico.is-playing .pop{animation-name:about-ico-pop}
-.about-stat-ico.is-playing .spin{animation-name:about-ico-spin}
+.about-stat-ico.is-intro *{animation-duration:1.8s;animation-iteration-count:1;animation-direction:reverse;animation-fill-mode:backwards;animation-delay:var(--ico-delay,0s);animation-timing-function:cubic-bezier(.65,0,.35,1)}
+.about-stat-ico.is-playing *{animation-duration:1.4s;animation-iteration-count:infinite;animation-direction:alternate;animation-timing-function:cubic-bezier(.65,0,.35,1)}
+.about-stat-ico:is(.is-intro,.is-playing) .d1{animation-name:about-ico-d1}
+.about-stat-ico:is(.is-intro,.is-playing) .d2{animation-name:about-ico-d2}
+.about-stat-ico:is(.is-intro,.is-playing) .d3{animation-name:about-ico-d3}
+.about-stat-ico:is(.is-intro,.is-playing) .pop{animation-name:about-ico-pop}
+.about-stat-ico:is(.is-intro,.is-playing) .spin{animation-name:about-ico-spin}
 @keyframes about-ico-d1{0%,30%{stroke-dashoffset:0}75%,100%{stroke-dashoffset:1.12}}
 @keyframes about-ico-d2{0%,38%{stroke-dashoffset:0}84%,100%{stroke-dashoffset:1.12}}
 @keyframes about-ico-d3{0%,46%{stroke-dashoffset:0}92%,100%{stroke-dashoffset:1.12}}
 @keyframes about-ico-pop{0%,30%{transform:scale(1);opacity:1}48%,100%{transform:scale(.2);opacity:0}}
 @keyframes about-ico-spin{0%,30%{transform:rotate(0)}92%,100%{transform:rotate(-360deg)}}
-@media (prefers-reduced-motion:reduce){.about-stat-ico.is-playing *{animation:none}}
+@media (prefers-reduced-motion:reduce){.about-stat-ico *{animation:none!important}}
 `;
 
   function injectIconCss() {
@@ -136,12 +138,38 @@
 
     const ico = card.querySelector(".about-stat-ico");
     let icoIo = null;
-    if (ico && "IntersectionObserver" in window) {
-      icoIo = new IntersectionObserver((entries) => {
-        entries.forEach((en) => ico.classList.toggle("is-playing", en.isIntersecting));
-      });
-      icoIo.observe(card);
+    let icoStop = false;
+    const onIcoEnd = (ev) => {
+      if (!ev.target.classList.contains("d3")) return;
+      if (ev.type === "animationend") ico.classList.remove("is-intro");
+      // Iterations alternate full -> empty -> full; stop on a full one.
+      else if (icoStop && Math.round(ev.elapsedTime / 1.4) % 2 === 0) {
+        ico.classList.remove("is-playing");
+        icoStop = false;
+      }
+    };
+    if (ico && !reduceMotion()) {
+      ico.addEventListener("animationend", onIcoEnd);
+      ico.addEventListener("animationiteration", onIcoEnd);
+      if ("IntersectionObserver" in window) {
+        icoIo = new IntersectionObserver((entries) => {
+          if (!entries.some((en) => en.isIntersecting)) return;
+          icoIo.disconnect();
+          if (!ico.classList.contains("is-playing")) ico.classList.add("is-intro");
+        }, { threshold: 0.4 });
+        icoIo.observe(card);
+      }
     }
+    const icoHover = (on) => {
+      if (!ico || reduceMotion()) return;
+      if (on) {
+        icoStop = false;
+        ico.classList.remove("is-intro");
+        ico.classList.add("is-playing");
+      } else if (ico.classList.contains("is-playing")) {
+        icoStop = true;
+      }
+    };
 
     let canvas = card.querySelector(".about_stat-fill");
     if (canvas && canvas.tagName.toLowerCase() !== "canvas") { canvas.remove(); canvas = null; }
@@ -188,6 +216,7 @@
     }
 
     const onEnter = (ev) => {
+      icoHover(true);
       if (reduceMotion()) {
         card.classList.add("is-hover");
         state.e = 100;
@@ -202,6 +231,7 @@
     };
 
     const onLeave = (ev) => {
+      icoHover(false);
       card.classList.remove("is-hover");
       if (reduceMotion()) {
         state.e = 0;
@@ -232,6 +262,10 @@
       cancelAnimationFrame(state.raf);
       ro.disconnect(); mo.disconnect();
       if (icoIo) icoIo.disconnect();
+      if (ico) {
+        ico.removeEventListener("animationend", onIcoEnd);
+        ico.removeEventListener("animationiteration", onIcoEnd);
+      }
       card.removeEventListener("mouseenter", onEnter);
       card.removeEventListener("mouseleave", onLeave);
     };
@@ -286,7 +320,7 @@
     if (!cards.length) return;
     injectIconCss();
     const cleanups = [...cards].map(setupCard);
-    // Stagger the icons so the four loops ripple across the row.
+    // Stagger the scroll-in draw so it ripples across the row.
     scope.querySelectorAll(".about-stat-ico").forEach((svg, i) =>
       svg.style.setProperty("--ico-delay", i * 0.2 + "s"));
     cleanups.push(setupCounts(scope));
