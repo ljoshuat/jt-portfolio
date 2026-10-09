@@ -26,7 +26,7 @@
   const CSS = `
 .venn-orbit-on .circle_lottie-line,.venn-orbit-on .circle-intersect{visibility:hidden!important}
 .venn-orbit-on .circle_scroll{transform:translate3d(var(--vo-x,0px),var(--vo-y,0px),0)!important;translate:none!important;rotate:none!important;scale:none!important;opacity:var(--vo-o,1)!important}
-.vo-layer{position:absolute;top:0;bottom:0;left:0;width:100%;pointer-events:none}
+.vo-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 .vo-layer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .vo-mark{position:absolute;transform:translate(-50%,-50%);will-change:transform}
 .vo-mark svg{display:block;width:100%;height:auto;overflow:visible}`;
@@ -126,6 +126,12 @@
       const sr = section.getBoundingClientRect(), hr0 = host.getBoundingClientRect();
       layer.style.left = (sr.left - hr0.left) + 'px';
       layer.style.width = sr.width + 'px';
+      // when the section isn't pinned (phones) the lower rings hang below the sticky box: let the
+      // layer run on into the section's bottom padding so they aren't cut off
+      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) || 1;
+      const R = (circles[1].offsetWidth / 2) * RING * sc;
+      const extra = getComputedStyle(host).position === 'sticky' ? 0 : clamp(sr.bottom - hr0.bottom, 0, R * 2);
+      layer.style.height = (hr0.height + extra) + 'px';
       const r = layer.getBoundingClientRect();
       dpr = Math.min(2, window.devicePixelRatio || 1);
       w = r.width; h = r.height;
