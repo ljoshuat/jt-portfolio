@@ -7,6 +7,9 @@
    tablets (no cursor) scrolling does it alone. At the lock the lime center pulses and
    the JT mark draws on (the "Pull" version: the J trims on from
    its tail, then the square slides out and drags the notch in).
+   Like the rest of the page, the rings fade up once the heading
+   above them has blurred in (below 992px gsap.js already fades the
+   circles up; this follows it).
 
    Josh's original is left untouched: the IX3 "Scroll interaction 2",
    the Lottie rings (.circle_lottie-line) and the lime embed
@@ -101,6 +104,7 @@
       .sort((a, b) => order.findIndex((c) => a.classList.contains(c)) - order.findIndex((c) => b.classList.contains(c)));
     const circles = parents.map((p) => p.querySelector('.circle_scroll')).filter(Boolean);
     if (circles.length !== 3) return null;
+    const head = section.querySelector('.stag-blur') || section.querySelector('.intersection-heading') || section.querySelector('.section-heading');
     const limeSrc = section.querySelector('.shape_intersect.w-embed') || section.querySelector('.shape_intersect') || section;
     const labelSrc = section.querySelector('.circle-label') || section;
 
@@ -121,6 +125,65 @@
     let colors = null, colorAge = 0;
     const applied = circles.map(() => [0, 0]);
     let appliedS = 1; // our own scale on the circles (short screens)
+    let revealAt = 0, revealing = false, layerFilter = '';
+    const lifted = parents.map(() => 0); // our fade-up offset on each circle (desktop)
+    let closed = 0, baseMB = 0, mbInline = '', refreshT = 0;
+
+    // Fade-up, matching the rest of the page: the circles (and so the rings, which follow them) wait
+    // for the heading's words to blur in, then rise 40px and unblur, the top circle first. Below 992px
+    // gsap.js does this to the circles itself, so there it's only followed.
+    function reveal(time) {
+      const own = window.innerWidth >= 992;
+      if (!own) {
+        if (revealing) { clearReveal(); revealing = false; }
+        parents.forEach((el, i) => { // gsap.js's offset, so the fit below can leave it out
+          const t = getComputedStyle(el).transform;
+          lifted[i] = t && t !== 'none' ? new DOMMatrix(t).m42 : 0;
+        });
+        return;
+      }
+      if (revealAt === -1) return; // done
+      if (!revealAt) {
+        const words = head ? head.querySelectorAll('.stag-word') : [];
+        const ready = words.length
+          ? parseFloat(getComputedStyle(words[words.length - 1]).opacity) > 0.95
+          : !head || head.getBoundingClientRect().top < window.innerHeight * 0.35;
+        if (ready) revealAt = time + 300;
+      }
+      const still = reduce.matches;
+      let done = !!revealAt;
+      parents.forEach((el, i) => {
+        const t = revealAt ? clamp((time - revealAt - (i === 1 ? 0 : 120)) / 800) : 0;
+        const e = 1 - (1 - t) * (1 - t); // power2.out
+        if (t < 1) done = false;
+        lifted[i] = still ? 0 : 40 * (1 - e);
+        el.style.opacity = e.toFixed(3);
+        el.style.translate = `0 ${lifted[i].toFixed(2)}px`;
+        el.style.filter = still || e > 0.999 ? '' : `blur(${(6 * (1 - e)).toFixed(2)}px)`;
+      });
+      revealing = true;
+      if (done) { clearReveal(); revealing = false; revealAt = -1; }
+    }
+    function clearReveal() {
+      parents.forEach((el, i) => { el.style.opacity = el.style.translate = el.style.filter = ''; lifted[i] = 0; });
+    }
+
+    // When the fit raises or shrinks the Venn, close up the space it freed under the rings by pulling
+    // what follows the section up (no further than the gap Josh's original left there, and never into
+    // the rings), so there's no hole once the pin lets go.
+    function closeGap(freed, ringBottom) {
+      let want = 0;
+      if (freed > 0) {
+        const sr = section.getBoundingClientRect(), wr = wrapper.getBoundingClientRect();
+        const below = sr.bottom - wr.bottom + host.offsetHeight - ringBottom; // ring bottom to section end, once unpinned
+        want = clamp(freed, 0, Math.max(0, below - Math.max(48, window.innerHeight * 0.06)));
+      }
+      if (Math.abs(want - closed) < 2 && !(want === 0 && closed)) return;
+      closed = want;
+      section.style.marginBottom = closed ? (baseMB - closed).toFixed(1) + 'px' : mbInline;
+      clearTimeout(refreshT); // the page below moved: let ScrollTrigger re-measure it
+      refreshT = setTimeout(() => { if (window.ScrollTrigger && ScrollTrigger.refresh) ScrollTrigger.refresh(); }, 200);
+    }
 
     function fit() {
       // span the whole section width (padding included) so the side rings never clip on phones
@@ -171,6 +234,10 @@
       if (!colors || ++colorAge > 30) { readColors(); colorAge = 0; }
       const dt = Math.min(0.05, (time - last) / 1000 || 0); last = time;
       const still = reduce.matches;
+      reveal(time);
+      const ringA = parents.map((el) => { const o = parseFloat(getComputedStyle(el).opacity); return isNaN(o) ? 1 : o; });
+      const fl = getComputedStyle(parents[1]).filter;
+      if (fl !== layerFilter) { layerFilter = fl; layer.style.filter = fl === 'none' ? '' : fl; }
 
       // geometry (in layer coordinates), measured from where the circles sit before our offset
       const hr = layer.getBoundingClientRect();
@@ -182,30 +249,31 @@
         return [r.left + r.width / 2 - hr.left - applied[i][0], r.top + r.height / 2 - hr.top - applied[i][1]];
       });
       const R0 = (circles[1].offsetWidth / 2) * RING * sc;
-      // the Venn relative to the top circle, at full size
-      const rel = nat.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em * sc - nat[1][0], n[1] + VENN_OFFSETS[i][1] * em * sc - nat[1][1]]);
+      // the Venn relative to the top circle, at full size (fitted without the fade-up offset)
+      const rest = nat.map((n, i) => [n[0], n[1] - lifted[i] * sc]);
+      const rel = rest.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em * sc - rest[1][0], n[1] + VENN_OFFSETS[i][1] * em * sc - rest[1][1]]);
       const sticky = getComputedStyle(host).position === 'sticky';
+      const need = Math.max(rel[0][1], rel[2][1]) + 2 * R0;
 
       // short screens: the pinned Venn has to fit above the bottom of the screen. Raise it into the
       // space under the heading first, then shrink it (from the top ring's top edge) if it still doesn't fit.
-      const ringTop = nat[1][1] - R0;
+      const ringTop = rest[1][1] - R0;
       let lift = 0, f = 1;
       if (sticky) {
         const vh = window.innerHeight;
         const bottom = Math.min(host.offsetHeight, vh) - Math.max(16, vh * 0.04);
-        const need = Math.max(rel[0][1], rel[2][1]) + 2 * R0;
         const over = ringTop + need - bottom;
         if (over > 0) {
-          const head = host.querySelector('.intersection-heading') || host.querySelector('.section-heading');
-          const headBottom = !head ? ringTop : head.offsetParent === host
+          const headBottom = !head || !host.contains(head) ? ringTop : head.offsetParent === host
             ? head.offsetTop + head.offsetHeight
             : head.getBoundingClientRect().bottom - hr.top;
           lift = clamp(over, 0, Math.max(0, ringTop - headBottom - Math.max(32, vh * 0.06)));
           f = clamp((bottom - ringTop + lift) / need, 0.5, 1);
         }
       }
+      closeGap(sticky ? lift + need * (1 - f) : 0, ringTop - lift + need * f);
       const R = R0 * f;
-      const V = rel.map((r) => [nat[1][0] + r[0] * f, ringTop - lift + R + r[1] * f]);
+      const V = rel.map((r, i) => [rest[1][0] + r[0] * f, ringTop - lift + R + r[1] * f + lifted[i] * sc]);
       const hub = [(V[0][0] + V[1][0] + V[2][0]) / 3, (V[0][1] + V[1][1] + V[2][1]) / 3];
 
       // scroll progress. Pinned (desktop/tablet): the same range as Josh's interaction, wrapper top at
@@ -259,7 +327,7 @@
 
       ctx.clearRect(0, 0, w, h);
       const lit = smooth(0.88, 0.98, p);
-      if (lit > 0.01) region(P, R, colors.lime, lit);
+      if (lit > 0.01) region(P, R, colors.lime, lit * Math.min(...ringA));
 
       ctx.save();
       ctx.lineWidth = 1;
@@ -267,13 +335,13 @@
       P.forEach((c, i) => {
         const tau = lerp(1.25 + i * 0.08, 0, k) + tilt[1] * (1 - k);
         const rot = lerp((i * Math.PI) / 3 + spin * (i % 2 ? -1 : 1) + tilt[0], 0, k);
-        ctx.globalAlpha = lerp(0.5, 0.32, k);
+        ctx.globalAlpha = lerp(0.5, 0.32, k) * ringA[i];
         ctx.beginPath();
         ctx.ellipse(c[0], c[1], R, Math.max(0.5, R * Math.abs(Math.cos(tau))), rot, 0, 7);
         ctx.stroke();
         if (k < 0.95) { // a lime bead riding each ring sells the 3D motion
           const a = spin * 2.2 + i * 2.1, ex = R * Math.cos(a), ey = R * Math.abs(Math.cos(tau)) * Math.sin(a);
-          ctx.globalAlpha = 1 - k;
+          ctx.globalAlpha = (1 - k) * ringA[i];
           ctx.fillStyle = colors.lime;
           ctx.beginPath();
           ctx.arc(c[0] + ex * Math.cos(rot) - ey * Math.sin(rot), c[1] + ex * Math.sin(rot) + ey * Math.cos(rot), 2.5, 0, 7);
@@ -283,7 +351,7 @@
       ctx.restore();
 
       if (pulse > 0.02) {
-        ctx.save(); ctx.globalAlpha = pulse * 0.6; ctx.strokeStyle = colors.lime;
+        ctx.save(); ctx.globalAlpha = pulse * 0.6 * ringA[1]; ctx.strokeStyle = colors.lime;
         ctx.beginPath(); ctx.arc(hub[0], hub[1], R * 0.25 + R * (1 - pulse) * 0.9, 0, 7); ctx.stroke();
         ctx.restore();
       }
@@ -298,7 +366,7 @@
       markWrap.style.left = (top[0] - H * 0.055).toFixed(2) + 'px';
       markWrap.style.top = (yT + H * 0.595).toFixed(2) + 'px';
       markWrap.style.width = ((lw * 332) / 328).toFixed(2) + 'px';
-      markWrap.style.opacity = smooth(0.94, 1, p).toFixed(3);
+      markWrap.style.opacity = (smooth(0.94, 1, p) * ringA[1]).toFixed(3);
       mark.set(lockAt ? (still ? 3 : (time - lockAt) / 1000) : 0);
     }
 
@@ -307,6 +375,10 @@
       on = true;
       section.classList.add('venn-orbit-on');
       host.prepend(layer);
+      mbInline = section.style.marginBottom;
+      baseMB = parseFloat(getComputedStyle(section).marginBottom) || 0;
+      closed = 0; revealAt = 0; layerFilter = '';
+      reveal(performance.now()); // hide the circles until the heading has come in
       fit();
       readColors();
       ro.observe(host); ro.observe(section);
@@ -318,7 +390,11 @@
       cancelAnimationFrame(raf); raf = 0;
       ro.disconnect(); io.disconnect();
       layer.remove();
+      layer.style.filter = '';
       section.classList.remove('venn-orbit-on');
+      if (revealing) { clearReveal(); revealing = false; }
+      clearTimeout(refreshT);
+      if (closed) { section.style.marginBottom = mbInline; closed = 0; }
       circles.forEach((c, i) => { ['--vo-x', '--vo-y', '--vo-o', '--vo-s'].forEach((v) => c.style.removeProperty(v)); applied[i] = [0, 0]; });
       appliedS = 1;
     }
