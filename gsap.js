@@ -1672,6 +1672,88 @@ function revealHero(container) {
 
   }
 
+
+  /* -----------------------------------------
+     PHONE EYEBROW UNDER THE HEADING
+     Only shown on phones (data-mobile-copy).
+  ----------------------------------------- */
+
+  const heroEyebrow =
+    container.querySelector(
+      '[data-mobile-copy="hello"]'
+    );
+
+
+  if (heroEyebrow) {
+
+    gsap.set(
+      heroEyebrow,
+      {
+        autoAlpha: 0,
+        y: 20
+      }
+    );
+
+    tl.to(
+      heroEyebrow,
+      {
+        autoAlpha: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out"
+      },
+      "-=0.5"
+    );
+
+  }
+
+
+  /* -----------------------------------------
+     DEMO VIDEO ON PHONES + TABLETS
+     It sits in the first screen under the
+     hero, so fade it up after the heading
+     and eyebrow instead of showing first.
+  ----------------------------------------- */
+
+  const demoVid =
+    window.innerWidth < 992 &&
+    container.querySelector(
+      ".section_demo-vid"
+    );
+
+
+  if (demoVid) {
+
+    gsap.set(
+      demoVid,
+      {
+        opacity: 0,
+        y: 30
+      }
+    );
+
+    tl.to(
+      demoVid,
+      {
+        opacity: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out",
+
+        onComplete: () =>
+          gsap.set(demoVid, {
+            clearProps: "transform"
+          })
+      },
+      "-=0.4"
+    );
+
+  }
+
 }
 
 
@@ -1694,19 +1776,32 @@ function initScrollAnimations(container) {
   );
 
 
+  /* Word tweens by heading, so a catch-up
+     below can speed one up. */
+  const stagTweens = new Map();
+
+
   headings.forEach(
     heading => {
 
 
       /* -----------------------------------------
          PRINCIPLES LEAD IS CONTROLLED
-         BY principles-gsap.js
+         BY principles-gsap.js ON DESKTOP.
+         principles-gsap.js doesn't run below 992,
+         so phones and tablets get the same word
+         blur-up as "I partner with..." below,
+         started a little lower (top 70%).
       ----------------------------------------- */
 
-      if (
+      const isLead =
         heading.classList.contains(
           "principles-lead"
-        )
+        );
+
+      if (
+        isLead &&
+        window.innerWidth >= 992
       ) {
 
         return;
@@ -1776,7 +1871,7 @@ function initScrollAnimations(container) {
          SCROLL ANIMATION
       ----------------------------------------- */
 
-      gsap.to(
+      const wordsTween = gsap.to(
         splitWords,
         {
           opacity: 1,
@@ -1793,7 +1888,9 @@ function initScrollAnimations(container) {
 
             trigger: heading,
 
-            start: "top 35%",
+            start: isLead
+              ? "top 70%"
+              : "top 35%",
 
             invalidateOnRefresh:
               true
@@ -1803,8 +1900,268 @@ function initScrollAnimations(container) {
         }
       );
 
+      stagTweens.set(heading, wordsTween);
+
     }
   );
+
+
+  /* -----------------------------------------
+     PHONE EYEBROWS AROUND THE RINGS HEADING
+     [Welcome…] fades in just before the
+     heading's words, [Since 2003] once they finish.
+     Only shown on phones (data-mobile-copy).
+  ----------------------------------------- */
+
+  /* Reveals that wait on a delay, so the
+     catch-up under the rings can hurry them. */
+  const delayedReveals = [];
+
+  [
+    ["welcome", false],
+    ["since", true]
+  ].forEach(([name, afterHeading]) => {
+
+    const eyebrow =
+      container.querySelector(
+        `[data-mobile-copy="${name}"]`
+      );
+
+    if (!eyebrow) return;
+
+    const heading =
+      eyebrow.parentElement &&
+      eyebrow.parentElement.querySelector(
+        ".stag-blur"
+      );
+
+    const delay =
+      afterHeading
+        ? stagRevealTime(heading)
+        : 0;
+
+    const eyebrowTween = gsap.fromTo(
+      eyebrow,
+      {
+        autoAlpha: 0,
+        y: 20
+      },
+      {
+        autoAlpha: 1,
+        y: 0,
+
+        duration: 0.6,
+
+        delay,
+
+        ease: "power2.out",
+
+        /* ScrollTrigger's default "play" skips a
+           tween's delay; "restart" keeps it. Once,
+           so it can't replay. */
+
+        scrollTrigger: {
+
+          trigger: heading || eyebrow,
+
+          start: "top 35%",
+
+          toggleActions:
+            "restart none none none",
+
+          once: true,
+
+          invalidateOnRefresh:
+            true
+
+        }
+
+      }
+    );
+
+    if (delay) delayedReveals.push(eyebrowTween);
+
+  });
+
+
+  /* -----------------------------------------
+     RINGS ON TABLET + PHONE
+     The ring scroll interaction is desktop
+     only, so fade the rings up right after
+     the heading above them (and the phone
+     [Since 2003] under it) reveals.
+  ----------------------------------------- */
+
+  if (window.innerWidth < 992) {
+
+    const ringsSection =
+      container.querySelector(
+        ".section_circles"
+      );
+
+    const ringsHeading =
+      ringsSection &&
+      ringsSection.querySelector(
+        ".stag-blur"
+      );
+
+    const rings =
+      ringsSection
+        ? ringsSection.querySelectorAll(
+            ".circle_scroll-parent, .circle-intersect"
+          )
+        : [];
+
+    if (rings.length) {
+
+      drawRingLotties(ringsSection);
+
+      gsap.set(
+        rings,
+        {
+          opacity: 0,
+          y: 40,
+          filter: "blur(6px)"
+        }
+      );
+
+      const ringsTween = gsap.to(
+        rings,
+        {
+          opacity: 1,
+          y: 0,
+          filter: "blur(0px)",
+
+          /* Top-down: the center ring's label sits
+             highest, then the side rings with the
+             overlap shape that sits across them. */
+          stagger: (i, el) =>
+            el.classList.contains("center")
+              ? 0
+              : 0.12,
+
+          duration: 0.8,
+
+          delay:
+            window.innerWidth < 768
+              ? stagRevealTime(ringsHeading) + 0.3
+              : 0.5,
+
+          ease: "power2.out",
+
+          onStart: () =>
+            drawRingLotties(ringsSection),
+
+          /* "restart" so the delay holds
+             (see the eyebrows above). */
+
+          scrollTrigger: {
+
+            trigger:
+              ringsHeading || ringsSection,
+
+            start: "top 35%",
+
+            toggleActions:
+              "restart none none none",
+
+            once: true,
+
+            invalidateOnRefresh:
+              true
+
+          }
+
+        }
+      );
+
+      delayedReveals.push(ringsTween);
+
+    }
+
+
+    /* Catch-up: if a fast scroll brings the next
+       section close while the heading's words,
+       [Since 2003] or the rings are still waiting,
+       hurry them (in order) so nothing below shows
+       before them. */
+
+    if (ringsSection && delayedReveals.length) {
+
+      ScrollTrigger.create({
+
+        trigger: ringsSection,
+
+        /* 150px before the next section shows,
+           but never before the heading starts. */
+        start: () => {
+
+          const headingTrigger =
+            stagTweens.get(ringsHeading) &&
+            stagTweens.get(ringsHeading).scrollTrigger;
+
+          const nextShows =
+            ringsSection.getBoundingClientRect().bottom +
+            window.scrollY -
+            window.innerHeight;
+
+          return Math.max(
+            headingTrigger ? headingTrigger.start + 60 : 0,
+            nextShows - 150
+          );
+
+        },
+
+        invalidateOnRefresh: true,
+
+        once: true,
+
+        onEnter: () => {
+
+          const wordsTween =
+            stagTweens.get(ringsHeading);
+
+          if (
+            wordsTween &&
+            wordsTween.progress() < 1
+          ) {
+
+            if (wordsTween.scrollTrigger) {
+              wordsTween.scrollTrigger.kill(false, true);
+            }
+
+            wordsTween.timeScale(3).play();
+
+          }
+
+          delayedReveals.forEach((tween, i) => {
+
+            if (
+              tween.progress() > 0 ||
+              tween.isActive()
+            ) return;
+
+            if (tween.scrollTrigger) {
+              tween.scrollTrigger.kill(false, true);
+            }
+
+            tween
+              .timeScale(1.5)
+              .delay(0.15 + i * 0.15)
+              .restart(true);
+
+          });
+
+        }
+
+      });
+
+    }
+
+  }
+
+
+  initLowerHomeFadeUps(container, stagTweens);
 
 
   requestAnimationFrame(() => {
@@ -1812,5 +2169,297 @@ function initScrollAnimations(container) {
     ScrollTrigger.refresh();
 
   });
+
+}
+
+
+/* =========================================================
+   LOWER HOME FADE-UPS
+   From the principles down (principle number,
+   title, video, text, logos, Kind Words, footer)
+   each block fades up as it scrolls in. They
+   queue in page order, so nothing lower starts
+   before everything above it has, and the last
+   footer items still play at the very bottom.
+   Desktop gets the same from the logos down;
+   its principles have their own sticky scroll
+   (principles-gsap.js).
+========================================================= */
+
+function initLowerHomeFadeUps(container, stagTweens) {
+
+  if (
+    !container.querySelector(".section_principles")
+  ) return;
+
+  const desktop = window.innerWidth >= 992;
+
+  const items = gsap.utils.toArray(
+    [
+      ...(desktop ? [] : [
+        ".section_principles .principles_item_wrap > *",
+        ".section_principles .principles_item_layout > *"
+      ]),
+      ".section_logos .heading-wrap",
+      ".section_logos .logo-wrap",
+      ".section_testimonial .testimonial_wrap > *",
+      ".footer .work-together-wrap",
+      ".footer .footer-layout > :not(.work-together-wrap)"
+    ].join(", "),
+    container
+  ).filter(el =>
+    !el.classList.contains("principles_item_layout") &&
+    el.getBoundingClientRect().height > 0
+  ).sort((a, b) => {
+    const ra = a.getBoundingClientRect();
+    const rb = b.getBoundingClientRect();
+    return ra.top - rb.top || ra.left - rb.left;
+  });
+
+  if (!items.length) return;
+
+  const tweens = items.map(el =>
+    gsap.fromTo(
+      el,
+      {
+        opacity: 0,
+        y: 40
+      },
+      {
+        opacity: 1,
+        y: 0,
+
+        duration: 0.8,
+
+        ease: "power3.out",
+
+        paused: true,
+
+        onComplete: () =>
+          gsap.set(el, {
+            clearProps: "transform"
+          })
+      }
+    )
+  );
+
+  /* Side-by-side items (a logo row, the footer
+     columns) start together. */
+  const tops = items.map(el =>
+    Math.round(el.getBoundingClientRect().top)
+  );
+
+  let next = 0;
+  let lastStart = 0;
+
+  /* The principles wait for the Great Work
+     words above them to finish. */
+  const leadHeading =
+    container.querySelector(".principles-lead");
+
+  const leadTween =
+    leadHeading && stagTweens.get(leadHeading);
+
+  const waitForLead = () => {
+
+    if (!leadTween) return;
+
+    if (leadTween.progress() === 0) {
+
+      if (leadTween.scrollTrigger) {
+        leadTween.scrollTrigger.kill(false, true);
+      }
+
+      leadTween.play();
+
+    }
+
+    const leadStart =
+      gsap.ticker.time - leadTween.totalTime();
+
+    lastStart = Math.max(
+      lastStart,
+      leadStart + stagRevealTime(leadHeading) - 0.1
+    );
+
+  };
+
+  const revealThrough = index => {
+
+    if (next === 0) waitForLead();
+
+    while (next <= index) {
+
+      const i = next++;
+      const tween = tweens[i];
+      const now = gsap.ticker.time;
+      const sameRow =
+        i > 0 && Math.abs(tops[i] - tops[i - 1]) < 8;
+      const at = Math.max(
+        now,
+        sameRow ? lastStart : lastStart + 0.1
+      );
+
+      lastStart = at;
+
+      gsap.delayedCall(at - now, () => tween.play());
+
+    }
+
+  };
+
+  items.forEach((el, i) => {
+
+    ScrollTrigger.create({
+
+      trigger: el,
+
+      /* 85% down the screen, or the bottom of
+         the page for footer items that never
+         get that high. */
+      start: () =>
+        Math.min(
+          el.getBoundingClientRect().top +
+            window.scrollY -
+            window.innerHeight * 0.85,
+          ScrollTrigger.maxScroll(window) - 2
+        ),
+
+      once: true,
+
+      invalidateOnRefresh: true,
+
+      onEnter: () => revealThrough(i)
+
+    });
+
+  });
+
+}
+
+
+/* =========================================================
+   RING LOTTIES ON PHONES
+   Webflow skips the ring draw-in to its last
+   frame on phones. After a Barba return the
+   Lotties load after that skip, at different
+   times, and can be reset again, so keep
+   parking each ring on its drawn frame for a
+   few seconds.
+========================================================= */
+
+/* How long a .stag-blur heading's word stagger
+   takes to finish (0.04s stagger, 0.6s per word),
+   so lines under it can wait their turn. */
+function stagRevealTime(heading) {
+
+  const words =
+    heading
+      ? heading.querySelectorAll(".stag-word").length
+      : 0;
+
+  return words
+    ? (words - 1) * 0.04 + 0.6
+    : 0.6;
+
+}
+
+
+let ringLottieTimer = null;
+
+function drawRingLotties(section) {
+
+  if (
+    !section ||
+    window.innerWidth >= 768
+  ) return;
+
+  const getLottieLib = () =>
+    (window.Webflow &&
+      Webflow.require &&
+      Webflow.require("lottie") &&
+      Webflow.require("lottie").lottie) ||
+    window.lottie ||
+    window.bodymovin;
+
+  const ringEls = Array.from(
+    section.querySelectorAll(
+      ".circle_lottie-line"
+    )
+  );
+
+  if (!ringEls.length) return;
+
+  const parkRings = () => {
+
+    const lottieLib = getLottieLib();
+
+    if (
+      !lottieLib ||
+      !lottieLib.getRegisteredAnimations
+    ) return;
+
+    lottieLib
+      .getRegisteredAnimations()
+      .forEach(anim => {
+
+        const isRing = ringEls.some(
+          el =>
+            el === anim.wrapper ||
+            el.contains(anim.wrapper)
+        );
+
+        if (
+          !isRing ||
+          !anim.isLoaded ||
+          !anim.totalFrames
+        ) return;
+
+        // Webflow's ring draw ends at 98%.
+        const drawnFrame = Math.floor(
+          (anim.totalFrames - 1) * 0.98
+        );
+
+        if (
+          Math.abs(
+            anim.currentFrame - drawnFrame
+          ) > 0.5
+        ) {
+
+          anim.goToAndStop(
+            drawnFrame,
+            true
+          );
+
+        }
+
+      });
+
+  };
+
+  clearInterval(ringLottieTimer);
+
+  let ticks = 0;
+
+  parkRings();
+
+  ringLottieTimer = setInterval(() => {
+
+    parkRings();
+
+    ticks++;
+
+    if (
+      ticks >= 24 ||
+      !document.contains(section)
+    ) {
+
+      clearInterval(ringLottieTimer);
+
+      ringLottieTimer = null;
+
+    }
+
+  }, 250);
 
 }
