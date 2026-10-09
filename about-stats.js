@@ -139,9 +139,13 @@
     const ico = card.querySelector(".about-stat-ico");
     let icoIo = null;
     let icoStop = false;
+    let icoPending = false;
     const onIcoEnd = (ev) => {
       if (!ev.target.classList.contains("d3")) return;
-      if (ev.type === "animationend") ico.classList.remove("is-intro");
+      if (ev.type === "animationend") {
+        ico.classList.remove("is-intro");
+        if (icoPending) { icoPending = false; playOnce(); }
+      }
       // Iterations alternate full -> empty -> full; stop on a full one.
       else if (icoStop && Math.round(ev.elapsedTime / 1.4) % 2 === 0) {
         ico.classList.remove("is-playing");
@@ -164,12 +168,32 @@
       if (!ico || reduceMotion()) return;
       if (on) {
         icoStop = false;
-        ico.classList.remove("is-intro");
-        ico.classList.add("is-playing");
+        if (!ico.classList.contains("is-playing")) {
+          // Same keyframes as the draw-in, so flush styles to start a
+          // fresh animation instead of inheriting the draw-in's clock.
+          ico.classList.remove("is-intro");
+          void getComputedStyle(ico.querySelector(".d3")).animationName;
+          ico.classList.add("is-playing");
+        }
       } else if (ico.classList.contains("is-playing")) {
         icoStop = true;
       }
     };
+    // One boomerang, then rest on the full icon.
+    const playOnce = () => { icoHover(true); icoHover(false); };
+
+    // Touch screens have no hover: play one boomerang when the card
+    // reaches the middle of the screen (after the draw-in finishes).
+    let midIo = null;
+    if (ico && !reduceMotion() && !canHover() && "IntersectionObserver" in window) {
+      midIo = new IntersectionObserver((entries) => {
+        if (!entries.some((en) => en.isIntersecting)) return;
+        midIo.disconnect();
+        if (ico.classList.contains("is-intro")) icoPending = true;
+        else playOnce();
+      }, { rootMargin: "-40% 0px -40% 0px" });
+      midIo.observe(card);
+    }
 
     let canvas = card.querySelector(".about_stat-fill");
     if (canvas && canvas.tagName.toLowerCase() !== "canvas") { canvas.remove(); canvas = null; }
@@ -262,6 +286,7 @@
       cancelAnimationFrame(state.raf);
       ro.disconnect(); mo.disconnect();
       if (icoIo) icoIo.disconnect();
+      if (midIo) midIo.disconnect();
       if (ico) {
         ico.removeEventListener("animationend", onIcoEnd);
         ico.removeEventListener("animationiteration", onIcoEnd);
