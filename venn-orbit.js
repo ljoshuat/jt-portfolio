@@ -25,7 +25,7 @@
 
   const CSS = `
 .venn-orbit-on .circle_lottie-line,.venn-orbit-on .circle-intersect{visibility:hidden!important}
-.venn-orbit-on .circle_scroll{transform:translate3d(var(--vo-x,0px),var(--vo-y,0px),0)!important;translate:none!important;rotate:none!important;scale:none!important;opacity:var(--vo-o,1)!important}
+.venn-orbit-on .circle_scroll{transform:translate3d(var(--vo-x,0px),var(--vo-y,0px),0) scale(var(--vo-s,1))!important;transform-origin:50% 50%!important;translate:none!important;rotate:none!important;scale:none!important;opacity:var(--vo-o,1)!important}
 .vo-layer{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none}
 .vo-layer canvas{position:absolute;inset:0;width:100%;height:100%;display:block}
 .vo-mark{position:absolute;transform:translate(-50%,-50%);will-change:transform}
@@ -120,17 +120,18 @@
     let spin = 0, last = 0, pulse = 0, wasLocked = false, lockAt = 0, pull = 0, tilt = [0, 0];
     let colors = null, colorAge = 0;
     const applied = circles.map(() => [0, 0]);
+    let appliedS = 1; // our own scale on the circles (short screens)
 
     function fit() {
       // span the whole section width (padding included) so the side rings never clip on phones
       const sr = section.getBoundingClientRect(), hr0 = host.getBoundingClientRect();
       layer.style.left = (sr.left - hr0.left) + 'px';
       layer.style.width = sr.width + 'px';
-      // when the section isn't pinned (phones) the lower rings hang below the sticky box: let the
-      // layer run on into the section's bottom padding so they aren't cut off
-      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) || 1;
+      // the lower rings can hang below the sticky box (always on phones, where it isn't pinned, and
+      // while the pinned box scrolls away on desktop): let the layer run on below it so they aren't cut off
+      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) / appliedS || 1;
       const R = (circles[1].offsetWidth / 2) * RING * sc;
-      const extra = getComputedStyle(host).position === 'sticky' ? 0 : clamp(sr.bottom - hr0.bottom, 0, R * 2);
+      const extra = getComputedStyle(host).position === 'sticky' ? R * 2 : clamp(sr.bottom - hr0.bottom, 0, R * 2);
       layer.style.height = (hr0.height + extra) + 'px';
       const r = layer.getBoundingClientRect();
       dpr = Math.min(2, window.devicePixelRatio || 1);
@@ -175,22 +176,46 @@
       const hr = layer.getBoundingClientRect();
       const em = parseFloat(getComputedStyle(circles[0]).fontSize) || 16;
       // on phones the circle row is scaled down (.circle-layout scale .8): work in screen pixels
-      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) || 1;
+      const sc = circles[1].getBoundingClientRect().width / (circles[1].offsetWidth || 1) / appliedS || 1;
       const nat = circles.map((c, i) => {
         const r = c.getBoundingClientRect();
         return [r.left + r.width / 2 - hr.left - applied[i][0], r.top + r.height / 2 - hr.top - applied[i][1]];
       });
-      const R = (circles[1].offsetWidth / 2) * RING * sc;
-      const V = nat.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em * sc, n[1] + VENN_OFFSETS[i][1] * em * sc]);
+      const R0 = (circles[1].offsetWidth / 2) * RING * sc;
+      // the Venn relative to the top circle, at full size
+      const rel = nat.map((n, i) => [n[0] + VENN_OFFSETS[i][0] * em * sc - nat[1][0], n[1] + VENN_OFFSETS[i][1] * em * sc - nat[1][1]]);
+      const sticky = getComputedStyle(host).position === 'sticky';
+
+      // short screens: the pinned Venn has to fit above the bottom of the screen. Raise it into the
+      // space under the heading first, then shrink it (from the top ring's top edge) if it still doesn't fit.
+      const ringTop = nat[1][1] - R0;
+      let lift = 0, f = 1;
+      if (sticky) {
+        const vh = window.innerHeight;
+        const bottom = Math.min(host.offsetHeight, vh) - Math.max(16, vh * 0.04);
+        const need = Math.max(rel[0][1], rel[2][1]) + 2 * R0;
+        const over = ringTop + need - bottom;
+        if (over > 0) {
+          const head = host.querySelector('.intersection-heading') || host.querySelector('.section-heading');
+          const headBottom = !head ? ringTop : head.offsetParent === host
+            ? head.offsetTop + head.offsetHeight
+            : head.getBoundingClientRect().bottom - hr.top;
+          lift = clamp(over, 0, Math.max(0, ringTop - headBottom - Math.max(32, vh * 0.06)));
+          f = clamp((bottom - ringTop + lift) / need, 0.5, 1);
+        }
+      }
+      const R = R0 * f;
+      const V = rel.map((r) => [nat[1][0] + r[0] * f, ringTop - lift + R + r[1] * f]);
       const hub = [(V[0][0] + V[1][0] + V[2][0]) / 3, (V[0][1] + V[1][1] + V[2][1]) / 3];
 
       // scroll progress. Pinned (desktop/tablet): the same range as Josh's interaction, wrapper top at
       // top -> wrapper middle at top. Not pinned (phones): from the Venn entering the bottom of the
       // screen to its middle reaching 60% of the screen height.
       let scroll;
-      if (getComputedStyle(host).position === 'sticky') {
-        const wr = wrapper.getBoundingClientRect();
-        scroll = clamp(-wr.top / (wr.height * 0.5 * 0.88)); // locks a little before the end, then holds
+      if (sticky) {
+        // locks a little before Josh's range ends, and before the pin lets go, then holds
+        const wr = wrapper.getBoundingClientRect(), pin = wr.height - host.offsetHeight;
+        scroll = clamp(-wr.top / Math.min(wr.height * 0.5 * 0.88, pin > 100 ? pin * 0.85 : Infinity));
       } else {
         const vh = window.innerHeight, hubY = hr.top + hub[1];
         scroll = clamp((vh + R - hubY) / (vh * 0.4 + R));
@@ -222,7 +247,9 @@
         c.style.setProperty('--vo-x', (x / sc).toFixed(2) + 'px');
         c.style.setProperty('--vo-y', (y / sc).toFixed(2) + 'px');
         c.style.setProperty('--vo-o', iconAlpha.toFixed(3));
+        c.style.setProperty('--vo-s', f.toFixed(4));
       });
+      appliedS = f;
 
       const locked = p > 0.97;
       if (locked && !wasLocked) pulse = 1;
@@ -292,7 +319,8 @@
       ro.disconnect(); io.disconnect();
       layer.remove();
       section.classList.remove('venn-orbit-on');
-      circles.forEach((c, i) => { ['--vo-x', '--vo-y', '--vo-o'].forEach((v) => c.style.removeProperty(v)); applied[i] = [0, 0]; });
+      circles.forEach((c, i) => { ['--vo-x', '--vo-y', '--vo-o', '--vo-s'].forEach((v) => c.style.removeProperty(v)); applied[i] = [0, 0]; });
+      appliedS = 1;
     }
     enable();
     return { destroy: disable };
