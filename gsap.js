@@ -1630,43 +1630,9 @@ function revealHero(container) {
     gsap.timeline();
 
 
-  tl.to(
-    heroItems,
-    {
-      opacity: 1,
-      y: 0,
-      filter: "blur(0px)",
-
-      stagger: 0.06,
-
-      duration: 0.8,
-
-      ease: "power3.out"
-    }
-  );
-
-
-  if (heroP) {
-
-    tl.to(
-      heroP,
-      {
-        autoAlpha: 1,
-        y: 0,
-
-        duration: 0.8,
-
-        ease: "power3.out"
-      },
-      "-=0.5"
-    );
-
-  }
-
-
   /* -----------------------------------------
-     PHONE EYEBROW UNDER THE HEADING
-     Only shown on phones (data-mobile-copy).
+     [HELLO, I'M JOSH] ABOVE THE HEADING
+     Fades in first, then the heading follows.
   ----------------------------------------- */
 
   const heroEyebrow =
@@ -1691,6 +1657,40 @@ function revealHero(container) {
         autoAlpha: 1,
         y: 0,
 
+        duration: 0.6,
+
+        ease: "power3.out"
+      }
+    );
+
+  }
+
+
+  tl.to(
+    heroItems,
+    {
+      opacity: 1,
+      y: 0,
+      filter: "blur(0px)",
+
+      stagger: 0.06,
+
+      duration: 0.8,
+
+      ease: "power3.out"
+    },
+    heroEyebrow ? "-=0.3" : 0
+  );
+
+
+  if (heroP) {
+
+    tl.to(
+      heroP,
+      {
+        autoAlpha: 1,
+        y: 0,
+
         duration: 0.8,
 
         ease: "power3.out"
@@ -1704,8 +1704,8 @@ function revealHero(container) {
   /* -----------------------------------------
      DEMO VIDEO ON PHONES + TABLETS
      It sits in the first screen under the
-     hero, so fade it up after the heading
-     and eyebrow instead of showing first.
+     hero, so fade it up after the eyebrow
+     and heading instead of showing first.
   ----------------------------------------- */
 
   const demoVid =
