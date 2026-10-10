@@ -128,23 +128,17 @@ function initHome(
 
     /* =====================================================
        SESSION STORAGE
-       DISABLED WHILE TESTING
-    =====================================================
-
-    const hasPlayed =
-      sessionStorage.getItem(
-        "loaderPlayed"
-      );
-
+       Loader plays once per browser session.
     ===================================================== */
 
+    let hasPlayed = null;
 
-    /*
-     * TESTING:
-     * Force loader every refresh.
-     */
-
-    const hasPlayed = null;
+    try {
+      hasPlayed =
+        sessionStorage.getItem(
+          "loaderPlayed"
+        );
+    } catch (e) {}
 
 
     console.log(
@@ -939,8 +933,6 @@ function initLoader(container) {
   const loaderTL =
     gsap.timeline({
 
-      delay: 0.25,
-
       onStart() {
 
         console.log(
@@ -1430,15 +1422,14 @@ exitTL.to(
 
       /* =====================================================
          SESSION STORAGE
-         DISABLED WHILE TESTING
-      =====================================================
-
-      sessionStorage.setItem(
-        "loaderPlayed",
-        "true"
-      );
-
       ===================================================== */
+
+      try {
+        sessionStorage.setItem(
+          "loaderPlayed",
+          "true"
+        );
+      } catch (e) {}
 
 
       loader.remove();
