@@ -47,6 +47,7 @@
   /* Motion values from the reference effect (kept as is) */
   const EASE_FACTOR = 0.09; /* lerp factor per frame */
   const FLING_MULT = 14; /* inertia multiplier on drag release */
+  const TOUCH_FOLLOW = 0.55; /* touch drags: share of the gap closed per 60fps frame */
   const CELL_RATIO = 1.78; /* world-cell pitch / base tile width (reference 2.1) */
   const BASE_MIN = 220; /* min base tile width, px (reference 150) */
   const BASE_MAX = 500; /* max base tile width, px (reference 260) */
@@ -206,6 +207,25 @@
   }
 
   /* Read the snippets from the CMS list: image, alt, optional video */
+  function smallest(srcset) {
+    let best = "";
+    let bestW = Infinity;
+    srcset.split(",").forEach((part) => {
+      const [url, d] = part.trim().split(/\s+/);
+      const w = parseFloat(d);
+      if (url && /w$/.test(d || "") && w < bestW) {
+        bestW = w;
+        best = url;
+      }
+    });
+    return best;
+  }
+
+  /* Bunny serves several sizes of each clip; tiles only need a small one */
+  function tileVideo(url) {
+    return url.replace(/play_(1080|1440|2160|720)p\.mp4/, "play_480p.mp4");
+  }
+
   function readSnippets(root) {
     const out = [];
     let imgs = root.querySelectorAll(".w-dyn-item img");
@@ -213,8 +233,10 @@
     imgs.forEach((img) => {
       if (img.closest("[data-collage-stage]")) return;
       if (img.classList.contains("w-dyn-bind-empty")) return;
-      const src = img.currentSrc || img.getAttribute("src");
+      const src = img.getAttribute("src") || img.currentSrc;
       if (!src) return;
+      /* Webflow's responsive variants: tiles load the smallest that fits */
+      const srcset = img.getAttribute("srcset") || "";
       const holder = img.closest("[data-snippets-video]");
       const video = holder
         ? (holder.getAttribute("data-snippets-video") || "").trim()
@@ -225,7 +247,7 @@
         (named && named.getAttribute("data-snippets-name")) ||
         alt.split(":")[0]
       ).trim();
-      out.push({ src, alt, title, video, ratio: 1 });
+      out.push({ src, srcset, small: smallest(srcset) || src, alt, title, video, ratio: 1 });
     });
     return out;
   }
@@ -345,7 +367,7 @@
           done();
         };
         probe.onerror = done;
-        probe.src = s.src;
+        probe.src = s.small;
       });
       setTimeout(resolve, 2500);
     });
@@ -507,6 +529,29 @@
           )
         : null;
 
+    /* One size per snippet for every tile (the widest a tile gets), so a
+       reused tile hits the same, already decoded file */
+    function tileSizes() {
+      return Math.ceil(Math.max(minW, base * WIDTHS[WIDTHS.length - 1])) + "px";
+    }
+
+    /* Decode every snippet before it scrolls in, so a tile that changes
+       piece mid-drag doesn't stall on it */
+    const keep = [];
+    function predecode() {
+      snippets.forEach((s) => {
+        if (s.video && !reduceMotion) return;
+        const im = new Image();
+        if (s.srcset) {
+          im.sizes = tileSizes();
+          im.srcset = s.srcset;
+        }
+        im.src = s.src;
+        keep.push(im);
+        if (im.decode) im.decode().catch(() => {});
+      });
+    }
+
     function setMedia(el, s) {
       const want = s.video && !reduceMotion ? "video" : "img";
       let media = el.firstChild;
@@ -520,7 +565,7 @@
         media.draggable = false;
         media.style.cssText =
           "display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;" +
-          "pointer-events:none;transform:scale(1.001);";
+          "pointer-events:none;" + (coarse ? "" : "transform:scale(1.001);");
         if (want === "video") {
           media.muted = true;
           media.loop = true;
@@ -536,12 +581,24 @@
         el.appendChild(media);
       }
       if (want === "video") {
-        if (media.getAttribute("src") !== s.video) {
-          media.poster = s.src;
-          media.setAttribute("src", s.video);
+        const small = tileVideo(s.video);
+        if (media.dataset.full !== s.video) {
+          media.dataset.full = s.video;
+          media.poster = s.small;
+          media.onerror = () => {
+            if (media.getAttribute("src") !== media.dataset.full) {
+              media.setAttribute("src", media.dataset.full);
+            }
+          };
+          media.setAttribute("src", small);
         }
-      } else if (media.getAttribute("src") !== s.src) {
-        media.setAttribute("src", s.src);
+      } else {
+        if (s.srcset) {
+          const sizes = tileSizes();
+          if (media.getAttribute("sizes") !== sizes) media.setAttribute("sizes", sizes);
+          if (media.getAttribute("srcset") !== s.srcset) media.setAttribute("srcset", s.srcset);
+        }
+        if (media.getAttribute("src") !== s.src) media.setAttribute("src", s.src);
       }
     }
 
@@ -559,9 +616,14 @@
         (item.lg ? "var(--spacing--radius-md,1rem)" : "var(--spacing--radius-sm,.5rem)") +
         /* no fill behind the image: a light fill bled through as a
            hairline at the rounded corners */
-        ";background:transparent;isolation:isolate;" +
-        "-webkit-mask-image:-webkit-radial-gradient(white,black);" +
-        "box-shadow:0 10px 30px -12px rgba(10,15,18,.65);will-change:transform;";
+        ";background:transparent;" +
+        /* desktop scales the media on hover, which needs the mask to keep
+           the corners clean; phones don't, and skip that costly layer */
+        (coarse ? "" : "isolation:isolate;-webkit-mask-image:-webkit-radial-gradient(white,black);") +
+        /* phones skip the soft shadow: blurring it on every moving
+           tile costs frames, and it barely reads on the dark page */
+        (coarse ? "" : "box-shadow:0 10px 30px -12px rgba(10,15,18,.65);") +
+        "will-change:transform;";
       el.dataset.idx = item.img;
       setMedia(el, snippets[item.img]);
       return el;
@@ -573,6 +635,16 @@
       const v = el.firstChild;
       if (v && v.tagName === "VIDEO") v.pause();
       free.push(el);
+    }
+
+    function setTileVideos(on) {
+      stage.querySelectorAll("video").forEach((v) => {
+        if (!on) v.pause();
+        else if (!reduceMotion && v.parentNode.style.display !== "none") {
+          const p = v.play();
+          if (p && p.catch) p.catch(() => {});
+        }
+      });
     }
 
     function clearTiles() {
@@ -684,8 +756,14 @@
         tgtY += dirY * d;
       }
 
-      curX += (tgtX - curX) * ease;
-      curY += (tgtY - curY) * ease;
+      /* A finger drag follows closely but through one short ease, which
+         evens out touch events that arrive unevenly between frames */
+      const k =
+        dragging && touchDrag && !reduceMotion
+          ? 1 - Math.pow(1 - TOUCH_FOLLOW, dt * 60)
+          : ease;
+      curX += (tgtX - curX) * k;
+      curY += (tgtY - curY) * k;
 
       if (!reduceMotion) {
         leanX += (leanTX - leanX) * MOUSE_EASE;
@@ -752,6 +830,8 @@
     let lastY = 0;
     let velX = 0;
     let velY = 0;
+    let lastT = 0;
+    let touchDrag = false;
     const cursor = makeDragCursor(root);
 
     function onPointerDown(e) {
@@ -765,6 +845,9 @@
       downT = performance.now();
       travel = 0;
       velX = velY = 0;
+      lastT = downT;
+      touchDrag = e.pointerType !== "mouse";
+      if (touchDrag) setTileVideos(false);
       root.classList.add("is-dragging");
       if (!cursor) root.style.cursor = "grabbing";
       if (cursor) cursor.press(true);
@@ -796,16 +879,30 @@
       travel += Math.abs(dx) + Math.abs(dy);
       tgtX -= dx;
       tgtY -= dy;
-      curX = tgtX;
-      curY = tgtY;
-      velX = dx;
-      velY = dy;
+      if (!touchDrag) {
+        curX = tgtX;
+        curY = tgtY;
+      }
+      /* Release speed. Touch: px per 60fps frame, smoothed over the last
+         few moves, so one uneven event doesn't decide the fling */
+      const now = performance.now();
+      const ms = Math.max(now - lastT, 1);
+      lastT = now;
+      if (touchDrag) {
+        const blend = Math.min(1, ms / 50);
+        velX += ((dx / ms) * 16.7 - velX) * blend;
+        velY += ((dy / ms) * 16.7 - velY) * blend;
+      } else {
+        velX = dx;
+        velY = dy;
+      }
       idle = 0;
     }
 
     function endDrag(e) {
       if (!dragging) return;
       dragging = false;
+      if (touchDrag) setTileVideos(true);
       root.classList.remove("is-dragging");
       if (!cursor) root.style.cursor = "grab";
       if (cursor) cursor.press(false);
@@ -827,6 +924,7 @@
         }
       }
 
+      if (touchDrag && performance.now() - lastT > 100) velX = velY = 0;
       if (!reduceMotion) {
         tgtX -= velX * FLING_MULT;
         tgtY -= velY * FLING_MULT;
@@ -1048,6 +1146,7 @@
       running = true;
       last = performance.now();
       render();
+      predecode();
       if (useTicker) gsap.ticker.add(tick);
       else raf = requestAnimationFrame(rafLoop);
       if (typeof gsap !== "undefined" && !reduceMotion) {
