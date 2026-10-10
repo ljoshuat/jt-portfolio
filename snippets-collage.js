@@ -23,9 +23,20 @@
    Optional attributes on [data-snippets-collage]:
      data-speed="70"      drift speed, px per second (default 70)
      data-direction="up"  "up", "down", "left" or "right" to start
-     data-mouse="0.14"    how far the canvas leans toward the mouse,
+     data-mouse="0.1"     how far the canvas leans toward the mouse,
                           as a share of the screen (0 turns it off)
      data-shuffle="false" same start every visit
+
+   Click or tap a piece (without dragging) to open it large, with its
+   name, previous / next and Esc to close. Hovering a piece lifts it,
+   shows its name by the cursor and pauses the drift. Phones get a
+   "Drag to explore" hint until the first touch. The CMS list stays in
+   the page, visually hidden, so screen readers still get every piece
+   and its alt text. Arrow keys pan only while the collage has focus;
+   Enter opens the piece in the middle.
+
+   Names: data-snippets-name on a Collection Item if set, otherwise the
+   alt text up to its first colon ("Rolling Mammoth logo: ...").
 
    Reduced motion: no drift, no mouse lean, no glide; it still pans.
 ========================================================= */
@@ -48,7 +59,7 @@
   const DEFAULT_SPEED = 70; /* same drift as the old Snippets scroll */
   const DRIFT_WAIT = 0.6; /* s of stillness before the drift returns */
   const DRIFT_RAMP = 1.2; /* s for the drift to get back to speed */
-  const MOUSE_RANGE = 0.14; /* share of the screen the canvas leans */
+  const MOUSE_RANGE = 0.1; /* share of the screen the canvas leans */
   const MOUSE_EASE = 0.05; /* lerp factor for the lean */
   const KEY_STEP = 120;
   const MAX_TALL = 1.5; /* tall pieces: height at most base x this */
@@ -104,6 +115,13 @@
     document.body.appendChild(el);
     root.style.cursor = "none";
 
+    /* Name of the piece under the cursor, in a pill beside the badge */
+    const label = document.createElement("div");
+    label.className = "sc-cursor-label";
+    label.setAttribute("aria-hidden", "true");
+    document.body.appendChild(label);
+    let labelText = "";
+
     const pos = { x: -200, y: -200 };
     const target = { x: -200, y: -200 };
     let scale = 0.6;
@@ -123,6 +141,11 @@
       el.style.opacity = on ? "1" : "0";
       targetScale = on ? 1 : 0.6;
       setTrail(on);
+      syncLabel();
+    }
+
+    function syncLabel() {
+      label.classList.toggle("is-on", shown && !!labelText);
     }
 
     function onMove(e) {
@@ -149,6 +172,9 @@
       el.style.transform =
         "translate3d(" + pos.x + "px," + pos.y + "px,0) scale(" +
         scale.toFixed(3) + ")";
+      label.style.transform =
+        "translate3d(" + (pos.x + DRAG_CURSOR_SIZE / 2 + 10) + "px," +
+        (pos.y - 16) + "px,0)";
       raf = requestAnimationFrame(loop);
     }
 
@@ -160,6 +186,15 @@
       press(down) {
         if (shown) targetScale = down ? 0.85 : 1;
       },
+      hide() {
+        show(false);
+      },
+      setLabel(text) {
+        if (text === labelText) return;
+        labelText = text || "";
+        if (labelText) label.textContent = labelText;
+        syncLabel();
+      },
       destroy() {
         cancelAnimationFrame(raf);
         window.removeEventListener("pointermove", onMove);
@@ -167,6 +202,7 @@
         setTrail(false);
         root.style.cursor = "";
         el.remove();
+        label.remove();
       },
     };
   }
@@ -190,10 +226,60 @@
       const video = holder
         ? (holder.getAttribute("data-snippets-video") || "").trim()
         : "";
-      out.push({ src, alt: img.alt || "", video, ratio: 1 });
+      const named = img.closest("[data-snippets-name]");
+      const alt = img.alt || "";
+      const title = (
+        (named && named.getAttribute("data-snippets-name")) ||
+        alt.split(":")[0]
+      ).trim();
+      out.push({ src, alt, title, video, ratio: 1 });
     });
     return out;
   }
+
+  const STYLE_ID = "snippets-collage-style";
+  const STYLES = `
+[data-snippets-collage]:focus{outline:none}
+[data-snippets-collage]:focus-visible{outline:2px solid var(--color--accent,#DAF40A);outline-offset:-6px}
+.snippets-collage_tile{transition:box-shadow .4s ease}
+.snippets-collage_tile .snippets-collage_media{transition:transform .6s cubic-bezier(.2,.8,.2,1)}
+.snippets-collage_tile.is-hover{box-shadow:0 26px 50px -18px rgba(10,15,18,.85)!important}
+.snippets-collage_tile.is-hover .snippets-collage_media{transform:scale(1.05)!important}
+.sc-cursor-label{position:fixed;top:0;left:0;z-index:2147483646;pointer-events:none;padding:.45rem .8rem;border-radius:999px;background:var(--color--bg-primary,#0A0F12);color:var(--color--text-primary,#F7F7F7);font-size:.75rem;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .2s ease}
+.sc-cursor-label.is-on{opacity:1}
+.sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;padding:.65rem 1.1rem;border-radius:999px;background:color-mix(in srgb,var(--color--accent,#DAF40A) 60%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:var(--color--bg-primary,#0A0F12);font-size:.75rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:opacity .5s ease}
+.sc-hint.is-gone{opacity:0}
+.sc-lb{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:clamp(4rem,8vw,6rem) clamp(1rem,6vw,6rem);background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
+.sc-lb.is-open{opacity:1;visibility:visible;transition:opacity .35s ease}
+.sc-lb_figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;max-height:100%;transform:scale(.94);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
+.sc-lb.is-open .sc-lb_figure{transform:none}
+.sc-lb_media{display:block;max-width:min(100%,1400px);max-height:calc(100vh - 12rem);max-height:calc(100dvh - 12rem);width:auto;height:auto;border-radius:var(--spacing--radius-md,16px);box-shadow:0 30px 80px -30px rgba(10,15,18,.9)}
+.sc-lb_caption{display:flex;flex-wrap:wrap;justify-content:center;gap:.4rem 1rem;color:var(--color--text-primary,#F7F7F7);font-size:clamp(.8rem,.9vw,.95rem);letter-spacing:.08em;text-transform:uppercase;text-align:center}
+.sc-lb_count{color:var(--color--text-muted,#7D7D7D);font-variant-numeric:tabular-nums}
+.sc-lb_btn{position:absolute;display:grid;place-items:center;width:3rem;height:3rem;padding:0;border:0;border-radius:50%;background:color-mix(in srgb,var(--color--accent,#DAF40A) 70%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:var(--color--bg-primary,#0A0F12);cursor:pointer;transition:transform .25s ease}
+.sc-lb_btn:hover{transform:scale(1.08)}
+.sc-lb_btn:focus-visible{outline:2px solid var(--color--text-primary,#F7F7F7);outline-offset:3px}
+.sc-lb_btn svg{width:1.1rem;height:1.1rem;fill:none;stroke:currentColor;stroke-width:2;stroke-linecap:round;stroke-linejoin:round}
+.sc-lb_close{top:calc(1.25rem + env(safe-area-inset-top,0px));right:1.25rem}
+.sc-lb_prev{left:1.25rem;top:50%;margin-top:-1.5rem}
+.sc-lb_next{right:1.25rem;top:50%;margin-top:-1.5rem}
+@media (max-width:767px){.sc-lb_prev,.sc-lb_next{top:auto;margin-top:0;bottom:calc(1.25rem + env(safe-area-inset-bottom,0px))}.sc-lb_prev{left:calc(50% - 3.75rem)}.sc-lb_next{right:calc(50% - 3.75rem)}.sc-lb_media{max-height:calc(100dvh - 14rem)}}
+@media (prefers-reduced-motion:reduce){.sc-lb,.sc-lb_figure,.snippets-collage_tile .snippets-collage_media{transition:none}}
+`;
+
+  function addStyles() {
+    if (document.getElementById(STYLE_ID)) return;
+    const tag = document.createElement("style");
+    tag.id = STYLE_ID;
+    tag.textContent = STYLES;
+    document.head.appendChild(tag);
+  }
+
+  const ICON = {
+    close: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M6 6l12 12M18 6L6 18"/></svg>',
+    prev: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M15 5l-7 7 7 7"/></svg>',
+    next: '<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 5l7 7-7 7"/></svg>',
+  };
 
   function shuffled(n) {
     const order = Array.from({ length: n }, (_, i) => i);
@@ -228,13 +314,20 @@
 
     const ease = reduceMotion ? 1 : EASE_FACTOR;
 
-    /* Hide the CMS list; it is only the image pool */
+    addStyles();
+
+    /* The CMS list is the image pool. It stays in the page, visually
+       hidden, so screen readers still list every piece with its alt */
     const pool = Array.from(root.children).filter(
       (el) => el.querySelector("img") && !el.matches(".section_hero")
     );
+    const poolCss = pool.map((el) => el.style.cssText);
     pool.forEach((el) => {
       el.setAttribute("data-collage-pool", "");
-      el.style.display = "none";
+      el.style.cssText +=
+        ";position:absolute;width:1px;height:1px;margin:-1px;padding:0;" +
+        "overflow:hidden;clip:rect(0 0 0 0);clip-path:inset(50%);" +
+        "white-space:nowrap;border:0;transform:none;";
     });
 
     /* Every visit starts on a different patch, in a different order */
@@ -280,8 +373,27 @@
     if (!root.hasAttribute("aria-label")) {
       root.setAttribute(
         "aria-label",
-        "Snippets: an endless collage. Scroll, drag or use the arrow keys to look around."
+        "Snippets collage. Drag, scroll or use the arrow keys to look around, and press Enter to open the piece in the middle."
       );
+    }
+    const hadTabindex = root.hasAttribute("tabindex");
+    if (!hadTabindex) root.tabIndex = 0;
+    if (!root.hasAttribute("role")) root.setAttribute("role", "region");
+
+    /* Phones: a hint until the first touch */
+    const coarse = window.matchMedia("(hover: none), (pointer: coarse)").matches;
+    let hint = null;
+    if (coarse) {
+      hint = document.createElement("div");
+      hint.className = "sc-hint";
+      hint.setAttribute("aria-hidden", "true");
+      hint.textContent = "Drag to explore";
+      root.appendChild(hint);
+    }
+    function dropHint() {
+      if (!hint || hint.classList.contains("is-gone")) return;
+      hint.classList.add("is-gone");
+      setTimeout(() => hint && hint.remove(), 600);
     }
     root.style.touchAction = "none";
     root.style.userSelect = "none";
@@ -456,12 +568,14 @@
         (item.lg ? "var(--spacing--radius-md,1rem)" : "var(--spacing--radius-sm,.5rem)") +
         ";background:var(--color--bg-secondary,#18191a);" +
         "box-shadow:0 10px 30px -12px rgba(10,15,18,.65);will-change:transform;";
+      el.dataset.idx = item.img;
       setMedia(el, snippets[item.img]);
       return el;
     }
 
     function release(el) {
       el.style.display = "none";
+      if (el === hoverEl) setHover(null);
       const v = el.firstChild;
       if (v && v.tagName === "VIDEO") v.pause();
       free.push(el);
@@ -558,6 +672,15 @@
         return;
       }
 
+      /* Keep the hover right while pieces drift under a still cursor */
+      if (mouseIn && !dragging && !lbOpen) updateHover();
+
+      /* Hovering a piece (or the lightbox being open) holds the drift */
+      if (hoverEl || lbOpen) {
+        idle = 0;
+        driftAmt = Math.max(0, driftAmt - dt / 0.35);
+      }
+
       /* Auto drift: waits while the visitor is busy, then eases back in */
       if (!reduceMotion && !dragging) {
         idle += dt;
@@ -583,8 +706,9 @@
     --------------------------------------------- */
 
     function onWheel(e) {
-      if (menuOpen()) return;
+      if (menuOpen() || lbOpen) return;
       if (e.cancelable) e.preventDefault();
+      dropHint();
       const unit =
         e.deltaMode === 1 ? 16 : e.deltaMode === 2 ? root.clientHeight : 1;
       let dx = e.deltaX * unit;
@@ -598,7 +722,42 @@
       interacted(dx, dy);
     }
 
+    /* ---------------------------------------------
+       HOVER: lift the piece, show its name, hold the drift
+    --------------------------------------------- */
+
+    let hoverEl = null;
+    let mouseIn = false;
+    let mouseX = 0;
+    let mouseY = 0;
+
+    function tileAt(x, y) {
+      const hit = document.elementFromPoint(x, y);
+      const tile = hit && hit.closest && hit.closest(".snippets-collage_tile");
+      return tile && stage.contains(tile) ? tile : null;
+    }
+
+    function setHover(tile) {
+      if (tile === hoverEl) return;
+      if (hoverEl) hoverEl.classList.remove("is-hover");
+      hoverEl = tile;
+      if (hoverEl) hoverEl.classList.add("is-hover");
+      if (cursor) {
+        cursor.setLabel(
+          hoverEl ? snippets[+hoverEl.dataset.idx].title : ""
+        );
+      }
+    }
+
+    function updateHover() {
+      setHover(tileAt(mouseX, mouseY));
+    }
+
     let dragging = false;
+    let downX = 0;
+    let downY = 0;
+    let downT = 0;
+    let travel = 0;
     let lastX = 0;
     let lastY = 0;
     let velX = 0;
@@ -606,11 +765,15 @@
     const cursor = makeDragCursor(root);
 
     function onPointerDown(e) {
-      if (menuOpen()) return;
+      if (menuOpen() || lbOpen) return;
       if (e.pointerType === "mouse" && e.button !== 0) return;
+      dropHint();
       dragging = true;
-      lastX = e.clientX;
-      lastY = e.clientY;
+      setHover(null);
+      downX = lastX = e.clientX;
+      downY = lastY = e.clientY;
+      downT = performance.now();
+      travel = 0;
       velX = velY = 0;
       root.classList.add("is-dragging");
       if (!cursor) root.style.cursor = "grabbing";
@@ -620,6 +783,11 @@
     }
 
     function onPointerMove(e) {
+      if (e.pointerType === "mouse") {
+        mouseIn = true;
+        mouseX = e.clientX;
+        mouseY = e.clientY;
+      }
       if (!dragging) {
         /* Mouse lean: the canvas follows the pointer around the screen */
         if (e.pointerType === "mouse" && !reduceMotion && mouseRange) {
@@ -635,6 +803,7 @@
       const dy = e.clientY - lastY;
       lastX = e.clientX;
       lastY = e.clientY;
+      travel += Math.abs(dx) + Math.abs(dy);
       tgtX -= dx;
       tgtY -= dy;
       curX = tgtX;
@@ -653,21 +822,60 @@
       if (e.pointerId != null && root.hasPointerCapture(e.pointerId)) {
         root.releasePointerCapture(e.pointerId);
       }
+
+      /* A click or tap (barely moved, quick) opens the piece */
+      const isTap =
+        e.type === "pointerup" &&
+        travel < 8 &&
+        Math.hypot(e.clientX - downX, e.clientY - downY) < 8 &&
+        performance.now() - downT < 600;
+      if (isTap) {
+        const tile = tileAt(e.clientX, e.clientY);
+        if (tile) {
+          openLightbox(+tile.dataset.idx, tile);
+          return;
+        }
+      }
+
       if (!reduceMotion) {
         tgtX -= velX * FLING_MULT;
         tgtY -= velY * FLING_MULT;
       }
       interacted(-velX, -velY);
+      if (e.pointerType === "mouse") updateHover();
     }
 
     function onLeave() {
       leanTX = 0;
       leanTY = 0;
+      mouseIn = false;
+      setHover(null);
     }
 
+    /* Keys work while the collage itself has focus */
     function onKey(e) {
-      if (menuOpen()) return;
-      if (e.target.closest && e.target.closest("input, textarea, select")) return;
+      if (menuOpen() || lbOpen || e.target !== root) return;
+      if (e.key === "Enter" || e.key === " ") {
+        const r = root.getBoundingClientRect();
+        let best = null;
+        let bestD = Infinity;
+        tiles.forEach((rec) => {
+          const t = rec.el.getBoundingClientRect();
+          const d = Math.hypot(
+            t.left + t.width / 2 - (r.left + r.width / 2),
+            t.top + t.height / 2 - (r.top + r.height / 2)
+          );
+          if (d < bestD) {
+            bestD = d;
+            best = rec.el;
+          }
+        });
+        if (best) {
+          e.preventDefault();
+          openLightbox(+best.dataset.idx, best);
+        }
+        return;
+      }
       const step = {
         ArrowDown: [0, KEY_STEP],
         ArrowUp: [0, -KEY_STEP],
@@ -681,6 +889,123 @@
       tgtX += step[0];
       tgtY += step[1];
       interacted(step[0], step[1]);
+    }
+
+    /* ---------------------------------------------
+       LIGHTBOX: the piece large, with name, prev / next, Esc
+    --------------------------------------------- */
+
+    let lbOpen = false;
+    let lbIndex = 0;
+    let lbReturn = null;
+    let lbOpenedAt = 0;
+    let lb = null;
+
+    function buildLightbox() {
+      lb = document.createElement("div");
+      lb.className = "sc-lb";
+      lb.setAttribute("role", "dialog");
+      lb.setAttribute("aria-modal", "true");
+      lb.setAttribute("aria-label", "Snippet");
+      lb.innerHTML =
+        '<figure class="sc-lb_figure"><div class="sc-lb_frame"></div>' +
+        '<figcaption class="sc-lb_caption"><span class="sc-lb_title"></span>' +
+        '<span class="sc-lb_count"></span></figcaption></figure>' +
+        '<button type="button" class="sc-lb_btn sc-lb_close" aria-label="Close">' + ICON.close + "</button>" +
+        '<button type="button" class="sc-lb_btn sc-lb_prev" aria-label="Previous snippet">' + ICON.prev + "</button>" +
+        '<button type="button" class="sc-lb_btn sc-lb_next" aria-label="Next snippet">' + ICON.next + "</button>";
+      lb.querySelector(".sc-lb_close").addEventListener("click", closeLightbox);
+      lb.querySelector(".sc-lb_prev").addEventListener("click", () => showSnippet(lbIndex - 1));
+      lb.querySelector(".sc-lb_next").addEventListener("click", () => showSnippet(lbIndex + 1));
+      lb.addEventListener("click", (e) => {
+        /* ignore the click that follows the tap which opened it */
+        if (performance.now() - lbOpenedAt < 400) return;
+        if (e.target === lb || e.target.classList.contains("sc-lb_figure")) closeLightbox();
+      });
+      if (N < 2) {
+        lb.querySelector(".sc-lb_prev").hidden = true;
+        lb.querySelector(".sc-lb_next").hidden = true;
+      }
+      document.body.appendChild(lb);
+    }
+
+    /* prev / next walk the same shuffled order as the field */
+    function showSnippet(i) {
+      const pos = mod(order.indexOf(lbIndex) + (i - lbIndex), N);
+      lbIndex = order[pos];
+      const s = snippets[lbIndex];
+      const frame = lb.querySelector(".sc-lb_frame");
+      frame.textContent = "";
+      let media;
+      if (s.video && !reduceMotion) {
+        media = document.createElement("video");
+        media.src = s.video;
+        media.poster = s.src;
+        media.muted = true;
+        media.loop = true;
+        media.playsInline = true;
+        media.autoplay = true;
+        media.setAttribute("muted", "");
+        media.setAttribute("playsinline", "");
+        if (s.alt) media.setAttribute("aria-label", s.alt);
+        const p = media.play();
+        if (p && p.catch) p.catch(() => {});
+      } else {
+        media = document.createElement("img");
+        media.src = s.src;
+        media.alt = s.alt;
+      }
+      media.className = "sc-lb_media";
+      frame.appendChild(media);
+      lb.querySelector(".sc-lb_title").textContent = s.title;
+      lb.querySelector(".sc-lb_count").textContent = pos + 1 + " / " + N;
+      lb.setAttribute("aria-label", s.title || "Snippet");
+    }
+
+    function openLightbox(idx, fromEl) {
+      if (!lb) buildLightbox();
+      lbOpen = true;
+      lbOpenedAt = performance.now();
+      lbReturn = document.activeElement;
+      setHover(null);
+      if (cursor) cursor.hide();
+      lbIndex = idx;
+      showSnippet(idx);
+      lb.classList.add("is-open");
+      lb.querySelector(".sc-lb_close").focus({ preventScroll: true });
+      document.addEventListener("keydown", onLightboxKey, true);
+    }
+
+    function closeLightbox() {
+      if (!lbOpen) return;
+      lbOpen = false;
+      lb.classList.remove("is-open");
+      const v = lb.querySelector("video");
+      if (v) v.pause();
+      document.removeEventListener("keydown", onLightboxKey, true);
+      const back = lbReturn && lbReturn.isConnected ? lbReturn : root;
+      if (back && back.focus) back.focus({ preventScroll: true });
+      idle = 0;
+    }
+
+    function onLightboxKey(e) {
+      if (e.key === "Escape") {
+        e.preventDefault();
+        closeLightbox();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault();
+        showSnippet(lbIndex + 1);
+      } else if (e.key === "ArrowLeft") {
+        e.preventDefault();
+        showSnippet(lbIndex - 1);
+      } else if (e.key === "Tab") {
+        /* keep focus inside the dialog */
+        const btns = Array.from(lb.querySelectorAll("button")).filter((b) => !b.hidden);
+        const at = btns.indexOf(document.activeElement);
+        e.preventDefault();
+        const next = e.shiftKey ? at - 1 : at + 1;
+        btns[mod(next, btns.length)].focus();
+      }
     }
 
     let rt = null;
@@ -699,7 +1024,7 @@
     root.addEventListener("pointerup", endDrag);
     root.addEventListener("pointercancel", endDrag);
     root.addEventListener("pointerleave", onLeave);
-    document.addEventListener("keydown", onKey);
+    root.addEventListener("keydown", onKey);
     window.addEventListener("resize", onResize);
 
     if (window.stopLenis) window.stopLenis("snippets");
@@ -742,15 +1067,19 @@
       root.removeEventListener("pointerup", endDrag);
       root.removeEventListener("pointercancel", endDrag);
       root.removeEventListener("pointerleave", onLeave);
-      document.removeEventListener("keydown", onKey);
+      root.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onLightboxKey, true);
+      if (lb) lb.remove();
+      if (hint) hint.remove();
+      if (!hadTabindex) root.removeAttribute("tabindex");
       window.removeEventListener("resize", onResize);
       clearTimeout(rt);
       if (cursor) cursor.destroy();
       if (videoIO) videoIO.disconnect();
       stage.remove();
       vignette.remove();
-      pool.forEach((el) => {
-        el.style.display = "";
+      pool.forEach((el, i) => {
+        el.style.cssText = poolCss[i];
         el.removeAttribute("data-collage-pool");
       });
       delete root.dataset.collageReady;
