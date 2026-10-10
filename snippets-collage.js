@@ -234,6 +234,7 @@
   const STYLES = `
 [data-snippets-collage]:focus{outline:none}
 [data-snippets-collage]:focus-visible{outline:2px solid var(--color--accent,#DAF40A);outline-offset:-6px}
+[data-snippets-collage].sc-no-ring:focus-visible{outline:none}
 .snippets-collage_tile{transition:box-shadow .4s ease}
 .snippets-collage_tile .snippets-collage_media{transition:transform .6s cubic-bezier(.2,.8,.2,1)}
 .snippets-collage_tile.is-hover{box-shadow:0 26px 50px -18px rgba(10,15,18,.85)!important}
@@ -860,7 +861,7 @@
         });
         if (best) {
           e.preventDefault();
-          openLightbox(+best.dataset.idx, best);
+          openLightbox(+best.dataset.idx, best, true);
         }
         return;
       }
@@ -950,8 +951,17 @@
       lb.setAttribute("aria-label", s.title || "Snippet");
     }
 
-    function openLightbox(idx, fromEl) {
+    /* Focus ring on the collage only for keyboard users: after a
+       mouse-opened lightbox closes, focus comes back without the ring
+       until the visitor presses Tab */
+    let lbByKey = false;
+    function onTabKey(e) {
+      if (e.key === "Tab") root.classList.remove("sc-no-ring");
+    }
+
+    function openLightbox(idx, fromEl, byKey) {
       if (!lb) buildLightbox();
+      lbByKey = !!byKey;
       lbOpen = true;
       lbOpenedAt = performance.now();
       lbReturn = document.activeElement;
@@ -971,6 +981,7 @@
       const v = lb.querySelector("video");
       if (v) v.pause();
       document.removeEventListener("keydown", onLightboxKey, true);
+      if (!lbByKey) root.classList.add("sc-no-ring");
       const back = lbReturn && lbReturn.isConnected ? lbReturn : root;
       if (back && back.focus) back.focus({ preventScroll: true });
       idle = 0;
@@ -1013,6 +1024,7 @@
     root.addEventListener("pointercancel", endDrag);
     root.addEventListener("pointerleave", onLeave);
     root.addEventListener("keydown", onKey);
+    document.addEventListener("keydown", onTabKey);
     window.addEventListener("resize", onResize);
 
     if (window.stopLenis) window.stopLenis("snippets");
@@ -1056,6 +1068,8 @@
       root.removeEventListener("pointercancel", endDrag);
       root.removeEventListener("pointerleave", onLeave);
       root.removeEventListener("keydown", onKey);
+      document.removeEventListener("keydown", onTabKey);
+      root.classList.remove("sc-no-ring");
       document.removeEventListener("keydown", onLightboxKey, true);
       if (lb) lb.remove();
       if (hint) hint.remove();
