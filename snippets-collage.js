@@ -34,10 +34,10 @@
   /* Motion values from the reference effect (kept as is) */
   const EASE_FACTOR = 0.09; /* lerp factor per frame */
   const FLING_MULT = 14; /* inertia multiplier on drag release */
-  const CELL_RATIO = 2.1; /* world-cell pitch / base tile width */
-  const BASE_MIN = 150; /* min base tile width (px) */
-  const BASE_MAX = 260; /* max base tile width (px) */
-  const BASE_VP_RATIO = 0.24; /* base = min(vw, vh) x this */
+  const CELL_RATIO = 1.85; /* world-cell pitch / base tile width (reference 2.1) */
+  const BASE_MIN = 180; /* min base tile width, px (reference 150) */
+  const BASE_MAX = 380; /* max base tile width, px (reference 260) */
+  const BASE_VP_RATIO = 0.32; /* base = min(vw, vh) x this (reference 0.24) */
   const INIT_X = 2444; /* opening pan */
   const INIT_Y = 47;
   const WIDTHS = [0.68, 0.9, 1.0, 1.0, 1.3, 1.65];
@@ -51,7 +51,7 @@
   const MOUSE_EASE = 0.05; /* lerp factor for the lean */
   const KEY_STEP = 120;
   const MAX_TALL = 1.5; /* tall pieces: height at most base x this */
-  const MIN_GAP = 0.15; /* smallest space between tiles, x base */
+  const MIN_GAP = 0.12; /* smallest space between tiles, x base */
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
