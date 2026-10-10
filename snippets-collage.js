@@ -29,7 +29,8 @@
 
    Click or tap a piece (without dragging) to open it large, with its
    name, previous / next and Esc to close. Hovering a piece lifts it,
-   shows its name by the cursor and pauses the drift. Phones get a
+   turns the cursor badge into "View" (data-view-text on the
+   section changes the wording) and pauses the drift. Phones get a
    "Drag to explore" hint until the first touch. The CMS list stays in
    the page, visually hidden, so screen readers still get every piece
    and its alt text. Arrow keys pan only while the collage has focus;
@@ -115,12 +116,12 @@
     document.body.appendChild(el);
     root.style.cursor = "none";
 
-    /* Name of the piece under the cursor, in a pill beside the badge */
-    const label = document.createElement("div");
-    label.className = "sc-cursor-label";
-    label.setAttribute("aria-hidden", "true");
-    document.body.appendChild(label);
-    let labelText = "";
+    /* Over a piece, the arrows swap for "Click to view" */
+    const viewText = document.createElement("span");
+    viewText.className = "sc-cursor-text";
+    viewText.textContent = root.getAttribute("data-view-text") || "View";
+    el.appendChild(viewText);
+    let viewing = false;
 
     const pos = { x: -200, y: -200 };
     const target = { x: -200, y: -200 };
@@ -141,11 +142,6 @@
       el.style.opacity = on ? "1" : "0";
       targetScale = on ? 1 : 0.6;
       setTrail(on);
-      syncLabel();
-    }
-
-    function syncLabel() {
-      label.classList.toggle("is-on", shown && !!labelText);
     }
 
     function onMove(e) {
@@ -172,9 +168,6 @@
       el.style.transform =
         "translate3d(" + pos.x + "px," + pos.y + "px,0) scale(" +
         scale.toFixed(3) + ")";
-      label.style.transform =
-        "translate3d(" + (pos.x + DRAG_CURSOR_SIZE / 2 + 10) + "px," +
-        (pos.y - 16) + "px,0)";
       raf = requestAnimationFrame(loop);
     }
 
@@ -189,11 +182,11 @@
       hide() {
         show(false);
       },
-      setLabel(text) {
-        if (text === labelText) return;
-        labelText = text || "";
-        if (labelText) label.textContent = labelText;
-        syncLabel();
+      setView(on) {
+        if (on === viewing) return;
+        viewing = on;
+        el.classList.toggle("is-view", on);
+        if (shown) targetScale = on ? 1.12 : 1;
       },
       destroy() {
         cancelAnimationFrame(raf);
@@ -202,7 +195,6 @@
         setTrail(false);
         root.style.cursor = "";
         el.remove();
-        label.remove();
       },
     };
   }
@@ -245,8 +237,10 @@
 .snippets-collage_tile .snippets-collage_media{transition:transform .6s cubic-bezier(.2,.8,.2,1)}
 .snippets-collage_tile.is-hover{box-shadow:0 26px 50px -18px rgba(10,15,18,.85)!important}
 .snippets-collage_tile.is-hover .snippets-collage_media{transform:scale(1.05)!important}
-.sc-cursor-label{position:fixed;top:0;left:0;z-index:2147483646;pointer-events:none;padding:.45rem .8rem;border-radius:999px;background:var(--color--bg-primary,#0A0F12);color:var(--color--text-primary,#F7F7F7);font-size:.75rem;line-height:1.2;letter-spacing:.06em;text-transform:uppercase;white-space:nowrap;opacity:0;transition:opacity .2s ease}
-.sc-cursor-label.is-on{opacity:1}
+.snippets-cursor svg g{transition:opacity .2s ease,fill .4s ease}
+.snippets-cursor.is-view svg g{opacity:0}
+.sc-cursor-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 16%;text-align:center;color:var(--color--bg-primary,#0A0F12);font-size:15px;font-weight:600;line-height:1;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .2s ease}
+.snippets-cursor.is-view .sc-cursor-text{opacity:1}
 .sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;padding:.65rem 1.1rem;border-radius:999px;background:color-mix(in srgb,var(--color--accent,#DAF40A) 60%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:var(--color--bg-primary,#0A0F12);font-size:.75rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:opacity .5s ease}
 .sc-hint.is-gone{opacity:0}
 .sc-lb{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:clamp(4rem,8vw,6rem) clamp(1rem,6vw,6rem);background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
@@ -742,11 +736,7 @@
       if (hoverEl) hoverEl.classList.remove("is-hover");
       hoverEl = tile;
       if (hoverEl) hoverEl.classList.add("is-hover");
-      if (cursor) {
-        cursor.setLabel(
-          hoverEl ? snippets[+hoverEl.dataset.idx].title : ""
-        );
-      }
+      if (cursor) cursor.setView(!!hoverEl);
     }
 
     function updateHover() {
