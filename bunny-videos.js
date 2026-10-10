@@ -72,8 +72,17 @@ function initBunnyVideos(container = document) {
       HTMLMediaElement.NETWORK_EMPTY
     ) {
 
+      const sources = Array.from(
+        video.querySelectorAll("source")
+      );
+
       const source =
-        video.querySelector("source");
+        sources.find(
+          (s) =>
+            !s.media ||
+            !window.matchMedia ||
+            window.matchMedia(s.media).matches
+        ) || sources[0];
 
       if (
         source &&
@@ -162,9 +171,12 @@ function initBunnyVideos(container = document) {
 
     /* -----------------------------------------
        WARM VIDEO
+       Hover videos load as their card nears the
+       viewport, so the page doesn't download
+       every one up front.
     ----------------------------------------- */
 
-    video
+    const warm = () => video
       .play()
       .then(() => {
 
@@ -182,6 +194,30 @@ function initBunnyVideos(container = document) {
 
       })
       .catch(() => {});
+
+    if ("IntersectionObserver" in window) {
+
+      const io = new IntersectionObserver(
+        (entries) => {
+
+          if (entries.some((e) => e.isIntersecting)) {
+
+            io.disconnect();
+            warm();
+
+          }
+
+        },
+        { rootMargin: "300px 0px" }
+      );
+
+      io.observe(card);
+
+    } else {
+
+      warm();
+
+    }
 
 
     /* -----------------------------------------
