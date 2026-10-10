@@ -35,9 +35,9 @@
   const EASE_FACTOR = 0.09; /* lerp factor per frame */
   const FLING_MULT = 14; /* inertia multiplier on drag release */
   const CELL_RATIO = 1.85; /* world-cell pitch / base tile width (reference 2.1) */
-  const BASE_MIN = 180; /* min base tile width, px (reference 150) */
-  const BASE_MAX = 380; /* max base tile width, px (reference 260) */
-  const BASE_VP_RATIO = 0.32; /* base = min(vw, vh) x this (reference 0.24) */
+  const BASE_MIN = 220; /* min base tile width, px (reference 150) */
+  const BASE_MAX = 500; /* max base tile width, px (reference 260) */
+  const BASE_VP_RATIO = 0.4; /* base = min(vw, vh) x this (reference 0.24) */
   const INIT_X = 2444; /* opening pan */
   const INIT_Y = 47;
   const WIDTHS = [0.68, 0.9, 1.0, 1.0, 1.3, 1.65];
@@ -301,31 +301,33 @@
       CELL = Math.round(base * CELL_RATIO);
     }
 
-    /* Which snippet a cell shows: a linear pattern (ci + step * cj)
-       through a shuffled order. The step is picked for the number of
-       snippets so that repeats of the same piece sit as far apart as
-       possible in every direction (a fixed step can collapse a whole
-       row onto two pieces when it shares a factor with the count). */
-    const STEP = (() => {
+    /* Which snippet a cell shows: a repeating pattern through a
+       shuffled order, with the step chosen so the same piece comes
+       back as far away as the number of snippets allows (about
+       3.6 cells apart with 13 snippets, further with more). */
+    const step = (() => {
+      const reach = Math.min(N, 16);
       let best = 1;
-      let bestD = -1;
-      for (let b = 1; b < N; b++) {
-        let d = Infinity;
-        for (let i = -8; i <= 8; i++) {
-          for (let j = -8; j <= 8; j++) {
-            if ((i || j) && mod(i + b * j, N) === 0) d = Math.min(d, i * i + j * j);
+      let bestDist = -1;
+      for (let k = 1; k < N; k++) {
+        let near = Infinity;
+        for (let dx = -reach; dx <= reach; dx++) {
+          for (let dy = -reach; dy <= reach; dy++) {
+            if ((dx || dy) && mod(dx + k * dy, N) === 0) {
+              near = Math.min(near, dx * dx + dy * dy);
+            }
           }
         }
-        if (d > bestD) {
-          bestD = d;
-          best = b;
+        if (near > bestDist) {
+          bestDist = near;
+          best = k;
         }
       }
       return best;
     })();
 
     function snippetFor(ci, cj) {
-      return order[mod(ci + cj * STEP + salt, N)];
+      return order[mod(ci + cj * step + salt, N)];
     }
 
     function itemFor(ci, cj) {
