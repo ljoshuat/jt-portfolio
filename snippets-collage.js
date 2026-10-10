@@ -51,6 +51,7 @@
   const MOUSE_EASE = 0.05; /* lerp factor for the lean */
   const KEY_STEP = 120;
   const MAX_TALL = 1.5; /* tall pieces: height at most base x this */
+  const MIN_GAP = 0.15; /* smallest space between tiles, x base */
 
   const reduceMotion = window.matchMedia(
     "(prefers-reduced-motion: reduce)"
@@ -321,10 +322,13 @@
         h = Math.round(base * MAX_TALL);
         w = Math.round(h * ratio);
       }
+      /* Jitter only as far as the tile still fits inside its own cell
+         with a gap, so pieces scatter but never overlap */
       const jx = (r(3) % 1000) / 1000 - 0.5;
       const jy = (r(4) % 1000) / 1000 - 0.5;
-      const cx = (ci + 0.5 + jx * 0.6) * CELL;
-      const cy = (cj + 0.5 + jy * 0.6) * CELL;
+      const gap = base * MIN_GAP;
+      const cx = (ci + 0.5) * CELL + jx * Math.max(0, CELL - w - gap);
+      const cy = (cj + 0.5) * CELL + jy * Math.max(0, CELL - h - gap);
       return {
         x: Math.round(cx - w / 2),
         y: Math.round(cy - h / 2),
