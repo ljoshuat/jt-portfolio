@@ -22,6 +22,40 @@ function initBunnyVideos(container = document) {
     video.playsInline = true;
 
 
+    /* Card hover videos never play on touch
+       screens (see HOVER VIDEOS), so don't
+       download them there. */
+
+    if (
+      window.matchMedia &&
+      window.matchMedia("(hover: none)").matches &&
+      video.classList.contains("bunny-hover") &&
+      video.closest(".video-card")
+    ) {
+
+      video.preload = "none";
+
+      // Stop a download the page already started.
+      if (
+        video.networkState !==
+        HTMLMediaElement.NETWORK_EMPTY
+      ) {
+
+        video
+          .querySelectorAll("source")
+          .forEach((s) => s.removeAttribute("src"));
+
+        video.removeAttribute("src");
+
+        video.load();
+
+      }
+
+      return;
+
+    }
+
+
     /* -----------------------------------------
        MAKE SURE SOURCE IS LOADED
 
@@ -83,6 +117,18 @@ function initBunnyVideos(container = document) {
   );
 
 
+  /* Touch screens (phones, tablets) have no real
+     hover: a tap fires mouseenter with no
+     mouseleave, which left the hover video
+     running over the thumbnail (often still
+     black). They keep the thumbnail, and the
+     videos aren't warmed or played. */
+
+  const noHover =
+    window.matchMedia &&
+    window.matchMedia("(hover: none)").matches;
+
+
   cards.forEach((card) => {
 
     const video =
@@ -100,6 +146,18 @@ function initBunnyVideos(container = document) {
 
 
     card.dataset.videoInitialized = "true";
+
+
+    if (
+      noHover &&
+      video.classList.contains("bunny-hover")
+    ) {
+
+      video.pause();
+
+      return;
+
+    }
 
 
     /* -----------------------------------------
