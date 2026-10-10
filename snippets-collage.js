@@ -265,7 +265,8 @@
 .snippets-cursor.is-view svg g{opacity:0}
 .sc-cursor-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 16%;text-align:center;color:var(--color--bg-primary,#0A0F12);font-size:15px;font-weight:600;line-height:1;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .2s ease}
 .snippets-cursor.is-view .sc-cursor-text{opacity:1}
-.sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;color:var(--color--accent,#DAF40A);font-size:.8rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:color .4s ease}
+.sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;color:var(--color--accent,#DAF40A);font-size:.8rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;padding:.55em 1.1em;border-radius:999px;background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 72%,transparent);-webkit-backdrop-filter:blur(10px);backdrop-filter:blur(10px);transition:color .4s ease,background .4s ease}
+@media (hover:none),(pointer:coarse){.sc-hint{-webkit-backdrop-filter:none;backdrop-filter:none;background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 85%,transparent)}}
 .sc-lb{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:clamp(4rem,8vw,6rem) clamp(1rem,6vw,6rem);background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
 .sc-lb.is-open{opacity:1;visibility:visible;transition:opacity .35s ease}
 .sc-lb_figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;max-height:100%;transform:scale(.94);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
@@ -419,10 +420,14 @@
     let base = 0;
     let CELL = 0;
     let minW = 0;
+    /* Viewport size, read only on resize: reading it every frame
+       forced a layout pass right after the last frame's moves */
+    let vw = 0;
+    let vh = 0;
 
     function measure() {
-      const vw = root.clientWidth;
-      const vh = root.clientHeight;
+      vw = root.clientWidth;
+      vh = root.clientHeight;
       base = Math.round(
         Math.max(
           BASE_MIN,
@@ -603,13 +608,22 @@
     }
 
     function acquire(item) {
-      let el = free.pop();
+      /* Prefer a spare tile that already shows this piece, so its
+         image doesn't have to be swapped and decoded again */
+      let at = -1;
+      for (let k = free.length - 1; k >= 0; k--) {
+        if (free[k].dataset.idx === String(item.img)) {
+          at = k;
+          break;
+        }
+      }
+      let el = at >= 0 ? free.splice(at, 1)[0] : free.pop();
       if (!el) {
         el = document.createElement("div");
         el.className = "snippets-collage_tile";
         stage.appendChild(el);
       }
-      el.style.cssText =
+      const css =
         "position:absolute;top:0;left:0;display:block;overflow:hidden;" +
         "width:" + item.w + "px;height:" + item.h + "px;" +
         "border-radius:" +
@@ -624,6 +638,12 @@
            tile costs frames, and it barely reads on the dark page */
         (coarse ? "" : "box-shadow:0 10px 30px -12px rgba(10,15,18,.65);") +
         "will-change:transform;";
+      /* a spare tile of the same size only needs showing again */
+      if (el._css === css) el.style.display = "block";
+      else {
+        el.style.cssText = css;
+        el._css = css;
+      }
       el.dataset.idx = item.img;
       setMedia(el, snippets[item.img]);
       return el;
@@ -687,8 +707,7 @@
     }
 
     function render() {
-      const vw = root.clientWidth;
-      const vh = root.clientHeight;
+      if (!vw || !vh) measure();
       const px = curX + leanX;
       const py = curY + leanY;
       const pad = Math.ceil((base * 1.65 + 0.6 * CELL) / CELL) + 1;
@@ -698,6 +717,10 @@
       const j1 = Math.floor((py + vh) / CELL) + pad;
 
       const seen = new Set();
+      const ahead = Math.round(Math.min(vw, vh) * 0.35);
+      /* phones: land on whole device pixels so images aren't resampled */
+      const snap = coarse;
+      const dpr = window.devicePixelRatio || 1;
 
       for (let ci = i0; ci <= i1; ci++) {
         for (let cj = j0; cj <= j1; cj++) {
@@ -705,7 +728,9 @@
           if (!it) continue;
           const x = it.x - px;
           const y = it.y - py;
-          if (x + it.w <= 0 || x >= vw || y + it.h <= 0 || y >= vh) continue;
+          /* Tiles are built a little before they scroll into view, so
+             that work never lands on a frame you can see */
+          if (x + it.w <= -ahead || x >= vw + ahead || y + it.h <= -ahead || y >= vh + ahead) continue;
 
           const key = ci + "|" + cj;
           seen.add(key);
@@ -714,7 +739,9 @@
             rec = { el: acquire(it) };
             tiles.set(key, rec);
           }
-          rec.el.style.transform = "translate3d(" + x + "px," + y + "px,0)";
+          const tx = snap ? Math.round(x * dpr) / dpr : x;
+          const ty = snap ? Math.round(y * dpr) / dpr : y;
+          rec.el.style.transform = "translate3d(" + tx + "px," + ty + "px,0)";
         }
       }
 
@@ -1110,8 +1137,11 @@
     function onResize() {
       clearTimeout(rt);
       rt = setTimeout(() => {
-        clearTiles();
+        const was = base + "|" + minW;
         measure();
+        /* A phone's toolbar sliding in only changes the height: keep
+           the tiles unless their sizes actually changed */
+        if (base + "|" + minW !== was) clearTiles();
       }, RESIZE_DEBOUNCE);
     }
 
@@ -1145,6 +1175,7 @@
       if (destroyed) return;
       running = true;
       last = performance.now();
+      measure();
       render();
       predecode();
       if (useTicker) gsap.ticker.add(tick);
