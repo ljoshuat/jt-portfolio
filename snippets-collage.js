@@ -301,11 +301,31 @@
       CELL = Math.round(base * CELL_RATIO);
     }
 
-    /* Which snippet a cell shows. A linear pattern through a shuffled
-       order means neighbours (across, down and diagonal) never show the
-       same piece, even with only a dozen snippets. */
+    /* Which snippet a cell shows: a linear pattern (ci + step * cj)
+       through a shuffled order. The step is picked for the number of
+       snippets so that repeats of the same piece sit as far apart as
+       possible in every direction (a fixed step can collapse a whole
+       row onto two pieces when it shares a factor with the count). */
+    const STEP = (() => {
+      let best = 1;
+      let bestD = -1;
+      for (let b = 1; b < N; b++) {
+        let d = Infinity;
+        for (let i = -8; i <= 8; i++) {
+          for (let j = -8; j <= 8; j++) {
+            if ((i || j) && mod(i + b * j, N) === 0) d = Math.min(d, i * i + j * j);
+          }
+        }
+        if (d > bestD) {
+          bestD = d;
+          best = b;
+        }
+      }
+      return best;
+    })();
+
     function snippetFor(ci, cj) {
-      return order[mod(ci * 7 + cj * 3 + salt, N)];
+      return order[mod(ci + cj * STEP + salt, N)];
     }
 
     function itemFor(ci, cj) {
