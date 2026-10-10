@@ -30,8 +30,9 @@
    Click or tap a piece (without dragging) to open it large, with its
    name, previous / next and Esc to close. Hovering a piece lifts it,
    turns the cursor badge into "View" (data-view-text on the
-   section changes the wording) and pauses the drift. Phones get a
-   "Drag to explore" hint until the first touch. The CMS list stays in
+   section changes the wording) and pauses the drift. A lime line
+   along the bottom says "[ Click, drag or scroll ]" ("[ Tap or drag ]"
+   on touch; data-hint / data-hint-touch change the wording). The CMS list stays in
    the page, visually hidden, so screen readers still get every piece
    and its alt text. Arrow keys pan only while the collage has focus;
    Enter opens the piece in the middle.
@@ -241,8 +242,7 @@
 .snippets-cursor.is-view svg g{opacity:0}
 .sc-cursor-text{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;padding:0 16%;text-align:center;color:var(--color--bg-primary,#0A0F12);font-size:15px;font-weight:600;line-height:1;letter-spacing:.1em;text-transform:uppercase;opacity:0;transition:opacity .2s ease}
 .snippets-cursor.is-view .sc-cursor-text{opacity:1}
-.sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;padding:.65rem 1.1rem;border-radius:999px;background:color-mix(in srgb,var(--color--accent,#DAF40A) 60%,transparent);-webkit-backdrop-filter:blur(18px);backdrop-filter:blur(18px);color:var(--color--bg-primary,#0A0F12);font-size:.75rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:opacity .5s ease}
-.sc-hint.is-gone{opacity:0}
+.sc-hint{position:absolute;left:50%;bottom:calc(1.5rem + env(safe-area-inset-bottom,0px));z-index:3;transform:translateX(-50%);pointer-events:none;color:var(--color--accent,#DAF40A);font-size:.8rem;line-height:1.2;letter-spacing:.08em;text-transform:uppercase;white-space:nowrap;transition:color .4s ease}
 .sc-lb{position:fixed;inset:0;z-index:2147483000;display:flex;align-items:center;justify-content:center;padding:clamp(4rem,8vw,6rem) clamp(1rem,6vw,6rem);background:color-mix(in srgb,var(--color--bg-primary,#0A0F12) 86%,transparent);-webkit-backdrop-filter:blur(14px);backdrop-filter:blur(14px);opacity:0;visibility:hidden;transition:opacity .35s ease,visibility 0s linear .35s}
 .sc-lb.is-open{opacity:1;visibility:visible;transition:opacity .35s ease}
 .sc-lb_figure{margin:0;display:flex;flex-direction:column;align-items:center;gap:1rem;max-width:100%;max-height:100%;transform:scale(.94);transition:transform .5s cubic-bezier(.2,.8,.2,1)}
@@ -374,21 +374,16 @@
     if (!hadTabindex) root.tabIndex = 0;
     if (!root.hasAttribute("role")) root.setAttribute("role", "region");
 
-    /* Phones: a hint until the first touch */
+    /* How to use it, in lime along the bottom (touch gets its own words) */
     const coarse = window.matchMedia("(hover: none), (pointer: coarse)").matches;
-    let hint = null;
-    if (coarse) {
-      hint = document.createElement("div");
-      hint.className = "sc-hint";
-      hint.setAttribute("aria-hidden", "true");
-      hint.textContent = "Drag to explore";
-      root.appendChild(hint);
-    }
-    function dropHint() {
-      if (!hint || hint.classList.contains("is-gone")) return;
-      hint.classList.add("is-gone");
-      setTimeout(() => hint && hint.remove(), 600);
-    }
+    const hint = document.createElement("div");
+    hint.className = "sc-hint";
+    hint.setAttribute("aria-hidden", "true");
+    hint.textContent = coarse
+      ? root.getAttribute("data-hint-touch") || "[ Tap or drag ]"
+      : root.getAttribute("data-hint") || "[ Click, drag or scroll ]";
+    root.appendChild(hint);
+    function dropHint() {}
     root.style.touchAction = "none";
     root.style.userSelect = "none";
     root.style.webkitUserSelect = "none";
