@@ -44,8 +44,15 @@
       const top = row(text, false);
       const bottom = row(text, true);
       mask.append(top, bottom);
-      if (!el.getAttribute("aria-label")) el.setAttribute("aria-label", text);
-      textNode.parentNode.replaceChild(mask, textNode);
+      // Screen readers get the plain text from a visually hidden copy; the
+      // letter rows stay aria-hidden. (aria-label is not allowed on a plain div.)
+      const label = document.createElement("span");
+      label.textContent = text;
+      label.style.cssText =
+        "position:absolute;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0";
+      const frag = document.createDocumentFragment();
+      frag.append(label, mask);
+      textNode.parentNode.replaceChild(frag, textNode);
   
       const settings = { yPercent: -100, duration: 0.45, ease: "power3.inOut", stagger: 0.025 };
       const roll = gsap.timeline({ paused: true })
