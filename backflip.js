@@ -16,6 +16,17 @@
      [data-backflip-step] x 4            (optional, gets .is-active)
    The track also gets --bf-progress (0-1) for CSS.
 
+   Idle play-through: once the section is pinned and scrolling
+   rests, the figure loops a small move for the current step, then
+   the page glides on to the next step (Load, Rotate, then through
+   the flip to Stick), holding on each one so the copy can be read.
+   The page itself scrolls, so figure, copy, bars and scroll stay in
+   sync, and any touch, wheel or key hands control straight back (and
+   stops the play-through for the rest of the visit).
+   Before the section is reached only the Set loop plays (the page
+   never scrolls itself into the section). Uses window.lenis when
+   present. Off for prefers-reduced-motion.
+
    Load site-wide (footer). No dependencies. Barba-safe.
 ========================================================= */
 (() => {
@@ -382,7 +393,7 @@
       drawBody(s);
     }
 
-    function render(p) {
+    function render(p, labelP = p) {
       if (!cols || !rows) return;
       drawFigure(p);
       const data = octx.getImageData(0, 0, cols, rows).data;
@@ -403,6 +414,7 @@
       }
       ctx.fill();
 
+      p = labelP;
       track.style.setProperty("--bf-progress", p.toFixed(4));
       if (phaseEl) {
         let label = PHASES[0][1];
@@ -427,21 +439,145 @@
       // Light smoothing so wheel steps don't stutter
       shown += (target - shown) * 0.2;
       if (Math.abs(target - shown) < 0.0005) shown = target;
-      if (shown !== last) { render(shown); last = shown; }
+      // Coming out of the idle loop, labels follow the scroll, not the rewinding pose
+      if (shown !== last) { render(shown, handoff ? target : shown); last = shown; }
       raf = shown !== target ? requestAnimationFrame(loop) : 0;
+      if (!raf) { handoff = false; startIdle(); }
     }
     function onScroll() {
       target = progress();
+      if (idling) {
+        if (target === anchor) return;
+        stopIdle();
+        handoff = true;
+      }
       if (!raf) raf = requestAnimationFrame(loop);
     }
 
-    const ro = new ResizeObserver(() => { resize(); render(shown); });
+    // ---------- idle loops ----------
+    // When scrolling rests, the figure moves on its own around the current
+    // phase while the label, steps and bars stay put. Before the section is
+    // scrolled into it starts quickly; mid-section it waits a few seconds.
+    // home: pose to ease into first. cycle: [seconds, progress] repeated, or
+    // null to hold still (mid-flight just eases back to the takeoff pose).
+    const IDLE = [
+      { home: 0, cycle: [[0, 0], [0.7, 0.09], [1.5, 0.25], [2.5, 0], [4, 0]] }, // Set: arms up, swing down, stand
+      { home: 0.27, cycle: [[0, 0.27], [0.55, 0.22], [1.1, 0.27], [1.65, 0.22], [2.2, 0.27], [3.6, 0.27]] }, // Load: bounce in the squat
+      { home: 0.37, cycle: [[0, 0.37], [0.6, 0.33], [1.2, 0.37], [3, 0.37]] }, // Rotate: back to takeoff, dip and rise
+      { home: 1, cycle: [[0, 1], [0.8, 0.93], [1.6, 1], [3.6, 1]] }, // Stick: soften the knees
+    ];
+    const INTRO = 0.9; // seconds to ease from where scrolling stopped to home
+    // Play-through: progress stops to glide to, and how long to hold on each
+    const STOPS = [0.28, 0.39, 1];
+    const HOLD = 3500; // ms on a step before moving on
+    const still = window.matchMedia("(prefers-reduced-motion: reduce)");
+    let idling = false, idleRaf = 0, idleTimer = 0, idleStart = 0, anchor = 0, plan = null;
+    let inView = false, handoff = false, advanceTimer = 0, autoRaf = 0, autoOn = false, tookOver = false;
+    const ease = (u) => u * u * (3 - 2 * u);
+    function phaseOf(p) {
+      let i = 0;
+      PHASES.forEach(([at], k) => { if (p >= at) i = k; });
+      return i;
+    }
+    function idleAt(t) {
+      const intro = plan.home === anchor ? 0 : INTRO;
+      if (t < intro) return lerp(anchor, plan.home, ease(t / intro));
+      if (!plan.cycle) return plan.home;
+      const c = plan.cycle;
+      t = (t - intro) % c[c.length - 1][0];
+      for (let i = 1; i < c.length; i++) {
+        const [t0, p0] = c[i - 1], [t1, p1] = c[i];
+        if (t <= t1) return lerp(p0, p1, ease((t - t0) / (t1 - t0)));
+      }
+      return plan.home;
+    }
+    function idleTick(now) {
+      if (!idleStart) idleStart = now;
+      const t = (now - idleStart) / 1000;
+      shown = idleAt(t);
+      if (shown !== last) { render(shown, anchor); last = shown; }
+      // A held pose stops drawing once it gets there
+      idleRaf = plan.cycle || t < INTRO ? requestAnimationFrame(idleTick) : 0;
+    }
+    const canIdle = () => inView && !still.matches && !document.hidden && !idling && !raf && !autoOn && shown === target;
+    function startIdle() {
+      clearTimeout(idleTimer);
+      if (!canIdle()) return;
+      const wait = target === 0 ? 900 : 1500;
+      idleTimer = setTimeout(() => {
+        if (!canIdle()) return;
+        anchor = target; plan = IDLE[phaseOf(anchor)];
+        idling = true; idleStart = 0;
+        idleRaf = requestAnimationFrame(idleTick);
+        if (!tookOver && pinned() && anchor < 1) advanceTimer = setTimeout(advance, HOLD);
+      }, wait);
+    }
+    function pinned() {
+      const r = track.getBoundingClientRect();
+      return r.top <= 1 && r.bottom >= window.innerHeight - 1;
+    }
+    // Glide the page to the next stop; scroll events drive the figure as usual
+    function advance() {
+      const next = STOPS.find((p) => p > anchor + 0.01);
+      if (next === undefined || !pinned()) return;
+      const r = track.getBoundingClientRect();
+      const total = r.height - window.innerHeight;
+      const from = window.scrollY;
+      const to = from + r.top + total * next;
+      const duration = next === 1 ? 2.6 : 1.3;
+      autoOn = true;
+      const done = () => { autoOn = false; autoRaf = 0; onScroll(); };
+      if (window.lenis && window.lenis.scrollTo) {
+        window.lenis.scrollTo(to, { duration, easing: (u) => (u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2), onComplete: done });
+        return;
+      }
+      let t0 = 0;
+      const step = (now) => {
+        if (!t0) t0 = now;
+        const u = Math.min(1, (now - t0) / (duration * 1000));
+        window.scrollTo(0, lerp(from, to, u < 0.5 ? 2 * u * u : 1 - Math.pow(-2 * u + 2, 2) / 2));
+        if (u < 1) autoRaf = requestAnimationFrame(step); else done();
+      };
+      autoRaf = requestAnimationFrame(step);
+    }
+    // Any input from the visitor stops the play-through right away
+    function onInput() {
+      clearTimeout(advanceTimer);
+      if (!autoOn) return;
+      // Interrupting a glide means they want control: no more play-through this visit
+      tookOver = true;
+      cancelAnimationFrame(autoRaf); autoRaf = 0; autoOn = false;
+      if (window.lenis && window.lenis.scrollTo) window.lenis.scrollTo(window.scrollY, { immediate: true, force: true });
+      onScroll();
+    }
+    const INPUTS = ["wheel", "touchstart", "pointerdown", "keydown"];
+    INPUTS.forEach((ev) => window.addEventListener(ev, onInput, { passive: true }));
+    function stopIdle() {
+      clearTimeout(idleTimer); clearTimeout(advanceTimer);
+      cancelAnimationFrame(idleRaf); idleRaf = 0;
+      idling = false;
+    }
+    function pauseIdle() {
+      // Off screen or hidden tab: stop and settle back on the scroll pose
+      if (!idling) { clearTimeout(idleTimer); return; }
+      stopIdle();
+      shown = target; render(shown); last = shown;
+    }
+    const io = new IntersectionObserver(([e]) => {
+      inView = e.isIntersecting;
+      if (inView) startIdle(); else pauseIdle();
+    });
+    io.observe(canvas);
+    function onVisibility() { if (document.hidden) pauseIdle(); else startIdle(); }
+    document.addEventListener("visibilitychange", onVisibility);
+
+    const ro = new ResizeObserver(() => { resize(); render(shown, idling ? anchor : shown); });
     ro.observe(canvas);
     resize();
     target = shown = progress();
     render(shown);
     window.addEventListener("scroll", onScroll, { passive: true });
-    const mo = new MutationObserver(() => render(shown));
+    const mo = new MutationObserver(() => render(shown, idling ? anchor : shown));
     mo.observe(document.documentElement, { attributes: true, attributeFilter: ["class", "data-theme"] });
     if (document.body) mo.observe(document.body, { attributes: true, attributeFilter: ["class"] });
 
@@ -449,6 +585,9 @@
       render,
       destroy() {
         cancelAnimationFrame(raf); ro.disconnect(); mo.disconnect();
+        stopIdle(); io.disconnect(); onInput();
+        INPUTS.forEach((ev) => window.removeEventListener(ev, onInput));
+        document.removeEventListener("visibilitychange", onVisibility);
         window.removeEventListener("scroll", onScroll);
       },
     };
