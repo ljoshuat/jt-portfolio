@@ -37,6 +37,7 @@
   const CELL_RATIO = 1.78; /* world-cell pitch / base tile width (reference 2.1) */
   const BASE_MIN = 220; /* min base tile width, px (reference 150) */
   const BASE_MAX = 500; /* max base tile width, px (reference 260) */
+  const BASE_VW_RATIO = 0.22; /* floor from the window width */
   const BASE_VP_RATIO = 0.4; /* base = min(vw, vh) x this (reference 0.24) */
   const INIT_X = 2444; /* opening pan */
   const INIT_Y = 47;
@@ -51,6 +52,7 @@
   const MOUSE_EASE = 0.05; /* lerp factor for the lean */
   const KEY_STEP = 120;
   const MAX_TALL = 1.5; /* tall pieces: height at most base x this */
+  const MIN_TILE = 300; /* smallest tile width, px */
   const MIN_GAP = 0.12; /* smallest space between tiles, x base */
 
   const reduceMotion = window.matchMedia(
@@ -291,14 +293,24 @@
 
     let base = 0;
     let CELL = 0;
+    let minW = 0;
 
     function measure() {
       const vw = root.clientWidth;
       const vh = root.clientHeight;
       base = Math.round(
-        Math.max(BASE_MIN, Math.min(BASE_MAX, Math.min(vw, vh) * BASE_VP_RATIO))
+        Math.max(
+          BASE_MIN,
+          Math.min(
+            BASE_MAX,
+            /* short, wide windows size from the width instead */
+            Math.max(Math.min(vw, vh) * BASE_VP_RATIO, vw * BASE_VW_RATIO)
+          )
+        )
       );
       CELL = Math.round(base * CELL_RATIO);
+      /* Smallest tile: MIN_TILE px, or 70% of a phone's width */
+      minW = Math.min(MIN_TILE, vw * 0.7);
     }
 
     /* Which snippet a cell shows: a repeating pattern through a
@@ -337,12 +349,20 @@
       const idx = snippetFor(ci, cj);
       const wMul = WIDTHS[r(1) % WIDTHS.length];
       const ratio = snippets[idx].ratio || 1;
-      let w = Math.round(base * wMul);
+      let w = Math.max(minW, Math.round(base * wMul));
       let h = Math.round(w / ratio);
-      /* Tall pieces would tower over the rest: shrink them to fit */
+      /* Tall pieces would tower over the rest: shrink them to fit,
+         but never narrower than the minimum */
       if (h > base * MAX_TALL) {
-        h = Math.round(base * MAX_TALL);
+        h = Math.max(Math.round(base * MAX_TALL), Math.round(minW / ratio));
         w = Math.round(h * ratio);
+      }
+      /* Always leave room in the cell for the gap */
+      const room = CELL - base * MIN_GAP;
+      if (w > room || h > room) {
+        const k = Math.min(room / w, room / h);
+        w = Math.round(w * k);
+        h = Math.round(h * k);
       }
       /* Jitter only as far as the tile still fits inside its own cell
          with a gap, so pieces scatter but never overlap */
