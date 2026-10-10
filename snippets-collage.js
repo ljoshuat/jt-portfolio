@@ -34,7 +34,7 @@
   /* Motion values from the reference effect (kept as is) */
   const EASE_FACTOR = 0.09; /* lerp factor per frame */
   const FLING_MULT = 14; /* inertia multiplier on drag release */
-  const CELL_RATIO = 1.85; /* world-cell pitch / base tile width (reference 2.1) */
+  const CELL_RATIO = 1.78; /* world-cell pitch / base tile width (reference 2.1) */
   const BASE_MIN = 220; /* min base tile width, px (reference 150) */
   const BASE_MAX = 500; /* max base tile width, px (reference 260) */
   const BASE_VP_RATIO = 0.4; /* base = min(vw, vh) x this (reference 0.24) */
