@@ -517,7 +517,7 @@
         media.className = "snippets-collage_media";
         media.draggable = false;
         media.style.cssText =
-          "display:block;width:100%;height:100%;object-fit:cover;" +
+          "display:block;width:100%;height:100%;object-fit:cover;border-radius:inherit;" +
           "pointer-events:none;transform:scale(1.001);";
         if (want === "video") {
           media.muted = true;
@@ -555,7 +555,10 @@
         "width:" + item.w + "px;height:" + item.h + "px;" +
         "border-radius:" +
         (item.lg ? "var(--spacing--radius-md,1rem)" : "var(--spacing--radius-sm,.5rem)") +
-        ";background:var(--color--bg-secondary,#18191a);" +
+        /* no fill behind the image: a light fill bled through as a
+           hairline at the rounded corners */
+        ";background:transparent;isolation:isolate;" +
+        "-webkit-mask-image:-webkit-radial-gradient(white,black);" +
         "box-shadow:0 10px 30px -12px rgba(10,15,18,.65);will-change:transform;";
       el.dataset.idx = item.img;
       setMedia(el, snippets[item.img]);
