@@ -446,8 +446,9 @@
       if (!raf) { handoff = false; startIdle(); }
     }
     // ---------- scroll cue ----------
-    // [data-backflip-cue] gets .is-on while the section is pinned and the page
-    // rests: at the start until the visitor first moves through, and on Stick.
+    // [data-backflip-cue] gets .is-pinned the whole time the section is pinned,
+    // and .is-on while it is pinned and the page rests: at the start until the
+    // visitor first moves through, and on Stick. CSS picks which one to show.
     let cueStarted = false, cueTimer = 0;
     function cueCheck() {
       if (!cue) return;
@@ -458,6 +459,7 @@
     function cueRest() {
       if (!cue) return;
       cue.classList.remove("is-on");
+      cue.classList.toggle("is-pinned", pinned());
       clearTimeout(cueTimer);
       cueTimer = setTimeout(cueCheck, 900);
     }
