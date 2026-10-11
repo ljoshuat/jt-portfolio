@@ -35,11 +35,11 @@
 .vo-mark svg{display:block;width:100%;height:auto;overflow:visible}`;
 
   /* ---------- JT mark draw-on ("Pull") ---------- */
-  // Golden-ratio JT mark (logo-golden/jt-mark-golden.svg): weight 89, swoop r144/r55, notch closed by r55, pixel 89 x 76, gap 34
+  // Small JT mark (logo-golden/jt-mark-golden-small-notch34.svg): the mark shows under 48px here, so it uses the straight notch and the wider pixel gap
   // the J with its notch filled in; the notch is pulled in later by a sliding wedge
-  const JT_J_SOLID = 'M75.61628,0h148.37872l-39.93821,160.82932c-16.61457,61.17812 -72.54472,106.17068 -138.98345,106.17068h-57.40845l22.10107,-89h35.30738c25.37734,0 46.74075,-17.18563 53.08695,-40.55359l12.03053,-48.44641h-56.67563z';
-  const JT_NOTCH = 'M106.47557,103.96121c9.84669,-9.27633 23.11458,-14.96121 37.71024,-14.96121l-33.99498,0z';
-  const JT_DOT = 'M257.995,0h76l-22.10107,89h-76z';
+  const JT_J_SOLID = 'M75.61628,0h148.37872l-39.93821,160.82932c-16.61457,61.17812 -72.54472,106.17068 -138.98345,106.17068h-57.40845l22.10107,-89h34.64679c25.70763,0 47.40134,-17.18563 53.74754,-40.55359l12.03053,-48.44641h-56.67563z';
+  const JT_NOTCH = 'M106.192,89L144.192,89L101.749,123L97.749,123Z';
+  const JT_DOT = 'M268.995,0h76l-22.10107,89h-76z';
   // centerline the reveal follows: tail (lower left) -> up the stem -> left along the top bar
   const JT_TRIM = 'M-22 222 L58 222 C100 222 126 205 137 168 L160 86 L172 42 L20 42';
   let markN = 0;
@@ -47,7 +47,7 @@
   function makeMark() {
     const n = ++markN;
     const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
-    svg.setAttribute('viewBox', '-14 -2 350 271');
+    svg.setAttribute('viewBox', '-14 -2 361 271');
     svg.setAttribute('aria-hidden', 'true');
     svg.innerHTML = `<defs><mask id="vo-jm${n}" maskUnits="userSpaceOnUse" x="-80" y="-80" width="500" height="430"><path class="vo-trim" d="${JT_TRIM}" fill="none" stroke="#fff" stroke-width="124" stroke-linejoin="miter" stroke-miterlimit="10"/></mask>
       <clipPath id="vo-dc${n}"><path d="M225.3 -5 L500 -5 L500 90 L201.3 90 Z"/></clipPath>
@@ -365,7 +365,7 @@
       const lw = H * 0.55 * (1 + pulse * 0.12);
       markWrap.style.left = (top[0] - H * 0.055).toFixed(2) + 'px';
       markWrap.style.top = (yT + H * 0.595).toFixed(2) + 'px';
-      markWrap.style.width = ((lw * 332) / 328).toFixed(2) + 'px';
+      markWrap.style.width = ((lw * 332 * 361) / (328 * 350)).toFixed(2) + 'px';
       markWrap.style.opacity = (smooth(0.94, 1, p) * ringA[1]).toFixed(3);
       mark.set(lockAt ? (still ? 3 : (time - lockAt) / 1000) : 0);
     }
