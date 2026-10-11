@@ -1,5 +1,5 @@
-<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12.34 0.00 354.33 267.00" width="354" height="267">
-  <!-- Golden-ratio JT mark. J: weight 89, swoop 144/55, bar overhang 55, hook overhang 76. Pixel T: 89 tall (= weight), 76 wide, 42 from the J, same slant. Notch: 34 into the stem, 15.0 deep, closed by an r55 circle. -->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="-12.34 0.00 349.33 267.00" width="349" height="267">
+  <!-- Golden-ratio JT mark. J: weight 89, swoop 144/55, bar overhang 55, hook overhang 76. Pixel T: 89 tall (= weight), 76 wide, 37 from the J, same slant. Notch: 34 into the stem, 15.0 deep, closed by an r55 circle. -->
   <path fill="#DAF40A" d="M75.61628,0h148.37872l-39.93821,160.82932c-16.61457,61.17812 -72.54472,106.17068 -138.98345,106.17068h-57.40845l22.10107,-89h35.30738c25.37734,0 46.74075,-17.18563 53.08695,-40.55359l12.03053,-48.44641h-56.67563zM106.47557,103.96121c9.84669,-9.27633 23.11458,-14.96121 37.71024,-14.96121l-33.99498,0z"/>
-  <path fill="#DAF40A" d="M265.995,0h76l-22.10107,89h-76z"/>
+  <path fill="#DAF40A" d="M260.995,0h76l-22.10107,89h-76z"/>
 </svg>
