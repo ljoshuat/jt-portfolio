@@ -66,7 +66,7 @@
       trim.setAttribute('stroke-dashoffset', L * (1 - easeQuad(clamp(s / 0.8))));
       const w = clamp((s - 0.7) / 0.32); // notch slides in tip first, with the square
       wedge.setAttribute('transform', `translate(${-42 * Math.pow(1 - w, 3)} 0)`);
-      dot.setAttribute('transform', `translate(${-108 * (1 - backOut(clamp((s - 0.7) / 0.45)))} 0)`);
+      dot.setAttribute('transform', `translate(${-122 * (1 - backOut(clamp((s - 0.7) / 0.45)))} 0)`);
     };
     return svg;
   }
