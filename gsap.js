@@ -489,25 +489,39 @@ function buildLoaderGrid(loader) {
     const glows = Math.max(5, Math.round(cells.length * 0.2));
     const picks = pool.slice(0, glows);
 
-    /* Always exactly three accent tiles: random fully on-screen
-       cells, spread across the run so one lights at a time. */
+    /* Always exactly three accent tiles, spread apart on screen
+       and lit on an even beat across the run. */
     const ACCENTS = 3;
     const onScreen = c =>
-      c.cx > w / 2 && c.cx < W - w / 2 && c.cy > h / 2 && c.cy < H - h / 2;
-    const accents = pool.filter(onScreen).slice(0, ACCENTS);
-    pool.forEach(c => {
-      if (accents.length < ACCENTS && !accents.includes(c)) accents.push(c);
-    });
+      c.cx > w * 0.35 && c.cx < W - w * 0.35 && c.cy > h * 0.35 && c.cy < H - h * 0.35;
+    const visible = pool.filter(onScreen);
+    const candidates = visible.length >= ACCENTS ? visible : pool;
+    const dist = (a, b) => Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    const accents = [candidates[0]];
+    while (accents.length < ACCENTS) {
+      // Farthest-point pick, random among the near-farthest.
+      const ranked = candidates
+        .filter(c => !accents.includes(c))
+        .map(c => ({ c, d: Math.min(...accents.map(a => dist(a, c))) }))
+        .sort((a, b) => b.d - a.d);
+      const best = ranked.filter(r => r.d >= ranked[0].d * 0.85);
+      accents.push(best[Math.floor(Math.random() * best.length)].c);
+    }
     const rest = picks.filter(c => !accents.includes(c));
+
+    // One accent per beat. Each flash fades out before the next one
+    // starts, so two never overlap.
+    const beat = runTime / ACCENTS;
+    const flash = Math.min(0.7, beat * 0.9);
     accents.forEach((c, k) => {
-      const slot = Math.round(((k + 0.5) / ACCENTS) * (rest.length + accents.length));
-      rest.splice(Math.min(slot, rest.length), 0, c);
+      const at = 0.5 + k * beat;
+      tl.to(c.el, { fill: glow, duration: flash * 0.4, ease: "sine.out" }, at)
+        .to(c.el, { fill: c.base, duration: flash * 0.5, ease: "sine.in" }, at + flash * 0.5);
     });
 
     rest.forEach((c, i) => {
       const at = 0.5 + (i / rest.length) * runTime + Math.random() * 0.2;
-      const color = accents.includes(c) ? glow : lit;
-      tl.to(c.el, { fill: color, duration: 0.5, ease: "sine.inOut" }, at)
+      tl.to(c.el, { fill: lit, duration: 0.5, ease: "sine.inOut" }, at)
         .to(c.el, { fill: c.base, duration: 0.9, ease: "sine.inOut" }, at + 0.65);
     });
 
