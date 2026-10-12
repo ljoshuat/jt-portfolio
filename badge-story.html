@@ -9,7 +9,7 @@
   --jtb-dim:color-mix(in srgb,var(--jtb-accent) 16%,var(--jtb-bg));
   --jtb-mono:"Ppneuemontrealmono","PP Neue Montreal Mono","JetBrains Mono",ui-monospace,monospace;
   background:var(--jtb-bg);color:var(--jtb-fg);
-  padding:clamp(4rem,9vw,8rem) clamp(1rem,5vw,5rem);
+  padding-block:clamp(4rem,9vw,8rem);
   overflow:hidden;
 }
 .jtb *{box-sizing:border-box}
@@ -76,6 +76,7 @@
   </defs>
 </svg>
 
+<div class="jtb-inner">
 <div class="jtb-top">
   <div>
     <h2 class="jtb-title section-heading" id="jtb-title" data-rise>The badge</h2>
@@ -111,6 +112,7 @@
       <div><div class="jtb-label">Launched</div><p>Signed off. We launched it.</p></div>
     </li>
   </ol>
+</div>
 </div>
 
 </section>
