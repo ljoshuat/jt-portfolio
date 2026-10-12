@@ -2786,13 +2786,28 @@ function initBadgeStory() {
 
   rows.forEach(row => {
     const part = row.getAttribute("data-part");
-    row.addEventListener("mouseenter", () => setPart(part));
+    // Remember the state before a tap: on touch, focus fires before
+    // click and would otherwise make the first tap toggle straight off.
+    let before;
+    let mouse = false;
+    row.addEventListener("pointerdown", e => {
+      before = root.getAttribute("data-part");
+      mouse = e.pointerType === "mouse";
+    });
+    row.addEventListener("pointerenter", e => {
+      if (e.pointerType === "mouse") setPart(part);
+    });
+    row.addEventListener("pointerleave", e => {
+      if (e.pointerType === "mouse") setPart(null);
+    });
     row.addEventListener("focus", () => setPart(part));
-    row.addEventListener("mouseleave", () => setPart(null));
     row.addEventListener("blur", () => setPart(null));
-    row.addEventListener("click", () =>
-      setPart(root.getAttribute("data-part") === part ? null : part)
-    );
+    row.addEventListener("click", () => {
+      const was = before !== undefined ? before : root.getAttribute("data-part");
+      before = undefined;
+      if (mouse) { mouse = false; setPart(part); return; }
+      setPart(was === part ? null : part);
+    });
   });
 
   root.querySelectorAll(".jtb-hero path").forEach(el => {
