@@ -1,0 +1,135 @@
+<style>
+.jtx{
+  --jtx-bg:var(--color--bg-primary,#0A0F12);
+  --jtx-fg:var(--color--text-primary,#F7F7F7);
+  --jtx-accent:var(--color--accent,#DAF40A);
+  --jtx-muted:color-mix(in srgb,var(--jtx-fg) 62%,transparent);
+  --jtx-faint:color-mix(in srgb,var(--jtx-fg) 42%,transparent);
+  --jtx-line:color-mix(in srgb,var(--jtx-fg) 16%,transparent);
+  --jtx-panel:color-mix(in srgb,var(--jtx-fg) 6%,var(--jtx-bg));
+  --jtx-display:var(--typography--font-display,"Druk Wide Web"),"Druk Wide",Verdana,sans-serif;
+  --jtx-mono:"Ppneuemontrealmono","PP Neue Montreal Mono","JetBrains Mono",ui-monospace,monospace;
+  --jtx-serif:"Ppeditorialnew","PP Editorial New",Georgia,serif;
+  background:var(--jtx-bg);color:var(--jtx-fg);
+  padding-block:clamp(4rem,9vw,8rem);
+  overflow:hidden;
+}
+.jtx *{box-sizing:border-box}
+.jtx-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.jtx-label{font-family:var(--jtx-mono);font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.jtx-accent{color:var(--jtx-accent)}
+.jtx-type-row{display:grid;grid-template-columns:1fr;gap:1rem;padding:1.75rem 0;border-top:1px solid var(--jtx-line);transition:opacity .4s ease}
+.jtx-type-row:last-child{border-bottom:1px solid var(--jtx-line)}
+@media (min-width:992px){.jtx-type-row{grid-template-columns:minmax(0,1fr) 20rem;gap:3rem;align-items:start}}
+.jtx-type:hover .jtx-type-row{opacity:.45}
+.jtx-type:hover .jtx-type-row:hover{opacity:1}
+.jtx-sample{margin:0;min-width:0;overflow-wrap:break-word}
+.jtx-d{font-family:var(--jtx-display);font-weight:700;text-transform:uppercase;line-height:.95;letter-spacing:-.01em}
+.jtx-d-xl{font-size:clamp(2.2rem,6.4vw,7rem)}
+.jtx-d-l{font-size:clamp(1.6rem,4.2vw,4.75rem)}
+.jtx-d-m{font-size:clamp(1.25rem,2.4vw,2.6rem)}
+.jtx-b-l{font-weight:300;font-size:clamp(1.25rem,1.9vw,1.875rem);line-height:1.25}
+.jtx-b{font-weight:300;font-size:1.125rem;line-height:1.4;color:var(--jtx-muted)}
+.jtx-nav{display:flex;flex-wrap:wrap;gap:.6rem 1.25rem}
+.jtx-serif{font-family:var(--jtx-serif);font-style:italic;font-weight:200;font-size:clamp(2.5rem,4.2vw,4.5rem);line-height:1;color:var(--jtx-accent)}
+.jtx-spec{display:grid;gap:.4rem}
+.jtx-spec p{margin:0;font-size:.9375rem;line-height:1.4}
+.jtx-spec p+p{color:var(--jtx-faint)}
+.jtx-marks{list-style:none;margin:0;padding:0;display:grid;grid-template-columns:1fr;gap:2.5rem}
+@media (min-width:768px){.jtx-marks{grid-template-columns:repeat(3,minmax(0,1fr));gap:2rem}}
+.jtx-mark-panel{aspect-ratio:4/3;max-width:100%;border-radius:1.25rem;background:var(--jtx-panel);display:flex;align-items:center;justify-content:center;transition:background-color .4s ease}
+.jtx-mark-panel svg{width:36%;height:auto;fill:var(--jtx-accent);transition:transform .6s cubic-bezier(.2,.7,.2,1)}
+.jtx-mark:hover .jtx-mark-panel{background:color-mix(in srgb,var(--jtx-fg) 10%,var(--jtx-bg))}
+.jtx-mark:hover .jtx-mark-panel svg{transform:translateY(-4%) rotate(-3deg) scale(1.06)}
+.jtx-mark h3{margin:1.75rem 0 .75rem;font-family:var(--jtx-display);font-weight:700;text-transform:uppercase;font-size:clamp(1.5rem,2.2vw,2.25rem);line-height:1}
+.jtx-mark p{margin:.75rem 0 0;color:var(--jtx-muted);line-height:1.4;max-width:30rem}
+.jtx-rule{display:grid;grid-template-columns:1fr;gap:.75rem;margin-top:clamp(3rem,7vw,6rem);padding-top:1.75rem;border-top:1px solid var(--jtx-line)}
+@media (min-width:768px){.jtx-rule{grid-template-columns:16rem minmax(0,1fr);gap:2rem}}
+.jtx-rule p{margin:0;font-size:clamp(1.0625rem,1.3vw,1.25rem);line-height:1.4;max-width:42rem}
+.jtx.is-js [data-rise]{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.jtx.is-js [data-rise].is-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .jtx.is-js [data-rise]{opacity:1;transform:none;transition:none}
+  .jtx-mark-panel,.jtx-mark-panel svg,.jtx-type-row{transition:none}
+  .jtx-mark:hover .jtx-mark-panel svg{transform:none}
+}
+</style>
+
+<section class="jtx jtx-type" id="jt-typography" aria-labelledby="jtx-type-title">
+<div class="jtx-inner">
+  <h2 class="jtx-sr" id="jtx-type-title">Typography</h2>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-d jtx-d-xl">Momentum</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Display / XL</span><p>Druk Wide 700 / uppercase</p><p>Covers, posters, loader counter. Web hero tops out at 80px.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-d jtx-d-l">Craft &amp; Motion</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Display / L</span><p>Druk Wide 700 / uppercase</p><p>Page titles. Web h1 up to 56px.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-d jtx-d-m">Selected Work</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Display / M</span><p>Druk Wide 700 / uppercase</p><p>Section heads. Web h2 up to 40px.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-b-l">I design and build brands that move.</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Body / L</span><p>Neue Montreal 300</p><p>Intros and pull lines, up to 35px.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-b">Every project starts with a clear story and ends with something people use.</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Body</span><p>Neue Montreal 300, gray</p><p>Paragraphs at 16 to 18px, line height 1.4.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-nav jtx-label"><span>Work</span><span>/</span><span>About</span><span>/</span><span>Contact</span></p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Label</span><p>Neue Montreal, tracked</p><p>Nav, meta and tags. 12 to 14px, uppercase.</p></div>
+  </div>
+  <div class="jtx-type-row" data-rise>
+    <p class="jtx-sample jtx-serif">since 2003</p>
+    <div class="jtx-spec"><span class="jtx-label jtx-accent">Serif accent</span><p>Editorial New 200 italic</p><p>One or two words of emphasis, never a full sentence.</p></div>
+  </div>
+</div>
+</section>
+
+<section class="jtx jtx-which" id="jt-which-mark" aria-labelledby="jtx-mark-title">
+<div class="jtx-inner">
+  <h2 class="jtx-sr" id="jtx-mark-title">Which mark</h2>
+  <ul class="jtx-marks">
+    <li class="jtx-mark" data-rise>
+      <div class="jtx-mark-panel">
+        <svg viewBox="113.8 89 346.4 267" role="img" aria-label="The open J">
+          <path transform="translate(113.795 89)" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/>
+          <path transform="translate(362.024 89)" d="M22.101 0H98.101L76 89H0Z"/>
+        </svg>
+      </div>
+      <h3>Open J</h3>
+      <span class="jtx-label jtx-accent">The voice</span>
+      <p>Nav, footer, loader, page transitions, covers and the email signature.</p>
+    </li>
+    <li class="jtx-mark" data-rise>
+      <div class="jtx-mark-panel">
+        <svg viewBox="0 0 539 445" role="img" aria-label="The badge">
+          <path fill-rule="evenodd" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z M201.746 89H350.125L310.187 249.829C293.572 311.007 237.642 356 171.203 356H113.795L135.896 267H170.543C196.25 267 217.944 249.814 224.29 226.446L232.606 192.961C242.452 183.685 255.72 178 270.316 178H179.645Z M384.125 89H460.125L438.024 178H362.024Z"/>
+        </svg>
+      </div>
+      <h3>Badge</h3>
+      <span class="jtx-label jtx-accent">The signature</span>
+      <p>App icon, favicon, avatar, stickers, merch and the back of the business card.</p>
+    </li>
+    <li class="jtx-mark" data-rise>
+      <div class="jtx-mark-panel">
+        <svg viewBox="0 0 1077.8 890" role="img" aria-label="The trio J">
+          <path transform="translate(0 445)" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
+          <path transform="translate(428.4 445)" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
+          <path transform="translate(538.9 0)" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
+        </svg>
+      </div>
+      <h3>Trio J</h3>
+      <span class="jtx-label jtx-accent">The pattern</span>
+      <p>Patterns, backgrounds, packaging and social tiles. Never as a stand-alone logo next to the open J.</p>
+    </li>
+  </ul>
+  <div class="jtx-rule" data-rise>
+    <span class="jtx-label jtx-accent">One mark per view</span>
+    <p>The open J and the badge never share a screen. If the badge is the app icon, the screen inside uses the open J or no mark at all.</p>
+  </div>
+</div>
+</section>

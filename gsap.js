@@ -2850,11 +2850,61 @@ function initBadgeStory() {
  * the page's own scripts, so watch for the section
  * arriving instead of relying on a hook.
  */
+/* =========================================================
+   BRAND SECTIONS (TYPOGRAPHY, WHICH MARK)
+   Fade each row or card up as it scrolls in.
+========================================================= */
+
+function initBrandSections() {
+
+  document.querySelectorAll(".jtx:not([data-jtx-init])").forEach(root => {
+
+    root.setAttribute("data-jtx-init", "true");
+    root.classList.add("is-js");
+
+    const items =
+      root.querySelectorAll(
+        "[data-rise]"
+      );
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !("IntersectionObserver" in window)
+    ) {
+      items.forEach(el => el.classList.add("is-in"));
+      return;
+    }
+
+    const io = new IntersectionObserver(entries => {
+      entries
+        .filter(entry => entry.isIntersecting)
+        .forEach((entry, i) => {
+          entry.target.style.transitionDelay = (i * 0.1) + "s";
+          entry.target.classList.add("is-in");
+          io.unobserve(entry.target);
+        });
+    }, {
+      rootMargin: "0px 0px -10% 0px",
+      threshold: 0.15
+    });
+
+    items.forEach(el => io.observe(el));
+
+  });
+
+}
+
+
 (function watchBadgeStory() {
 
-  function start() {
+  function initAll() {
     initBadgeStory();
-    new MutationObserver(initBadgeStory).observe(
+    initBrandSections();
+  }
+
+  function start() {
+    initAll();
+    new MutationObserver(initAll).observe(
       document.body,
       { childList: true, subtree: true }
     );
