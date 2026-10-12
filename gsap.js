@@ -308,6 +308,27 @@ function loaderGridPreview() {
 }
 
 
+/*
+ * Recolor one loader element to the theme text color:
+ * text color always, fill/stroke on SVG shapes that use
+ * them, and background where the element has one (the dot).
+ */
+function themeInk(el, color) {
+  const cs = getComputedStyle(el);
+  const props = { color };
+  const hasBg =
+    cs.backgroundColor &&
+    cs.backgroundColor !== "transparent" &&
+    !/rgba\(.*,\s*0\)$/.test(cs.backgroundColor);
+  if (hasBg) props.backgroundColor = color;
+  if (el instanceof SVGElement) {
+    if (cs.fill && cs.fill !== "none") props.fill = color;
+    if (cs.stroke && cs.stroke !== "none") props.stroke = color;
+  }
+  gsap.set(el, props);
+}
+
+
 function buildLoaderGrid(loader) {
 
   const NS = "http://www.w3.org/2000/svg";
@@ -542,20 +563,6 @@ function initLoader(container) {
 
 
   /* =========================================================
-     LOADER GRID (PREVIEW, ?grid ONLY)
-  ========================================================= */
-
-  const loaderGrid =
-    loaderGridPreview()
-      ? buildLoaderGrid(loader)
-      : null;
-
-  if (loaderGrid) {
-    loaderGrid.play(2.2);
-  }
-
-
-  /* =========================================================
      ELEMENTS
   ========================================================= */
 
@@ -681,6 +688,38 @@ function initLoader(container) {
     );
 
     return;
+
+  }
+
+
+  /* =========================================================
+     LOADER GRID (PREVIEW, ?grid ONLY)
+     The loader takes the theme's colors: dark by default,
+     light in light-theme, lime in vibe-theme. J, dot and
+     text use the theme text color so they read on it.
+  ========================================================= */
+
+  let loaderGrid = null;
+  let themeBg = null;
+
+  if (loaderGridPreview()) {
+
+    const themeStyle = getComputedStyle(document.body);
+    themeBg =
+      themeStyle.getPropertyValue("--color--bg-primary").trim() || "#0A0F12";
+    const themeText =
+      themeStyle.getPropertyValue("--color--text-primary").trim() || "#F7F7F7";
+
+    gsap.set(loader, { backgroundColor: themeBg, color: themeText });
+
+    [jLogo, dot, leftText, rightText, progressEl].forEach(el => {
+      if (!el) return;
+      themeInk(el, themeText);
+      el.querySelectorAll("*").forEach(child => themeInk(child, themeText));
+    });
+
+    loaderGrid = buildLoaderGrid(loader);
+    loaderGrid.play(2.2);
 
   }
 
@@ -1566,7 +1605,10 @@ if (elementsToExit.length) {
 }
 
 
-/* Grid fades out under the dot takeover. */
+/*
+ * Grid fades out under the dot takeover, and the dot
+ * shifts to the theme background so it hands off cleanly.
+ */
 if (loaderGrid) {
 
   exitTL.to(
@@ -1578,6 +1620,23 @@ if (loaderGrid) {
     },
     0
   );
+
+  const dotInk = [dot, ...dot.querySelectorAll("*")].filter(el => {
+    const cs = getComputedStyle(el);
+    return el instanceof SVGElement
+      ? cs.fill && cs.fill !== "none"
+      : cs.backgroundColor && !/rgba\(.*,\s*0\)$/.test(cs.backgroundColor) && cs.backgroundColor !== "transparent";
+  });
+
+  dotInk.forEach(el => {
+    exitTL.to(
+      el,
+      el instanceof SVGElement
+        ? { fill: themeBg, duration: 0.6, ease: "power2.in" }
+        : { backgroundColor: themeBg, duration: 0.6, ease: "power2.in" },
+      0
+    );
+  });
 
 }
 
