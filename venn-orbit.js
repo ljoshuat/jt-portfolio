@@ -128,6 +128,7 @@
     let revealAt = 0, revealing = false, layerFilter = '';
     const lifted = parents.map(() => 0); // our fade-up offset on each circle (desktop)
     let closed = 0, baseMB = 0, mbInline = '', refreshT = 0;
+    let shown = 0, caught = false; // how far the rings have formed, held back until they've faded in
 
     // Fade-up, matching the rest of the page: the circles (and so the rings, which follow them) wait
     // for the heading's words to blur in, then rise 40px and unblur, the top circle first. Below 992px
@@ -294,7 +295,14 @@
       let target = inside ? 1 - smooth(R * 0.6, R * 2.6, Math.hypot(px - hub[0], py - hub[1])) : 0;
       if (target > 0.9) target = 1; // close enough: snap them together
       pull = still ? 0 : lerp(pull, target, 0.07);
-      const p = still ? (scroll > 0.5 ? 1 : scroll) : Math.max(scroll, pull);
+      // The rings come in scrambled and form after. By the time the fade-up finishes the scroll is
+      // often already past the lock, so hold them apart until they're fully in, then let them catch
+      // up to the scroll over about a second and follow it from there.
+      const goal = Math.max(scroll, pull), faded = Math.min(...ringA);
+      if (faded < 0.98) { shown = 0; caught = false; }
+      else if (caught || goal <= shown) { shown = goal; caught = true; }
+      else shown = Math.min(goal, shown + dt * 1.1);
+      const p = still ? (scroll > 0.5 ? 1 : scroll) : shown;
       const k = easeCubic(clamp(p));
 
       spin += still ? 0 : dt * (1 - k) * 1.4;
