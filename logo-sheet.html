@@ -38,21 +38,11 @@
 .jtl-lime{background:var(--jtl-lime);color:var(--jtl-ink);border-bottom-right-radius:clamp(1.5rem,3.5vw,3rem)}
 .jtl-buildwrap{margin-top:clamp(3rem,7vw,6rem)}
 .jtl-build{display:block;width:100%;height:auto;overflow:visible}
+@media (max-width:767px){.jtl-buildwrap{overflow:hidden}.jtl-build{width:170%;margin-left:-35%}}
 .jtl-guides line,.jtl-circles circle{fill:none;stroke:var(--jtl-line);stroke-width:1;vector-effect:non-scaling-stroke}
 .jtl-dot{fill:color-mix(in srgb,var(--jtl-fg) 60%,transparent)}
 .jtl-shape path{fill:color-mix(in srgb,var(--jtl-accent) 16%,transparent);stroke:var(--jtl-accent);stroke-width:1.25;vector-effect:non-scaling-stroke}
 .jtl-pts rect{fill:var(--jtl-bg);stroke:var(--jtl-accent);stroke-width:1;vector-effect:non-scaling-stroke}
-@supports (animation-timeline:view()){
-  @media (prefers-reduced-motion:no-preference){
-    .jtl-tile{animation:jtl-rise linear both;animation-timeline:view();animation-range:entry 0% entry 60%}
-    .jtl-guides,.jtl-circles,.jtl-dot{animation:jtl-fade linear both;animation-timeline:view();animation-range:entry 10% cover 35%}
-    .jtl-shape path{stroke-dasharray:1200;animation:jtl-draw linear both;animation-timeline:view();animation-range:entry 20% cover 45%}
-    .jtl-pts{animation:jtl-fade linear both;animation-timeline:view();animation-range:cover 35% cover 50%}
-  }
-}
-@keyframes jtl-rise{from{opacity:0;transform:translateY(40px)}to{opacity:1;transform:none}}
-@keyframes jtl-fade{from{opacity:0}to{opacity:1}}
-@keyframes jtl-draw{from{stroke-dashoffset:1200;fill-opacity:0}70%{fill-opacity:0}to{stroke-dashoffset:0;fill-opacity:1}}
 @media (prefers-reduced-motion:reduce){
   .jtl-app,.jtl-ping,.jtl-ink .jtl-tick{transition:none}
   .jtl-icon:hover .jtl-app,.jtl-icon:hover .jtl-ping,.jtl-ink:hover .jtl-tick{transform:none}

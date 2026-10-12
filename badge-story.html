@@ -27,6 +27,17 @@
 .jtb-part.is-on p{color:var(--jtb-fg)}
 @media (max-width:479px){.jtb-part{grid-template-columns:1fr;gap:.35rem}}
 .jtb-hero{position:relative;display:flex;justify-content:center}
+.jtb-hint{display:none;align-items:center;gap:.6rem;margin:2.5rem 0 0;color:var(--jtb-muted)}
+.jtb-hint::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--jtb-accent);animation:jtb-ping 1.6s ease-out infinite}
+@keyframes jtb-ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--jtb-accent) 60%,transparent)}100%{box-shadow:0 0 0 .6rem transparent}}
+@media (hover:none),(max-width:991px){.jtb-hint{display:flex}.jtb-hint+.jtb-parts{margin-top:1rem}}
+@media (max-width:991px){
+  .jtb-copy{display:contents}
+  .jtb-top{gap:0}
+  .jtb-title{order:1}.jtb-lede{order:2}
+  .jtb-hero{order:3;margin-top:2.5rem}.jtb .jtb-hero svg{width:min(78%,26rem)}
+  .jtb-hint{order:4}.jtb-parts{order:5}
+}
 .jtb-hero svg{width:min(100%,38rem);height:auto;overflow:visible}
 .jtb-hero path{transition:fill .45s ease,opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1);transform-box:fill-box;transform-origin:50% 50%}
 .jtb-c{fill:var(--jtb-accent)}
@@ -59,6 +70,7 @@
 @media (prefers-reduced-motion:reduce){
   .jtb.is-js [data-rise]{opacity:1;transform:none;transition:none}
   .jtb-hero path,.jtb-step .jtb-mini,.jtb-part{transition:none}
+  .jtb-hint::before{animation:none}
   .jtb-step.is-stamp svg{animation:none}
 }
 </style>
@@ -78,9 +90,10 @@
 
 <div class="jtb-inner">
 <div class="jtb-top">
-  <div>
+  <div class="jtb-copy">
     <h2 class="jtb-title section-heading" id="jtb-title" data-rise>The badge</h2>
     <p class="jtb-lede" data-rise>My mark of done. The J is me, the pixel is the work, and the container holds them together like a stamp. When something ships, it gets the badge.</p>
+    <p class="jtb-label jtb-hint" data-rise>Tap a part</p>
     <ul class="jtb-parts" data-rise>
       <li class="jtb-part" data-part="j" tabindex="0"><span class="jtb-label">The J</span><p>Me. The person behind every project.</p></li>
       <li class="jtb-part" data-part="p" tabindex="0"><span class="jtb-label">The pixel</span><p>The work. The smallest unit of everything I make.</p></li>
