@@ -2895,11 +2895,30 @@ function initBrandSections() {
 }
 
 
+function initLogoSheet() {
+  document.querySelectorAll("#jt-logo-sheet:not([data-jtl-init])").forEach(root => {
+    root.dataset.jtlInit = "true";
+    const build = root.querySelector(".jtl-build");
+    if (!build || !("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    root.classList.add("is-js");
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        root.classList.add("is-drawn");
+        io.disconnect();
+      });
+    }, { threshold: 0.35 });
+    io.observe(build);
+  });
+}
+
 (function watchBadgeStory() {
 
   function initAll() {
     initBadgeStory();
     initBrandSections();
+    initLogoSheet();
   }
 
   function start() {
