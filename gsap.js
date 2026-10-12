@@ -341,20 +341,33 @@ function buildLoaderGrid(loader) {
     bgValue = token("--color--bg-primary") || "#0A0F12";
   }
 
+  const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
   const bg = toRGB(bgValue);
-  const fg = toRGB(token("--color--text-primary") || "#F7F7F7");
+  const isDark = lum(bg) < 128;
+
+  /*
+   * The loader can sit on a different color than the theme
+   * (light loader on the dark theme), so the shape color is
+   * whichever theme color stands out most against it.
+   */
+  const fg = [
+    toRGB(token("--color--text-primary") || "#F7F7F7"),
+    toRGB(token("--color--bg-primary") || "#0A0F12"),
+    isDark ? [247, 247, 247] : [10, 15, 18]
+  ].sort((a, b) => Math.abs(lum(b) - lum(bg)) - Math.abs(lum(a) - lum(bg)))[0];
+
+  /* Accent glows only where they read, otherwise ink. */
   const accent = toRGB(token("--color--accent") || "#DAF40A");
+  const accentReads = Math.abs(lum(accent) - lum(bg)) > 90;
 
-  const isDark =
-    (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) < 128;
-
-  const tones = [
-    mix(bg, fg, 0.04),
-    mix(bg, fg, 0.07),
-    mix(bg, fg, 0.10)
-  ];
-  const lit = mix(bg, fg, 0.17);
-  const glow = mix(bg, accent, isDark ? 0.9 : 0.4);
+  const tones = isDark
+    ? [mix(bg, fg, 0.04), mix(bg, fg, 0.07), mix(bg, fg, 0.10)]
+    : [mix(bg, fg, 0.05), mix(bg, fg, 0.08), mix(bg, fg, 0.11)];
+  const lit = mix(bg, fg, isDark ? 0.17 : 0.2);
+  const glow = accentReads
+    ? mix(bg, accent, isDark ? 0.9 : 0.75)
+    : mix(bg, fg, 0.35);
 
 
   /* -----------------------------------------
