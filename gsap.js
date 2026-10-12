@@ -304,7 +304,8 @@ function skipLoader(container) {
 ========================================================= */
 
 function loaderGridPreview() {
-  return /[?&]grid(=|&|$)/.test(window.location.search);
+  // Calm-lights grid is the default loader. Add ?nogrid to the URL to see the old one.
+  return !/[?&]nogrid(=|&|$)/.test(window.location.search);
 }
 
 
@@ -2918,7 +2919,7 @@ function initLogoSheet() {
   function initAll() {
     initBadgeStory();
     initBrandSections();
-    initLogoSheet();
+    // initLogoSheet(); on hold until Josh wants the construction draw-in live
   }
 
   function start() {
