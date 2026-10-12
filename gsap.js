@@ -1985,14 +1985,12 @@ function revealHero(container) {
 
 
   /* -----------------------------------------
-     DEMO VIDEO ON PHONES + TABLETS
-     It sits in the first screen under the
-     hero, so fade it up after the eyebrow
-     and heading instead of showing first.
+     HERO VIDEO
+     Fades up and in like the heading, right
+     after it, on every screen size.
   ----------------------------------------- */
 
   const demoVid =
-    window.innerWidth < 992 &&
     container.querySelector(
       ".section_demo-vid"
     );
@@ -2004,7 +2002,8 @@ function revealHero(container) {
       demoVid,
       {
         opacity: 0,
-        y: 30
+        y: 60,
+        filter: "blur(8px)"
       }
     );
 
@@ -2013,6 +2012,7 @@ function revealHero(container) {
       {
         opacity: 1,
         y: 0,
+        filter: "blur(0px)",
 
         duration: 0.8,
 
@@ -2020,7 +2020,7 @@ function revealHero(container) {
 
         onComplete: () =>
           gsap.set(demoVid, {
-            clearProps: "transform"
+            clearProps: "transform,filter"
           })
       },
       "-=0.4"
