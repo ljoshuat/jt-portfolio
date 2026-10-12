@@ -141,6 +141,15 @@ function initHome(
     } catch (e) {}
 
 
+    /*
+     * PREVIEW: ?grid plays the loader every time,
+     * with the tonal badge grid behind it.
+     */
+    if (loaderGridPreview()) {
+      hasPlayed = null;
+    }
+
+
     console.log(
       "LOADER PLAYED:",
       hasPlayed
@@ -287,6 +296,178 @@ function skipLoader(container) {
 
 
 /* =========================================================
+   LOADER GRID (PREVIEW)
+   Tonal badge grid behind the J + dot loader, with a few
+   cells glowing up and settling back while it runs.
+   Only on when the URL has ?grid. Colors come from the
+   active theme (dark, light-theme, vibe-theme).
+========================================================= */
+
+function loaderGridPreview() {
+  return /[?&]grid(=|&|$)/.test(window.location.search);
+}
+
+
+function buildLoaderGrid(loader) {
+
+  const NS = "http://www.w3.org/2000/svg";
+
+  const BADGE =
+    "M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z";
+
+
+  /* -----------------------------------------
+     THEME COLORS
+  ----------------------------------------- */
+
+  function toRGB(value) {
+    const probe = document.createElement("span");
+    probe.style.color = value;
+    document.body.appendChild(probe);
+    const m = getComputedStyle(probe).color.match(/[\d.]+/g) || [0, 0, 0];
+    probe.remove();
+    return m.slice(0, 3).map(Number);
+  }
+
+  function mix(a, b, t) {
+    return "rgb(" + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",") + ")";
+  }
+
+  const bodyStyle = getComputedStyle(document.body);
+  const token = name => bodyStyle.getPropertyValue(name).trim();
+
+  let bgValue = getComputedStyle(loader).backgroundColor;
+  if (!bgValue || /rgba\(.*,\s*0\)$/.test(bgValue) || bgValue === "transparent") {
+    bgValue = token("--color--bg-primary") || "#0A0F12";
+  }
+
+  const bg = toRGB(bgValue);
+  const fg = toRGB(token("--color--text-primary") || "#F7F7F7");
+  const accent = toRGB(token("--color--accent") || "#DAF40A");
+
+  const isDark =
+    (0.2126 * bg[0] + 0.7152 * bg[1] + 0.0722 * bg[2]) < 128;
+
+  const tones = [
+    mix(bg, fg, 0.04),
+    mix(bg, fg, 0.07),
+    mix(bg, fg, 0.10)
+  ];
+  const lit = mix(bg, fg, 0.17);
+  const glow = mix(bg, accent, isDark ? 0.9 : 0.4);
+
+
+  /* -----------------------------------------
+     GRID
+     Same lattice as the Figma tonal pattern.
+  ----------------------------------------- */
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  const w = Math.max(150, Math.min(340, W / 5.5));
+  const s = w / 539;
+  const h = 445 * s;
+  const px = 0.796 * w;
+  const py = h * 1.002;
+  const shift = -0.206 * w;
+
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "loader-grid");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  Object.assign(svg.style, {
+    position: "absolute",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    zIndex: "-1",
+    pointerEvents: "none"
+  });
+
+  const defs = document.createElementNS(NS, "defs");
+  const cellPath = document.createElementNS(NS, "path");
+  cellPath.setAttribute("id", "loader-grid-cell");
+  cellPath.setAttribute("d", BADGE);
+  cellPath.setAttribute("transform", "scale(" + s + ")");
+  defs.appendChild(cellPath);
+  svg.appendChild(defs);
+
+  const cells = [];
+  const rows = Math.ceil(H / py) + 2;
+
+  for (let r = -1; r < rows; r++) {
+    const off = ((r * shift) % px + px) % px - px * 1.5;
+    for (let x = off; x < W + px; x += px) {
+      const use = document.createElementNS(NS, "use");
+      use.setAttribute("href", "#loader-grid-cell");
+      use.setAttribute("x", x.toFixed(1));
+      use.setAttribute("y", (r * py).toFixed(1));
+      const base = tones[Math.floor(Math.random() * tones.length)];
+      use.style.fill = base;
+      svg.appendChild(use);
+      cells.push({
+        el: use,
+        base,
+        cx: x + w / 2,
+        cy: r * py + h / 2
+      });
+    }
+  }
+
+  /* Grid sits behind the logo, above the loader background. */
+  gsap.set(loader, { isolation: "isolate" });
+  loader.insertBefore(svg, loader.firstChild);
+
+
+  /* -----------------------------------------
+     ANIMATE
+  ----------------------------------------- */
+
+  function play(runTime) {
+
+    const tl = gsap.timeline();
+    const reduce =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduce) {
+      return tl;
+    }
+
+    const maxD = Math.hypot(W / 2, H / 2);
+
+    cells.forEach(c => {
+      gsap.set(c.el, { opacity: 0 });
+      tl.to(
+        c.el,
+        {
+          opacity: 1,
+          duration: 0.6,
+          ease: "power1.out"
+        },
+        0.6 * Math.hypot(c.cx - W / 2, c.cy - H / 2) / maxD
+      );
+    });
+
+    const pool = cells.slice().sort(() => Math.random() - 0.5);
+    const glows = Math.max(5, Math.round(cells.length * 0.2));
+
+    pool.slice(0, glows).forEach((c, i) => {
+      const at = 0.5 + (i / glows) * runTime + Math.random() * 0.2;
+      const color = Math.random() < 0.35 ? glow : lit;
+      tl.to(c.el, { fill: color, duration: 0.5, ease: "sine.inOut" }, at)
+        .to(c.el, { fill: c.base, duration: 0.9, ease: "sine.inOut" }, at + 0.65);
+    });
+
+    return tl;
+  }
+
+  return { svg, play };
+}
+
+
+/* =========================================================
    LOADER
    J + DOT LOADER
 ========================================================= */
@@ -345,6 +526,20 @@ function initLoader(container) {
       yPercent: 0
     }
   );
+
+
+  /* =========================================================
+     LOADER GRID (PREVIEW, ?grid ONLY)
+  ========================================================= */
+
+  const loaderGrid =
+    loaderGridPreview()
+      ? buildLoaderGrid(loader)
+      : null;
+
+  if (loaderGrid) {
+    loaderGrid.play(2.2);
+  }
 
 
   /* =========================================================
@@ -1353,6 +1548,22 @@ if (elementsToExit.length) {
 
       ease: "power3.in"
     }
+  );
+
+}
+
+
+/* Grid fades out under the dot takeover. */
+if (loaderGrid) {
+
+  exitTL.to(
+    loaderGrid.svg,
+    {
+      autoAlpha: 0,
+      duration: 0.7,
+      ease: "power2.in"
+    },
+    0
   );
 
 }
