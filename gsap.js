@@ -487,10 +487,26 @@ function buildLoaderGrid(loader) {
 
     const pool = cells.slice().sort(() => Math.random() - 0.5);
     const glows = Math.max(5, Math.round(cells.length * 0.2));
+    const picks = pool.slice(0, glows);
 
-    pool.slice(0, glows).forEach((c, i) => {
-      const at = 0.5 + (i / glows) * runTime + Math.random() * 0.2;
-      const color = Math.random() < 0.35 ? glow : lit;
+    /* Always exactly three accent tiles: random fully on-screen
+       cells, spread across the run so one lights at a time. */
+    const ACCENTS = 3;
+    const onScreen = c =>
+      c.cx > w / 2 && c.cx < W - w / 2 && c.cy > h / 2 && c.cy < H - h / 2;
+    const accents = pool.filter(onScreen).slice(0, ACCENTS);
+    pool.forEach(c => {
+      if (accents.length < ACCENTS && !accents.includes(c)) accents.push(c);
+    });
+    const rest = picks.filter(c => !accents.includes(c));
+    accents.forEach((c, k) => {
+      const slot = Math.round(((k + 0.5) / ACCENTS) * (rest.length + accents.length));
+      rest.splice(Math.min(slot, rest.length), 0, c);
+    });
+
+    rest.forEach((c, i) => {
+      const at = 0.5 + (i / rest.length) * runTime + Math.random() * 0.2;
+      const color = accents.includes(c) ? glow : lit;
       tl.to(c.el, { fill: color, duration: 0.5, ease: "sine.inOut" }, at)
         .to(c.el, { fill: c.base, duration: 0.9, ease: "sine.inOut" }, at + 0.65);
     });
