@@ -46,18 +46,18 @@
 .jtb-step:nth-child(1) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 10%,var(--jtb-bg))}
 .jtb-step:nth-child(2) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 42%,var(--jtb-bg))}
 .jtb-step:nth-child(3) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 10%,var(--jtb-bg))}
-.jtb-step:nth-child(3).is-live .jtb-mini{fill:var(--jtb-accent)}
-.jtb-step:nth-child(3).is-live .jtb-label{color:var(--jtb-accent)}
+.jtb:not(.is-js) .jtb-step:nth-child(3) .jtb-mini,.jtb-step:nth-child(3).is-live .jtb-mini{fill:var(--jtb-accent)}
+.jtb:not(.is-js) .jtb-step:nth-child(3) .jtb-label,.jtb-step:nth-child(3).is-live .jtb-label{color:var(--jtb-accent)}
 .jtb-step:nth-child(3) .jtb-label{transition:color .6s ease}
 .jtb-step:nth-child(3) svg{transform-origin:50% 50%}
 .jtb-step.is-stamp svg{animation:jtb-stamp .55s cubic-bezier(.3,1.6,.5,1)}
 @keyframes jtb-stamp{0%{transform:scale(1.18) rotate(-4deg)}100%{transform:scale(1) rotate(0)}}
 .jtb-step p{margin:.5rem 0 0;color:var(--jtb-muted);line-height:1.4}
 .jtb-note{margin:2.5rem 0 0;color:var(--jtb-muted);font-size:.9375rem}
-.jtb [data-rise]{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
-.jtb [data-rise].is-in{opacity:1;transform:none}
+.jtb.is-js [data-rise]{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.jtb.is-js [data-rise].is-in{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){
-  .jtb [data-rise]{opacity:1;transform:none;transition:none}
+  .jtb.is-js [data-rise]{opacity:1;transform:none;transition:none}
   .jtb-hero path,.jtb-step .jtb-mini,.jtb-part{transition:none}
   .jtb-step.is-stamp svg{animation:none}
 }
@@ -113,66 +113,4 @@
   </ol>
 </div>
 
-<script>
-(function () {
-  var root = document.getElementById("jt-badge-story");
-  if (!root) return;
-
-  /* Only on the JT Creative case study. */
-  if (!/\/work\/jt-creative\/?$/.test(location.pathname) && !root.hasAttribute("data-any-page")) {
-    root.remove();
-    return;
-  }
-
-  var reduce = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
-
-  /* Anatomy: hover or focus a row (or a part of the badge) to light that part. */
-  var rows = root.querySelectorAll(".jtb-part");
-  function setPart(p) {
-    if (p) root.setAttribute("data-part", p); else root.removeAttribute("data-part");
-    rows.forEach(function (r) { r.classList.toggle("is-on", r.getAttribute("data-part") === p); });
-  }
-  rows.forEach(function (r) {
-    var p = r.getAttribute("data-part");
-    r.addEventListener("mouseenter", function () { setPart(p); });
-    r.addEventListener("focus", function () { setPart(p); });
-    r.addEventListener("mouseleave", function () { setPart(null); });
-    r.addEventListener("blur", function () { setPart(null); });
-    r.addEventListener("click", function () { setPart(root.getAttribute("data-part") === p ? null : p); });
-  });
-  root.querySelectorAll(".jtb-hero path").forEach(function (el) {
-    var p = el.getAttribute("data-part");
-    el.addEventListener("mouseenter", function () { setPart(p); });
-    el.addEventListener("mouseleave", function () { setPart(null); });
-  });
-
-  /* Fade up as it scrolls in; the launch badge stamps lime last. */
-  var launch = root.querySelector(".jtb-step:nth-child(3)");
-  function goLive() {
-    if (!launch || launch.classList.contains("is-live")) return;
-    launch.classList.add("is-live");
-    if (!reduce) launch.classList.add("is-stamp");
-  }
-
-  var items = root.querySelectorAll("[data-rise]");
-  if (reduce || !("IntersectionObserver" in window)) {
-    items.forEach(function (el) { el.classList.add("is-in"); });
-    goLive();
-    return;
-  }
-
-  var io = new IntersectionObserver(function (entries) {
-    var shown = entries.filter(function (e) { return e.isIntersecting; });
-    shown.forEach(function (e, i) {
-      var el = e.target;
-      el.style.transitionDelay = (i * 0.12) + "s";
-      el.classList.add("is-in");
-      io.unobserve(el);
-      if (el === launch) setTimeout(goLive, 700 + i * 120);
-    });
-  }, { rootMargin: "0px 0px -12% 0px", threshold: 0.15 });
-
-  items.forEach(function (el) { io.observe(el); });
-})();
-</script>
 </section>

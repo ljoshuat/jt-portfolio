@@ -2737,3 +2737,133 @@ function drawRingLotties(section) {
   }, 250);
 
 }
+
+
+/* =========================================================
+   BADGE STORY (JT CREATIVE CASE STUDY)
+   Hover a part of the badge to light it, fade the
+   section up as it scrolls in, and stamp the launch
+   badge lime. Runs on load and again whenever a page
+   transition brings the section in.
+========================================================= */
+
+function initBadgeStory() {
+
+  const root =
+    document.getElementById(
+      "jt-badge-story"
+    );
+
+  if (!root || root.dataset.jtbInit) return;
+
+  root.dataset.jtbInit = "true";
+  root.classList.add("is-js");
+
+  const reduce =
+    window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+
+  /* Anatomy hover */
+
+  const rows =
+    root.querySelectorAll(
+      ".jtb-part"
+    );
+
+  function setPart(part) {
+    if (part) root.setAttribute("data-part", part);
+    else root.removeAttribute("data-part");
+    rows.forEach(row =>
+      row.classList.toggle(
+        "is-on",
+        row.getAttribute("data-part") === part
+      )
+    );
+  }
+
+  rows.forEach(row => {
+    const part = row.getAttribute("data-part");
+    row.addEventListener("mouseenter", () => setPart(part));
+    row.addEventListener("focus", () => setPart(part));
+    row.addEventListener("mouseleave", () => setPart(null));
+    row.addEventListener("blur", () => setPart(null));
+    row.addEventListener("click", () =>
+      setPart(root.getAttribute("data-part") === part ? null : part)
+    );
+  });
+
+  root.querySelectorAll(".jtb-hero path").forEach(el => {
+    const part = el.getAttribute("data-part");
+    el.addEventListener("mouseenter", () => setPart(part));
+    el.addEventListener("mouseleave", () => setPart(null));
+  });
+
+
+  /* Scroll reveal, launch badge stamps last */
+
+  const launch =
+    root.querySelector(
+      ".jtb-step:nth-child(3)"
+    );
+
+  function goLive() {
+    if (!launch || launch.classList.contains("is-live")) return;
+    launch.classList.add("is-live");
+    if (!reduce) launch.classList.add("is-stamp");
+  }
+
+  const items =
+    root.querySelectorAll(
+      "[data-rise]"
+    );
+
+  if (reduce || !("IntersectionObserver" in window)) {
+    items.forEach(el => el.classList.add("is-in"));
+    goLive();
+    return;
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries
+      .filter(entry => entry.isIntersecting)
+      .forEach((entry, i) => {
+        const el = entry.target;
+        el.style.transitionDelay = (i * 0.12) + "s";
+        el.classList.add("is-in");
+        io.unobserve(el);
+        if (el === launch) setTimeout(goLive, 700 + i * 120);
+      });
+  }, {
+    rootMargin: "0px 0px -12% 0px",
+    threshold: 0.15
+  });
+
+  items.forEach(el => io.observe(el));
+
+}
+
+
+/*
+ * Page transitions swap the content without running
+ * the page's own scripts, so watch for the section
+ * arriving instead of relying on a hook.
+ */
+(function watchBadgeStory() {
+
+  function start() {
+    initBadgeStory();
+    new MutationObserver(initBadgeStory).observe(
+      document.body,
+      { childList: true, subtree: true }
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+
+})();
