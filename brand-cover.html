@@ -14,7 +14,8 @@
 .jtc *{box-sizing:border-box}
 .jtc-grid{display:grid;grid-template-columns:1fr;gap:3rem;align-items:center}
 @media (min-width:768px){.jtc-grid{grid-template-columns:minmax(0,1.6fr) minmax(0,1fr);gap:clamp(2rem,4vw,5rem)}}
-.jtc-title{margin:0;font-family:var(--jtc-display);font-weight:700;text-transform:uppercase;font-size:clamp(2.5rem,6.45vw,7.75rem);line-height:.95;letter-spacing:-.01em}
+.jtc-copy{container-type:inline-size;min-width:0}
+.jtc-title{margin:0;font-family:var(--jtc-display);font-weight:700;text-transform:uppercase;font-size:clamp(1.5rem,6vw,7.75rem);font-size:clamp(1.5rem,10.8cqi,7.75rem);line-height:.95;letter-spacing:-.01em}
 .jtc-title span{display:block}
 .jtc-sub{margin:clamp(1rem,1.6vw,1.75rem) 0 0;font-family:var(--jtc-serif);font-style:italic;font-weight:200;font-size:clamp(1.5rem,3.35vw,4rem);line-height:1.05;color:var(--jtc-accent)}
 .jtc-mark{display:flex;justify-content:flex-end}
@@ -36,7 +37,7 @@
 </style>
 <div class="jtc-inner">
   <div class="jtc-grid">
-    <div>
+    <div class="jtc-copy">
       <h2 class="jtc-title" id="jtc-title"><span>Brand</span> <span>Guidelines</span></h2>
       <p class="jtc-sub">Josh Turner, designer and developer</p>
     </div>
