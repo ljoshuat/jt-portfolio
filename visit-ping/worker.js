@@ -16,6 +16,7 @@ const BOT_RE = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|lighthouse
 const DEDUPE_SECONDS = 30 * 60;
 const VISIT_SECONDS = 6 * 60 * 60;
 const MAX_PAGES = 30;
+const MAX_EVENTS = 30;
 
 let hourKey = '';
 let hourCount = 0;
@@ -45,6 +46,16 @@ export default {
     const sid = /^[a-z0-9]{8,40}$/i.test(body.sid || '') ? body.sid : '';
     const n = Number(body.n) || 1;
     const kv = env.VISITS || memoryKV;
+
+    // Something the visitor did on a page (opened a panel, switched theme):
+    // reply in that visit's thread.
+    if (body.event) {
+      if (!sid || !env.SLACK_BOT_TOKEN || Number(body.e) > MAX_EVENTS) return done();
+      const ts = await kv.get('visit:' + sid);
+      if (!ts) return done();
+      ctx.waitUntil(slackPost(env, { text: `• ${clean(body.event)}`, thread_ts: ts }));
+      return done();
+    }
 
     // Later page of a known visit: reply in that visit's thread.
     if (n > 1) {

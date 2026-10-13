@@ -1,4 +1,4 @@
-<!-- Visit ping: Slack message for each new visitor, with the pages they view as thread replies.
+<!-- Visit ping: Slack message for each new visitor, with the pages they view, panels they open and theme switches as thread replies.
      No cookies, no Google Analytics.
      Skip your own visits: open https://www.jtcreative.design/?noping once on each of your browsers.
      Turn it back on with ?ping -->
@@ -27,6 +27,33 @@
       }).catch(function () {});
     };
     send();
+    // Things that open without changing the URL.
+    var track = function (label) {
+      var e = (+ss.getItem('jt-e') || 0) + 1;
+      ss.setItem('jt-e', e);
+      fetch(ENDPOINT, {
+        method: 'POST', mode: 'cors', keepalive: true,
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ sid: sid, e: e, event: label })
+      }).catch(function () {});
+    };
+    document.addEventListener('click', function (ev) {
+      var t = ev.target.closest && ev.target.closest('[data-track],[data-launch-open],a,button');
+      if (!t) return;
+      if (t.hasAttribute('data-track')) return track(t.getAttribute('data-track'));
+      if (t.hasAttribute('data-launch-open')) return track('Opened Just Launched');
+      var label = (t.textContent || '').replace(/\s+/g, ' ').trim();
+      var href = t.getAttribute('href') || '';
+      if (t.tagName === 'A' && href && href.charAt(0) !== '#') return; // real page links show as page views
+      if (/^snippets$/i.test(label)) track('Opened Snippets');
+    }, true);
+    var setItem = Storage.prototype.setItem;
+    Storage.prototype.setItem = function (k, v) {
+      if (this === localStorage && k === 'site-mode' && v !== localStorage.getItem('site-mode')) {
+        track('Switched theme to ' + v);
+      }
+      return setItem.apply(this, arguments);
+    };
     // Page transitions that change the URL without a full reload.
     var push = history.pushState;
     history.pushState = function () { var r = push.apply(this, arguments); setTimeout(send, 0); return r; };
