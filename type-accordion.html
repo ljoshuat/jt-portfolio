@@ -20,7 +20,7 @@
 .jta-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
 .jta-list{display:flex;gap:.75rem;height:clamp(30rem,52cqi,40rem)}
 .jta-p{position:relative;cursor:pointer;flex:1 1 0;min-width:0;overflow:hidden;border-radius:1.25rem;background:var(--jta-panel);color:var(--jta-fg);transition:flex-grow .7s var(--jta-ease),background-color .5s ease,color .5s ease}
-.jta-p.is-open{flex-grow:4.2;background:var(--jta-accent);color:var(--jta-ink)}
+.jta-p.is-open{flex-grow:4.6;background:var(--jta-accent);color:var(--jta-ink)}
 .jta-h{all:unset;box-sizing:border-box;position:relative;z-index:2;display:flex;flex-direction:column;gap:.35rem;width:100%;padding:1.5rem 1.5rem 0;cursor:pointer}
 .jta-h:focus-visible{outline:2px solid currentColor;outline-offset:-6px;border-radius:1.25rem}
 .jta-lbl{font-family:var(--jta-mono);font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
@@ -39,6 +39,9 @@
 .jta-s .jta-abc{font-size:clamp(1.5rem,2.4cqi,2.1rem)}
 .jta-e .jta-abc,.jta-e .jta-big{font-family:var(--jta-serif);font-style:italic;font-weight:200}
 .jta-e .jta-abc{font-size:clamp(1.75rem,2.9cqi,2.6rem);line-height:1.05}
+.jta-m .jta-abc,.jta-m .jta-big{font-family:var(--jta-mono);font-weight:400}
+.jta-m .jta-abc{font-size:clamp(1.25rem,2.1cqi,1.9rem);letter-spacing:.04em;line-height:1.2}
+.jta-m .jta-big{letter-spacing:-.04em}
 /* phones: stacked accordion */
 @container (max-width:700px){
   .jta-list{flex-direction:column;height:auto;gap:.5rem}
@@ -82,6 +85,14 @@
       <div class="jta-bw"><div class="jta-b" id="jta-b3">
         <p class="jta-abc">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz</p>
         <p class="jta-rule">One or two words of emphasis, never a full sentence.</p>
+      </div></div>
+      <p class="jta-big" aria-hidden="true">Aa</p>
+    </div>
+    <div class="jta-p jta-m">
+      <button class="jta-h" type="button" aria-expanded="false" aria-controls="jta-b4"><span class="jta-lbl">Utility</span><span class="jta-name">Neue Montreal Mono</span></button>
+      <div class="jta-bw"><div class="jta-b" id="jta-b4">
+        <p class="jta-abc">ABCDEFGHIJKLM<br>NOPQRSTUVWXYZ</p>
+        <p class="jta-rule">Small, tracked caps for labels, nav and tags.</p>
       </div></div>
       <p class="jta-big" aria-hidden="true">Aa</p>
     </div>
