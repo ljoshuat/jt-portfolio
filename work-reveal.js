@@ -28,42 +28,69 @@
   const SECTIONS =
     "section:not(.section_proj-hero):not(.section_hero-visual), footer.footer";
 
-  /* Blocks that fade up as one row, never split into
-     their children (the 3-column gallery drifts its
-     columns with parallax). */
-  const WHOLE =
-    ".work-gallery-grid, .work-gallery-stack, .visual-wrap";
-
-  /* Media: a wrapper holding only one of these is the row. */
-  const MEDIA = "img, video, picture, iframe, .visual";
-
   let triggers = [];
   let tweens = [];
 
 
-  /* The rows of a section: step down through single-child
-     wrappers (padding, container) to where the content
-     splits into several blocks, and use those blocks. */
-  function rowsOf(section) {
+  /* Layout wrappers that hold several rows: split them
+     into their own rows. */
+  const GROUPS =
+    ".media-2-column, .visual-wrap-layout, .section-padding-bottom";
 
-    let el = section;
+  /* Galleries: each image fades up on its own. The
+     columns themselves keep their parallax drift
+     (work-gsap.js), so only the images inside move. */
+  const GALLERY = ".work-gallery-grid";
+  const GALLERY_PIECES =
+    ".work-gallery-stack > *, .work-gallery-item > :not(.work-gallery-stack)";
+
+  /* A wrapper holding only one of these is the row. */
+  const MEDIA = "img, video, picture, iframe, .visual";
+
+
+  /* The rows inside an element: step down through
+     single-child wrappers (padding, container) to where
+     the content splits into several blocks, use those
+     blocks, and split layout groups and galleries
+     further. */
+  function rowsOf(el) {
+
+    if (el.matches(GALLERY)) {
+      return [...el.querySelectorAll(GALLERY_PIECES)];
+    }
 
     while (
       el.children.length === 1 &&
-      !el.matches(WHOLE) &&
+      !el.matches(".visual-wrap") &&
       !el.firstElementChild.matches(MEDIA)
     ) {
       el = el.firstElementChild;
+
+      if (el.matches(GALLERY)) return rowsOf(el);
     }
 
-    if (el.matches(WHOLE) || el.children.length <= 1) {
+    if (el.matches(".visual-wrap") || el.children.length <= 1) {
       return [el];
     }
 
-    return [...el.children].filter(
-      (row) => !row.matches("script, style, link")
-    );
+    return [...el.children]
+      .filter((row) => !row.matches("script, style, link"))
+      .flatMap((row) =>
+        row.matches(GROUPS) || row.matches(GALLERY)
+          ? rowsOf(row)
+          : [row]
+      );
 
+  }
+
+
+  /* Lazy images change the page height as they load,
+     so re-measure the start points when one does. */
+  let refreshTimer = null;
+
+  function refreshSoon() {
+    clearTimeout(refreshTimer);
+    refreshTimer = setTimeout(() => ScrollTrigger.refresh(), 150);
   }
 
 
@@ -95,7 +122,9 @@
       .flatMap(rowsOf)
       .filter((el) =>
         !el.dataset.workReveal &&
-        el.getBoundingClientRect().height > 0
+        /* Skip hidden blocks (display: none). Images
+           still loading count, even at zero height. */
+        el.getClientRects().length > 0
       )
       .sort((a, b) => {
         const ra = a.getBoundingClientRect();
@@ -109,15 +138,23 @@
 
       el.dataset.workReveal = "true";
 
+      /* data-depth layers already move on y with their
+         own parallax, so those only fade. */
+      const depth = el.matches("[data-depth]");
+
+      /* Gallery images may carry the phone drift
+         (yPercent), so keep their transform. */
+      const keepTransform =
+        depth || !!el.closest(GALLERY);
+
       return gsap.fromTo(
         el,
-        {
-          opacity: 0,
-          y: 40
-        },
+        depth
+          ? { opacity: 0 }
+          : { opacity: 0, y: 40 },
         {
           opacity: 1,
-          y: 0,
+          ...(depth ? {} : { y: 0 }),
 
           duration: 0.8,
 
@@ -128,7 +165,7 @@
           /* data-depth layers keep their parallax
              transform, so only tidy up plain rows. */
           onComplete: () => {
-            if (!el.matches("[data-depth]")) {
+            if (!keepTransform) {
               gsap.set(el, {
                 clearProps: "transform"
               });
@@ -141,10 +178,10 @@
 
     tweens = tweens.concat(rowTweens);
 
-    /* Side-by-side rows start together. */
-    const tops = items.map((el) =>
-      Math.round(el.getBoundingClientRect().top)
-    );
+    /* Side-by-side rows start together (measured when
+       they reveal, after their images have loaded). */
+    const topOf = (el) =>
+      el.getBoundingClientRect().top + window.scrollY;
 
     let next = 0;
     let lastStart = 0;
@@ -156,7 +193,7 @@
         const i = next++;
         const now = gsap.ticker.time;
         const sameRow =
-          i > 0 && Math.abs(tops[i] - tops[i - 1]) < 8;
+          i > 0 && Math.abs(topOf(items[i]) - topOf(items[i - 1])) < 8;
         const at = Math.max(
           now,
           sameRow ? lastStart : lastStart + 0.1
@@ -181,6 +218,12 @@
       if (!page.isConnected) return;
 
       ScrollTrigger.update();
+
+      page.querySelectorAll("img").forEach((img) => {
+        if (!img.complete) {
+          img.addEventListener("load", refreshSoon, { once: true });
+        }
+      });
 
       items.forEach((el, i) => {
 
