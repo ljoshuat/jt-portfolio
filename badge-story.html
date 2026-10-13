@@ -10,7 +10,7 @@
   --jtb-mono:"Ppneuemontrealmono","PP Neue Montreal Mono","JetBrains Mono",ui-monospace,monospace;
   background:var(--jtb-bg);color:var(--jtb-fg);
   padding-block:clamp(4rem,9vw,8rem);
-  overflow:hidden;
+  overflow:hidden;overflow:clip;
 }
 .jtb *{box-sizing:border-box}
 .jtb-label{font-family:var(--jtb-mono);font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
@@ -35,7 +35,8 @@
   .jtb-copy{display:contents}
   .jtb-top{gap:0}
   .jtb-title{order:1}.jtb-lede{order:2}
-  .jtb-hero{order:3;margin-top:2.5rem}.jtb .jtb-hero svg{width:min(78%,26rem)}
+  .jtb-hero{order:3;margin-top:2.5rem;position:sticky;top:var(--jtb-stick,4.5rem);z-index:2;background:var(--jtb-bg);padding-block:1rem}.jtb .jtb-hero svg{width:min(66%,22rem)}
+  /* the badge stays in view while the parts list scrolls under it, so a tap shows its change */
   .jtb-hint{order:4}.jtb-parts{order:5}
 }
 .jtb-hero svg{width:min(100%,38rem);height:auto;overflow:visible}
