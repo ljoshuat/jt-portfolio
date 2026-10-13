@@ -30,14 +30,17 @@
 .jtb-hint{display:none;align-items:center;gap:.6rem;margin:2.5rem 0 0;color:var(--jtb-muted)}
 .jtb-hint::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--jtb-accent);animation:jtb-ping 1.6s ease-out infinite}
 @keyframes jtb-ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--jtb-accent) 60%,transparent)}100%{box-shadow:0 0 0 .6rem transparent}}
-@media (hover:none),(max-width:991px){.jtb-hint{display:flex}.jtb-hint+.jtb-parts{margin-top:1rem}}
+@media (hover:none),(max-width:991px){.jtb-hint{display:flex}}
+.jtb-hero .jtb-hint{position:absolute;top:0;left:0;margin:0}
 @media (max-width:991px){
   .jtb-copy{display:contents}
   .jtb-top{gap:0}
   .jtb-title{order:1}.jtb-lede{order:2}
-  .jtb-hero{order:3;margin-top:2.5rem;position:sticky;top:var(--jtb-stick,3rem);z-index:2;background:var(--jtb-bg);padding-block:1rem}.jtb .jtb-hero svg{width:min(66%,22rem)}
+  .jtb-hero{order:3;margin-top:2rem;position:sticky;top:var(--jtb-stick,3rem);z-index:2;background:var(--jtb-bg);padding-block:1rem;flex-direction:column;align-items:center}.jtb .jtb-hero svg{width:min(46%,15rem)}
+  .jtb-hero .jtb-hint{position:static;align-self:flex-start;margin:0 0 .75rem}
+  .jtb-parts{margin-top:1rem}
   /* the badge stays in view while the parts list scrolls under it, so a tap shows its change */
-  .jtb-hint{order:4}.jtb-parts{order:5}
+  .jtb-parts{order:5}
 }
 .jtb-hero svg{width:min(100%,38rem);height:auto;overflow:visible}
 .jtb-hero path{transition:fill .45s ease,opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1);transform-box:fill-box;transform-origin:50% 50%}
@@ -96,7 +99,6 @@
   <div class="jtb-copy">
     <h2 class="jtb-title section-heading" id="jtb-title" data-rise>The badge</h2>
     <p class="jtb-lede" data-rise>My sign-off. The J is me, the pixel is the work, and the container holds them together. When something ships, it gets stamped.</p>
-    <p class="jtb-label jtb-hint" data-rise>Tap a part</p>
     <ul class="jtb-parts" data-rise>
       <li class="jtb-part" data-part="j" tabindex="0"><span class="jtb-label">The J</span><p>Me. The person behind every project.</p></li>
       <li class="jtb-part" data-part="p" tabindex="0"><span class="jtb-label">The pixel</span><p>The work. The smallest unit of everything I make.</p></li>
@@ -104,6 +106,7 @@
     </ul>
   </div>
   <div class="jtb-hero" data-rise>
+    <p class="jtb-label jtb-hint">Tap a part</p>
     <svg viewBox="0 0 539 445" role="img" aria-label="The JT badge: a J and a pixel cut from a slanted container">
       <path class="jtb-c" data-part="c" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
       <g transform="translate(113.795 89)"><path class="jtb-j" data-part="j" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/></g>
