@@ -1,0 +1,110 @@
+<style>
+.jta{
+  --jta-bg:var(--color--bg-primary,#0A0F12);
+  --jta-fg:var(--color--text-primary,#F7F7F7);
+  --jta-accent:var(--color--accent,#DAF40A);
+  --jta-ink:#0A0F12;
+  --jta-panel:color-mix(in srgb,var(--jta-fg) 6%,var(--jta-bg));
+  --jta-line:color-mix(in srgb,var(--jta-fg) 14%,transparent);
+  --jta-faint:color-mix(in srgb,var(--jta-fg) 22%,transparent);
+  --jta-display:var(--typography--font-display,"Druk Wide Web"),"Druk Wide",Verdana,sans-serif;
+  --jta-body:"Ppneuemontreal","PP Neue Montreal",Helvetica,Arial,sans-serif;
+  --jta-mono:"Ppneuemontrealmono","PP Neue Montreal Mono",ui-monospace,monospace;
+  --jta-serif:"Ppeditorialnew","PP Editorial New",Georgia,serif;
+  --jta-ease:cubic-bezier(.65,0,.2,1);
+  background:var(--jta-bg);color:var(--jta-fg);
+  padding-block:clamp(4rem,9vw,8rem);
+  container-type:inline-size;
+}
+.jta *{box-sizing:border-box}
+.jta-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.jta-list{display:flex;gap:.75rem;height:clamp(30rem,52cqi,40rem)}
+.jta-p{position:relative;cursor:pointer;flex:1 1 0;min-width:0;overflow:hidden;border-radius:1.25rem;background:var(--jta-panel);color:var(--jta-fg);transition:flex-grow .7s var(--jta-ease),background-color .5s ease,color .5s ease}
+.jta-p.is-open{flex-grow:4.2;background:var(--jta-accent);color:var(--jta-ink)}
+.jta-h{all:unset;box-sizing:border-box;position:relative;z-index:2;display:flex;flex-direction:column;gap:.35rem;width:100%;padding:1.5rem 1.5rem 0;cursor:pointer}
+.jta-h:focus-visible{outline:2px solid currentColor;outline-offset:-6px;border-radius:1.25rem}
+.jta-lbl{font-family:var(--jta-mono);font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.jta-name{font-family:var(--jta-body);font-weight:300;font-size:1.0625rem;line-height:1.3;opacity:.7;white-space:nowrap}
+.jta-b{position:relative;z-index:2;padding:1.75rem 1.5rem 0;width:min(46rem,70cqi);opacity:0;visibility:hidden;transform:translateY(12px);transition:opacity .3s ease,transform .3s ease,visibility 0s .3s}
+.jta-p.is-open .jta-b{opacity:1;visibility:visible;transform:none;transition:opacity .5s ease .3s,transform .5s ease .3s,visibility 0s .3s}
+.jta-abc{margin:0;line-height:1.15;overflow-wrap:anywhere}
+.jta-rule{margin:1.25rem 0 0;font-family:var(--jta-body);font-weight:300;font-size:1.0625rem;line-height:1.4;max-width:26rem}
+.jta-big{position:absolute;left:1rem;bottom:-.2em;z-index:1;margin:0;line-height:1;white-space:nowrap;font-size:clamp(12rem,24cqi,20rem);color:var(--jta-faint);pointer-events:none;user-select:none;transition:color .5s ease}
+.jta-p.is-open .jta-big{color:var(--jta-ink)}
+/* faces */
+.jta-d .jta-abc,.jta-d .jta-big{font-family:var(--jta-display);font-weight:700;text-transform:uppercase;letter-spacing:-.01em}
+.jta-d .jta-abc{font-size:clamp(1.5rem,2.6cqi,2.25rem);line-height:1.05}
+.jta-d .jta-big{line-height:.86;bottom:-.12em}
+.jta-s .jta-abc,.jta-s .jta-big{font-family:var(--jta-body);font-weight:300}
+.jta-s .jta-abc{font-size:clamp(1.5rem,2.4cqi,2.1rem)}
+.jta-e .jta-abc,.jta-e .jta-big{font-family:var(--jta-serif);font-style:italic;font-weight:200}
+.jta-e .jta-abc{font-size:clamp(1.75rem,2.9cqi,2.6rem);line-height:1.05}
+/* phones: stacked accordion */
+@container (max-width:700px){
+  .jta-list{flex-direction:column;height:auto;gap:.5rem}
+  .jta-p{flex:none;display:grid;grid-template-rows:auto 0fr;transition:grid-template-rows .6s var(--jta-ease),background-color .5s ease,color .5s ease}
+  .jta-p.is-open{grid-template-rows:auto 1fr}
+  .jta-h{padding:1.25rem 1.25rem 1.25rem;min-height:6.5rem}
+  .jta-bw{min-height:0;overflow:hidden}
+  .jta-b{width:auto;padding:0 1.25rem 9rem}
+  .jta-big{left:auto;right:1rem;font-size:7.5rem}
+  .jta-p.is-open .jta-big{font-size:9rem}
+  .jta-abc{font-size:1.5rem}
+  .jta-d .jta-abc{font-size:1.4rem}
+}
+@media (prefers-reduced-motion:reduce){
+  .jta-p,.jta-b,.jta-p.is-open .jta-b,.jta-big{transition:none}
+}
+</style>
+
+<section class="jta" id="jt-type" aria-labelledby="jta-title">
+<div class="jta-inner">
+  <h2 class="jta-sr" id="jta-title">Typography</h2>
+  <div class="jta-list">
+    <div class="jta-p jta-d is-open">
+      <button class="jta-h" type="button" aria-expanded="true" aria-controls="jta-b1"><span class="jta-lbl">Primary</span><span class="jta-name">Druk Wide</span></button>
+      <div class="jta-bw"><div class="jta-b" id="jta-b1">
+        <p class="jta-abc">ABCDEFGHIJKLM<br>NOPQRSTUVWXYZ</p>
+        <p class="jta-rule">All caps, for headlines and section heads.</p>
+      </div></div>
+      <p class="jta-big" aria-hidden="true">Aa</p>
+    </div>
+    <div class="jta-p jta-s">
+      <button class="jta-h" type="button" aria-expanded="false" aria-controls="jta-b2"><span class="jta-lbl">Secondary</span><span class="jta-name">Neue Montreal</span></button>
+      <div class="jta-bw"><div class="jta-b" id="jta-b2">
+        <p class="jta-abc">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz</p>
+        <p class="jta-rule">Light and plain, for body copy and everything you read.</p>
+      </div></div>
+      <p class="jta-big" aria-hidden="true">Aa</p>
+    </div>
+    <div class="jta-p jta-e">
+      <button class="jta-h" type="button" aria-expanded="false" aria-controls="jta-b3"><span class="jta-lbl">Accent</span><span class="jta-name">Editorial New</span></button>
+      <div class="jta-bw"><div class="jta-b" id="jta-b3">
+        <p class="jta-abc">ABCDEFGHIJKLMNOPQRSTUVWXYZ<br>abcdefghijklmnopqrstuvwxyz</p>
+        <p class="jta-rule">One or two words of emphasis, never a full sentence.</p>
+      </div></div>
+      <p class="jta-big" aria-hidden="true">Aa</p>
+    </div>
+  </div>
+</div>
+</section>
+
+<script>
+(function(){
+  var root=document.getElementById('jt-type');if(!root)return;
+  var panels=[].slice.call(root.querySelectorAll('.jta-p'));
+  var hover=window.matchMedia('(hover:hover) and (pointer:fine)');
+  function open(p,toggle){
+    var wasOpen=p.classList.contains('is-open');
+    panels.forEach(function(q){q.classList.remove('is-open');q.querySelector('.jta-h').setAttribute('aria-expanded','false')});
+    if(toggle&&wasOpen&&root.querySelector('.jta-list').offsetHeight>0&&getComputedStyle(root.querySelector('.jta-list')).flexDirection==='column')return;
+    p.classList.add('is-open');p.querySelector('.jta-h').setAttribute('aria-expanded','true');
+  }
+  panels.forEach(function(p){
+    p.addEventListener('click',function(){open(p,true)});
+    p.addEventListener('mouseenter',function(){
+      if(hover.matches&&getComputedStyle(root.querySelector('.jta-list')).flexDirection!=='column')open(p,false);
+    });
+  });
+})();
+</script>
