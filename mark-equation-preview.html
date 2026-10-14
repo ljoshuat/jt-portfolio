@@ -1,0 +1,53 @@
+<!doctype html><html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Mark Equation</title>
+<style>
+:root{color-scheme:dark;--bg:#0A0F12;--fg:#F7F7F7;--lime:#DAF40A;--panel:#151a1d;--muted:#8a8f92}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:Helvetica,Arial,sans-serif}
+.wrap{max-width:1280px;margin:0 auto;padding:24px 16px 64px}
+.note{font:13px/1.4 ui-monospace,monospace;color:var(--muted);margin:0 0 32px}
+.eq{display:flex;align-items:center;gap:clamp(.5rem,1.6vw,1.25rem);background:var(--panel);border-radius:1.25rem;padding:clamp(1.5rem,4vw,3.5rem)}
+.term{flex:1 1 0;min-width:0;display:flex;flex-direction:column;align-items:center;gap:.9rem}
+.term svg{width:100%;height:auto;max-height:9rem;overflow:visible}
+.term.res{flex-grow:1.6}
+.term.res svg{max-height:11rem}
+.lbl{font:12px/1.2 ui-monospace,monospace;letter-spacing:.06em;text-transform:uppercase;color:var(--muted)}
+.res .lbl{color:var(--lime)}
+.op{flex:none;font:300 clamp(1.5rem,3.5vw,3rem)/1 Helvetica,Arial,sans-serif;color:var(--muted);padding-bottom:1.6rem}
+.ln{fill:none;stroke:var(--fg);stroke-width:1.5;vector-effect:non-scaling-stroke;stroke-linejoin:round}
+.gh{fill:none;stroke:var(--fg);stroke-opacity:.18;stroke-width:1;stroke-dasharray:3 4;vector-effect:non-scaling-stroke}
+.fill{fill:var(--lime)}
+@media (max-width:640px){
+  .eq{gap:.35rem;padding:1.5rem .75rem}
+  .term{gap:.5rem}
+  .op{font-size:1.125rem;padding-bottom:1.1rem}
+  .lbl{font-size:9px;letter-spacing:.04em}
+}
+</style></head><body><div class="wrap">
+<p class="note">Mock: J + T + pixel + comment = the mark.</p>
+<div class="eq">
+  <div class="term">
+    <svg viewBox="-10 -10 260 290" aria-label="J"><path transform="translate(118 133.5) scale(.65) translate(-118 -133.5)" class="ln" d="M144.6 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446Z"/></svg>
+    <span class="lbl">J</span>
+  </div>
+  <span class="op">+</span>
+  <div class="term">
+    <svg viewBox="-10 -10 260 290" aria-label="T"><path transform="translate(118 133.5) scale(.65) translate(-118 -133.5)" class="gh" d="M144.6 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446Z"/><path transform="translate(118 133.5) scale(.65) translate(-118 -133.5)" class="ln" d="M22 0H236.33L214.229 89H157 L 118 267 H 41 L 80 89 H0Z"/></svg>
+    <span class="lbl">T</span>
+  </div>
+  <span class="op">+</span>
+  <div class="term">
+    <svg viewBox="-10 -10 260 290" aria-label="Pixel"><path class="ln" d="M85.8 62.3H207.4L172.2 204.7H50.6Z"/></svg>
+    <span class="lbl">Pixel</span>
+  </div>
+  <span class="op">+</span>
+  <div class="term">
+    <svg viewBox="-10 -10 260 290" aria-label="Comment bubble"><path class="ln" d="M84 40 H230 Q252 40 246 62 L243 74 L288 66 L232 118 L212 192 Q206 214 184 214 H40 Q18 214 24 192 L58 62 Q62 40 84 40Z" transform="translate(126 127) scale(.78) translate(-140 -127)"/></svg>
+    <span class="lbl">Comment</span>
+  </div>
+  <span class="op eqs">=</span>
+  <div class="term res">
+    <svg viewBox="-10 -10 366.4 287" aria-label="The JT mark"><path class="fill" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/><path class="fill" d="M270.33 0H346.33L324.229 89H248.229Z"/></svg>
+    <span class="lbl">The mark</span>
+  </div>
+</div>
+</div></body></html>

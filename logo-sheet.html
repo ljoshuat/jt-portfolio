@@ -1,0 +1,95 @@
+<section class="jtl" id="jt-logo-sheet" aria-labelledby="jtl-title">
+<style>
+.jtl{
+  --jtl-bg:var(--color--bg-primary,#0A0F12);
+  --jtl-fg:var(--color--text-primary,#F7F7F7);
+  --jtl-accent:var(--color--accent,#DAF40A);
+  --jtl-ink:#0A0F12;
+  --jtl-lime:#DAF40A;
+  --jtl-line:color-mix(in srgb,var(--jtl-fg) 18%,transparent);
+  --jtl-mono:"Ppneuemontrealmono","PP Neue Montreal Mono","JetBrains Mono",ui-monospace,monospace;
+  --jtl-ease:cubic-bezier(.2,.7,.2,1);
+  background:var(--jtl-bg);color:var(--jtl-fg);
+  padding-block:clamp(4rem,9vw,8rem);
+  overflow:hidden;
+}
+.jtl *{box-sizing:border-box}
+.jtl-sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.jtl-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:0}
+@media (min-width:768px){.jtl-grid{grid-template-columns:repeat(4,minmax(0,1fr))}}
+.jtl-tile{position:relative;display:flex;align-items:center;justify-content:center;min-width:0;aspect-ratio:291/328}
+.jtl-wide{grid-column:span 2;aspect-ratio:582/328}
+.jtl-hero{background:var(--jtl-lime);border-top-left-radius:clamp(1.5rem,3.5vw,3rem)}
+.jtl-hero svg{width:32%;height:auto;fill:var(--jtl-ink);overflow:visible}
+.jtl-outline svg{width:48%;height:auto;overflow:visible}
+.jtl-outline .jtl-box,.jtl-outline .jtl-gl{fill:none;stroke:var(--jtl-line);stroke-width:1;vector-effect:non-scaling-stroke}
+.jtl-outline .jtl-box{stroke:color-mix(in srgb,var(--jtl-fg) 45%,transparent)}
+.jtl-outline .jtl-mk{fill:none;stroke:var(--jtl-fg);stroke-width:1.25;vector-effect:non-scaling-stroke}
+.jtl-app{width:23%;aspect-ratio:1;border-radius:22%;background:var(--jtl-lime);display:flex;align-items:center;justify-content:center;position:relative;transition:transform .5s var(--jtl-ease)}
+.jtl-app svg{width:62%;height:auto;fill:var(--jtl-ink)}
+.jtl-ping{position:absolute;top:-12%;right:-12%;width:26%;aspect-ratio:1;border-radius:50%;background:#fff;color:var(--jtl-ink);font:500 clamp(.7rem,1vw,.9rem)/1 var(--jtl-mono);display:flex;align-items:center;justify-content:center;transition:transform .5s cubic-bezier(.3,1.6,.5,1)}
+.jtl-icon:hover .jtl-app{transform:translateY(-4%)}
+.jtl-icon:hover .jtl-ping{transform:scale(1.15)}
+.jtl-spec{margin:0;font-family:var(--jtl-mono);font-size:clamp(.625rem,.75vw,.75rem);letter-spacing:.04em;text-transform:uppercase;line-height:1.5;position:absolute;top:12%;left:10%}
+.jtl-ink{background:var(--jtl-ink);color:#F7F7F7}
+.jtl-ink svg{position:absolute;left:10%;bottom:10%;width:30%;height:auto;fill:var(--jtl-lime);overflow:visible}
+.jtl-ink .jtl-tick{transition:transform .5s var(--jtl-ease)}
+.jtl-ink:hover .jtl-tick{transform:translate(4%,-6%)}
+.jtl-lime{background:var(--jtl-lime);color:var(--jtl-ink);border-bottom-right-radius:clamp(1.5rem,3.5vw,3rem)}
+.jtl-buildwrap{margin-top:clamp(3rem,7vw,6rem)}
+.jtl-build{display:block;width:100%;height:auto;overflow:visible}
+@media (max-width:767px){.jtl-buildwrap{overflow:hidden}.jtl-build{width:170%;margin-left:-35%}}
+.jtl-guides line,.jtl-circles circle{fill:none;stroke:var(--jtl-line);stroke-width:1;vector-effect:non-scaling-stroke}
+.jtl-dot{fill:color-mix(in srgb,var(--jtl-fg) 60%,transparent)}
+.jtl-shape path{fill:color-mix(in srgb,var(--jtl-accent) 16%,transparent);stroke:var(--jtl-accent);stroke-width:1.25;vector-effect:non-scaling-stroke}
+.jtl-pts rect{fill:var(--jtl-bg);stroke:var(--jtl-accent);stroke-width:1;vector-effect:non-scaling-stroke}
+.jtl.is-js .jtl-shape path{stroke-dasharray:1 1;stroke-dashoffset:1;fill-opacity:0}
+.jtl.is-js .jtl-guides,.jtl.is-js .jtl-circles,.jtl.is-js .jtl-dot,.jtl.is-js .jtl-pts{opacity:0}
+.jtl.is-drawn .jtl-guides,.jtl.is-drawn .jtl-circles,.jtl.is-drawn .jtl-dot{opacity:1;transition:opacity .6s ease}
+.jtl.is-drawn .jtl-shape path{stroke-dashoffset:0;fill-opacity:1;transition:stroke-dashoffset 1.1s cubic-bezier(.6,0,.2,1) .2s,fill-opacity .5s ease 1.1s}
+.jtl.is-drawn .jtl-pts{opacity:1;transition:opacity .4s ease 1.3s}
+@media (prefers-reduced-motion:reduce){
+  .jtl.is-js .jtl-shape path{stroke-dasharray:none;fill-opacity:1}
+  .jtl.is-js .jtl-guides,.jtl.is-js .jtl-circles,.jtl.is-js .jtl-dot,.jtl.is-js .jtl-pts{opacity:1}
+  .jtl-app,.jtl-ping,.jtl-ink .jtl-tick{transition:none}
+  .jtl-icon:hover .jtl-app,.jtl-icon:hover .jtl-ping,.jtl-ink:hover .jtl-tick{transform:none}
+}
+</style>
+<div class="jtl-inner">
+  <h2 class="jtl-sr" id="jtl-title">The JT mark</h2>
+  <div class="jtl-grid">
+    <div class="jtl-tile jtl-wide jtl-hero">
+      <svg viewBox="0 0 346.4 267" role="img" aria-label="The JT mark in ink on lime"><path d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/><path d="M270.33 0H346.33L324.229 89H248.229Z"/></svg>
+    </div>
+    <div class="jtl-tile jtl-wide jtl-outline">
+      <svg viewBox="-55 -31 478 330" role="img" aria-label="The JT mark in outline on its grid">
+        <rect class="jtl-box" x="-55" y="-31" width="478" height="330"/>
+        <g class="jtl-gl"><line x1="64.5" y1="-31" x2="64.5" y2="299"/><line x1="184.0" y1="-31" x2="184.0" y2="299"/><line x1="303.5" y1="-31" x2="303.5" y2="299"/><line x1="-55" y1="51.5" x2="423" y2="51.5"/><line x1="-55" y1="134.0" x2="423" y2="134.0"/><line x1="-55" y1="216.5" x2="423" y2="216.5"/></g>
+        <path class="jtl-mk" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/><path class="jtl-mk" d="M270.33 0H346.33L324.229 89H248.229Z"/>
+      </svg>
+    </div>
+    <div class="jtl-tile jtl-wide jtl-icon">
+      <div class="jtl-app">
+        <svg viewBox="0 0 539 445" role="img" aria-label="The badge as an app icon"><path fill-rule="evenodd" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z M201.746 89H350.125L310.187 249.829C293.572 311.007 237.642 356 171.203 356H113.795L135.896 267H170.543C196.25 267 217.944 249.814 224.29 226.446L232.606 192.961C242.452 183.685 255.72 178 270.316 178H179.645Z M384.125 89H460.125L438.024 178H362.024Z"/></svg>
+        <span class="jtl-ping" aria-hidden="true">3</span>
+      </div>
+    </div>
+    <div class="jtl-tile jtl-ink">
+      <p class="jtl-spec">Ink<br>R 10 G 15 B 18<br>C 44 M 17 Y 0 K 93<br>#0A0F12</p>
+      <svg viewBox="0 0 346.4 267" aria-hidden="true"><path d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/><g class="jtl-tick"><path d="M270.33 0H346.33L324.229 89H248.229Z"/></g></svg>
+    </div>
+    <div class="jtl-tile jtl-lime">
+      <p class="jtl-spec">Lime<br>R 218 G 244 B 10<br>C 11 M 0 Y 96 K 4<br>#DAF40A</p>
+    </div>
+  </div>
+  <div class="jtl-buildwrap">
+    <svg class="jtl-build" viewBox="-262 -113 872 458" role="img" aria-label="How the J is built: two circles of the same centre shape its curve, and every edge leans on the same angle">
+      <g class="jtl-guides"><line x1="-262" y1="0" x2="610" y2="0"/><line x1="-262" y1="89" x2="610" y2="89"/><line x1="-262" y1="124" x2="610" y2="124"/><line x1="-262" y1="143.5" x2="610" y2="143.5"/><line x1="-262" y1="178" x2="610" y2="178"/><line x1="-262" y1="267" x2="610" y2="267"/><line x1="94.4" y1="-113" x2="-19.4" y2="345"/><line x1="116.0" y1="-113" x2="2.3" y2="345"/><line x1="172.7" y1="-113" x2="58.9" y2="345"/><line x1="264.4" y1="-113" x2="150.7" y2="345"/><line x1="298.4" y1="-113" x2="184.7" y2="345"/><line x1="374.4" y1="-113" x2="260.7" y2="345"/></g>
+      <g class="jtl-circles"><circle cx="57.4" cy="124" r="143"/><circle cx="57.4" cy="124" r="54"/><circle cx="156.5" cy="143.5" r="54.5"/></g>
+      <circle class="jtl-dot" cx="57.4" cy="124" r="1.6"/><circle class="jtl-dot" cx="156.5" cy="143.5" r="1.6"/>
+      <g class="jtl-shape"><path pathLength="1" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/><path pathLength="1" d="M270.33 0H346.33L324.229 89H248.229Z"/></g>
+      <g class="jtl-pts"><rect x="84.95" y="-3.00" width="6" height="6"/><rect x="233.33" y="-3.00" width="6" height="6"/><rect x="193.39" y="157.83" width="6" height="6"/><rect x="54.41" y="264.00" width="6" height="6"/><rect x="-3.00" y="264.00" width="6" height="6"/><rect x="19.10" y="175.00" width="6" height="6"/><rect x="53.75" y="175.00" width="6" height="6"/><rect x="107.50" y="134.45" width="6" height="6"/><rect x="115.81" y="100.96" width="6" height="6"/><rect x="153.52" y="86.00" width="6" height="6"/><rect x="62.85" y="86.00" width="6" height="6"/><rect x="119.60" y="86.00" width="6" height="6"/><rect x="267.33" y="-3.00" width="6" height="6"/><rect x="343.33" y="-3.00" width="6" height="6"/><rect x="321.23" y="86.00" width="6" height="6"/><rect x="245.23" y="86.00" width="6" height="6"/></g>
+    </svg>
+  </div>
+</div>
+</section>

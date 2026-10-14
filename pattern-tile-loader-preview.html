@@ -1,0 +1,101 @@
+<!doctype html>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Pattern Tile Loader</title>
+<style>
+/* Layout: one centred bento preview, short caption below. Single dark look, matching the site. */
+:root{--bg:#0A0F12;--fg:#F7F7F7;--muted:#9aa1a6;--lime:#DAF40A;--panel:#151b1f;--display:"Archivo",Helvetica,Arial,sans-serif;--body:"Inter Tight",Helvetica,Arial,sans-serif;color-scheme:dark}
+body{margin:0;background:var(--bg);color:var(--fg);font-family:var(--body);padding:0 16px}
+.wrap{max-width:1100px;margin:0 auto;padding-block:32px 48px;display:grid;gap:20px}
+h1{margin:0;font-family:var(--display);font-weight:800;text-transform:uppercase;letter-spacing:-.01em;font-size:clamp(1.25rem,3vw,2rem);text-wrap:balance}
+p{margin:0;color:var(--muted);line-height:1.5;max-width:62ch;font-size:15px}
+.bento{position:relative;max-width:100%}
+.bento img{display:block;width:100%;height:auto;border-radius:14px}
+.jt-pattern-tile{position:absolute;left:4.1667%;top:50%;width:39.5833%;height:42.5926%;border-radius:3.16%/5.22%;overflow:hidden;background:var(--bg)}
+.jt-pattern-tile svg{display:block;width:100%;height:100%}
+.tag{color:var(--lime);font-size:12px;letter-spacing:.08em;text-transform:uppercase}
+</style>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Archivo:wght@800&family=Inter+Tight:wght@400&display=swap">
+</head><body>
+<div class="wrap">
+<div class="tag">Preview, not live</div>
+<h1>Loader in the pattern tile</h1>
+<p>The bottom-left square plays the site loader's badge grid on a loop: grey cells light and settle, and one lime cell flashes about every 1.5 seconds. With reduced motion turned on, it shows a still grid with three lime cells.</p>
+<div class="bento"><img src="https://cdn.prod.website-files.com/6ac66533162bac8c8f01fb1b/6accec91401d830e57cb5b78_jt-creative-overview-v2.webp" alt="JT Creative identity overview: logo lockup, mark, type, pattern and app icon"><div class="jt-pattern-tile" data-jt-pattern-tile></div></div>
+</div>
+<script>(function () {
+  var NS = 'http://www.w3.org/2000/svg';
+  var BADGE = 'M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z';
+  function rgb(a) { return 'rgb(' + a.map(Math.round).join(',') + ')'; }
+  function mix(a, b, t) { return a.map(function (v, i) { return v + (b[i] - v) * t; }); }
+  function build(tile) {
+    if (tile.dataset.jtTileInit) return;
+    tile.dataset.jtTileInit = '1';
+    var W = 760, H = 460;
+    var bg = [10, 15, 18], fg = [247, 247, 247], lime = [218, 244, 10];
+    var tones = [rgb(mix(bg, fg, 0.05)), rgb(mix(bg, fg, 0.08)), rgb(mix(bg, fg, 0.11))];
+    var lit = rgb(mix(bg, fg, 0.2)), glow = rgb(mix(bg, lime, 0.92));
+    var w = 111, s = w / 539, h = 445 * s, px = 0.796 * w, py = h * 1.002, shift = -0.206 * w;
+    var svg = document.createElementNS(NS, 'svg');
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    svg.setAttribute('preserveAspectRatio', 'xMidYMid slice');
+    svg.setAttribute('aria-hidden', 'true');
+    var defs = document.createElementNS(NS, 'defs');
+    var p = document.createElementNS(NS, 'path');
+    p.setAttribute('id', 'jt-tile-cell'); p.setAttribute('d', BADGE); p.setAttribute('transform', 'scale(' + s + ')');
+    defs.appendChild(p); svg.appendChild(defs);
+    var cells = [];
+    for (var r = -1; r < Math.ceil(H / py) + 1; r++) {
+      var off = ((r * shift) % px + px) % px - px * 1.5;
+      for (var x = off; x < W + px; x += px) {
+        var u = document.createElementNS(NS, 'use');
+        u.setAttribute('href', '#jt-tile-cell');
+        u.setAttribute('x', x.toFixed(1)); u.setAttribute('y', (r * py).toFixed(1));
+        var base = tones[Math.floor(Math.random() * tones.length)];
+        u.style.fill = base;
+        svg.appendChild(u);
+        cells.push({ el: u, base: base, cx: x + w / 2, cy: r * py + h / 2 });
+      }
+    }
+    tile.appendChild(svg);
+    if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      [0.25, 0.5, 0.75].forEach(function (f, i) {
+        var t = cells.filter(function (c) { return c.cx > W * (f - 0.12) && c.cx < W * (f + 0.12) && c.cy > H * 0.3 && c.cy < H * 0.7; })[0];
+        if (t) t.el.style.fill = glow;
+      });
+      return;
+    }
+    var inner = cells.filter(function (c) { return c.cx > w * 0.4 && c.cx < W - w * 0.4 && c.cy > h * 0.4 && c.cy < H - h * 0.4; });
+    function flash(c, color, up, hold, down) {
+      c.el.style.transition = 'fill ' + up + 's ease-out';
+      c.el.style.fill = color;
+      setTimeout(function () {
+        c.el.style.transition = 'fill ' + down + 's ease-in';
+        c.el.style.fill = c.base;
+      }, (up + hold) * 1000);
+    }
+    var last = null, visible = true;
+    function lights() {
+      if (visible) for (var i = 0; i < 2; i++) flash(cells[Math.floor(Math.random() * cells.length)], lit, 0.5, 0.2, 0.9);
+      tile._jtLights = setTimeout(lights, 420);
+    }
+    function accent() {
+      if (visible) {
+        var pool = inner.filter(function (c) { return !last || Math.hypot(c.cx - last.cx, c.cy - last.cy) > W * 0.35; });
+        var c = pool[Math.floor(Math.random() * pool.length)] || inner[0];
+        last = c;
+        flash(c, glow, 0.35, 0.35, 0.6);
+      }
+      tile._jtAccent = setTimeout(accent, 1500);
+    }
+    if ('IntersectionObserver' in window) {
+      new IntersectionObserver(function (e) { visible = e[0].isIntersecting; }).observe(tile);
+    }
+    lights(); setTimeout(accent, 600);
+  }
+  window.initPatternTile = function (scope) {
+    (scope || document).querySelectorAll('[data-jt-pattern-tile]').forEach(build);
+  };
+})();
+
+initPatternTile();</script>
+</body></html>

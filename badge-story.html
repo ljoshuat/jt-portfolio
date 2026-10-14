@@ -1,0 +1,138 @@
+<section class="jtb" id="jt-badge-story" aria-labelledby="jtb-title">
+<style>
+.jtb{
+  --jtb-bg:var(--color--bg-primary,#0A0F12);
+  --jtb-fg:var(--color--text-primary,#F7F7F7);
+  --jtb-accent:var(--color--accent,#DAF40A);
+  --jtb-muted:color-mix(in srgb,var(--jtb-fg) 62%,transparent);
+  --jtb-line:color-mix(in srgb,var(--jtb-fg) 16%,transparent);
+  --jtb-dim:color-mix(in srgb,var(--jtb-accent) 16%,var(--jtb-bg));
+  --jtb-mono:"Ppneuemontrealmono","PP Neue Montreal Mono","JetBrains Mono",ui-monospace,monospace;
+  background:var(--jtb-bg);color:var(--jtb-fg);
+  padding-block:clamp(4rem,9vw,8rem);
+  overflow:hidden;overflow:clip;
+}
+.jtb *{box-sizing:border-box}
+.jtb-label{font-family:var(--jtb-mono);font-size:.8125rem;letter-spacing:.04em;text-transform:uppercase;line-height:1.3}
+.jtb-top{display:grid;grid-template-columns:1fr;gap:3rem;align-items:center}
+@media (min-width:992px){.jtb-top{grid-template-columns:minmax(0,1fr) minmax(0,1.05fr);gap:5rem}}
+.jtb-title{margin:0 0 1.25rem}
+.jtb-lede{color:var(--jtb-muted);font-size:clamp(1.125rem,1.4vw,1.375rem);line-height:1.4;max-width:34rem;margin:0}
+.jtb-parts{list-style:none;margin:2.5rem 0 0;padding:0;border-top:1px solid var(--jtb-line);max-width:36rem}
+.jtb-part{display:grid;grid-template-columns:11rem 1fr;gap:1rem;padding:1.25rem 0;border-bottom:1px solid var(--jtb-line);cursor:default;outline:none}
+.jtb-part>*{transition:transform .4s cubic-bezier(.2,.7,.2,1)}
+.jtb-part .jtb-label{color:var(--jtb-accent);padding-top:.2rem}
+.jtb-part p{margin:0;color:var(--jtb-muted);line-height:1.4;transition:color .3s,transform .4s cubic-bezier(.2,.7,.2,1)}
+.jtb-part.is-on>*{transform:translateX(.75rem)}
+.jtb-part.is-on p{color:var(--jtb-fg)}
+@media (max-width:479px){.jtb-part{grid-template-columns:1fr;gap:.35rem}}
+.jtb-hero{position:relative;display:flex;justify-content:center}
+.jtb-hint{display:none;align-items:center;gap:.6rem;margin:2.5rem 0 0;color:var(--jtb-muted)}
+.jtb-hint::before{content:"";width:.5rem;height:.5rem;border-radius:50%;background:var(--jtb-accent);animation:jtb-ping 1.6s ease-out infinite}
+@keyframes jtb-ping{0%{box-shadow:0 0 0 0 color-mix(in srgb,var(--jtb-accent) 60%,transparent)}100%{box-shadow:0 0 0 .6rem transparent}}
+@media (hover:none),(max-width:991px){.jtb-hint{display:flex}}
+.jtb-hero .jtb-hint{position:absolute;top:0;left:0;margin:0}
+@media (max-width:991px){
+  .jtb-copy{display:contents}
+  .jtb-top{gap:0}
+  .jtb-title{order:1}.jtb-lede{order:2}
+  .jtb-hero{order:3;margin-top:2rem;position:sticky;top:var(--jtb-stick,3rem);z-index:2;background:var(--jtb-bg);padding-block:1rem;flex-direction:column;align-items:center}.jtb .jtb-hero svg{width:min(46%,15rem)}
+  .jtb-hero .jtb-hint{position:static;align-self:flex-start;margin:0 0 .75rem}
+  .jtb-parts{margin-top:1rem}
+  /* the badge stays in view while the parts list scrolls under it, so a tap shows its change */
+  .jtb-parts{order:5}
+}
+.jtb-hero svg{width:min(100%,38rem);height:auto;overflow:visible}
+.jtb-hero path{transition:fill .45s ease,opacity .45s ease,transform .6s cubic-bezier(.2,.7,.2,1);transform-box:fill-box;transform-origin:50% 50%}
+.jtb-c{fill:var(--jtb-accent)}
+.jtb-j,.jtb-p{fill:var(--jtb-bg)}
+.jtb[data-part="j"] .jtb-c,.jtb[data-part="p"] .jtb-c{fill:var(--jtb-dim)}
+.jtb[data-part="j"] .jtb-j{fill:var(--jtb-accent);transform:translateY(-2%)}
+.jtb[data-part="p"] .jtb-p{fill:var(--jtb-accent);transform:translate(4%,-6%)}
+.jtb[data-part="j"] .jtb-p,.jtb[data-part="p"] .jtb-j{fill:var(--jtb-bg)}
+.jtb[data-part="c"] .jtb-c{transform:scale(1.03)}
+.jtb[data-part="c"] .jtb-j,.jtb[data-part="c"] .jtb-p{fill:var(--jtb-accent)}
+.jtb-steps-wrap{margin-top:clamp(4rem,8vw,7rem)}
+.jtb-steps-head{color:var(--jtb-muted);padding-bottom:1.25rem;border-bottom:1px solid var(--jtb-line)}
+.jtb-steps{list-style:none;margin:0;padding:2rem 0 0;display:grid;grid-template-columns:1fr;gap:2rem}
+@media (min-width:768px){.jtb-steps{grid-template-columns:repeat(3,1fr)}}
+.jtb-step{display:flex;gap:1.5rem;align-items:center}
+.jtb-step svg{width:6.5rem;flex:none;height:auto;overflow:visible}
+.jtb-step .jtb-mini{transition:fill .6s ease}
+.jtb-step:nth-child(1) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 10%,var(--jtb-bg))}
+.jtb-step:nth-child(2) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 42%,var(--jtb-bg))}
+.jtb-step:nth-child(3) .jtb-mini{fill:color-mix(in srgb,var(--jtb-fg) 10%,var(--jtb-bg))}
+.jtb:not(.is-js) .jtb-step:nth-child(3) .jtb-mini,.jtb-step:nth-child(3).is-live .jtb-mini{fill:var(--jtb-accent)}
+.jtb:not(.is-js) .jtb-step:nth-child(3) .jtb-label,.jtb-step:nth-child(3).is-live .jtb-label{color:var(--jtb-accent)}
+.jtb-step:nth-child(3) .jtb-label{transition:color .6s ease}
+.jtb-step:nth-child(3) svg{transform-origin:50% 50%}
+.jtb-step.is-stamp svg{animation:jtb-stamp .55s cubic-bezier(.3,1.6,.5,1)}
+@keyframes jtb-stamp{0%{transform:scale(1.18) rotate(-4deg)}100%{transform:scale(1) rotate(0)}}
+.jtb-step p{margin:.5rem 0 0;color:var(--jtb-muted);line-height:1.4}
+.jtb-note{margin:2.5rem 0 0;color:var(--jtb-muted);font-size:.9375rem}
+.jtb.is-js [data-rise]{opacity:0;transform:translateY(40px);transition:opacity .8s cubic-bezier(.2,.7,.2,1),transform .8s cubic-bezier(.2,.7,.2,1)}
+.jtb.is-js [data-rise].is-in{opacity:1;transform:none}
+@media (prefers-reduced-motion:reduce){
+  .jtb.is-js [data-rise]{opacity:1;transform:none;transition:none}
+  .jtb-hero path,.jtb-step .jtb-mini,.jtb-part{transition:none}
+  .jtb-hint::before{animation:none}
+  .jtb-step.is-stamp svg{animation:none}
+}
+</style>
+
+<svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false">
+  <defs>
+    <path id="jtb-shape-c" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
+    <path id="jtb-shape-j" transform="translate(113.795 89)" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/>
+    <path id="jtb-shape-p" transform="translate(362.024 89)" d="M22.101 0H98.101L76 89H0Z"/>
+    <mask id="jtb-cut">
+      <rect x="-10" y="-10" width="560" height="465" fill="#fff"/>
+      <use href="#jtb-shape-j" fill="#000"/>
+      <use href="#jtb-shape-p" fill="#000"/>
+    </mask>
+  </defs>
+</svg>
+
+<div class="jtb-inner page-padding">
+<div class="container-med">
+<div class="jtb-top">
+  <div class="jtb-copy">
+    <h2 class="jtb-title section-heading" id="jtb-title" data-rise>The badge</h2>
+    <p class="jtb-lede" data-rise>My sign-off. The J is me, the pixel is the work, and the container holds them together. When something ships, it gets stamped.</p>
+    <ul class="jtb-parts" data-rise>
+      <li class="jtb-part" data-part="j" tabindex="0"><span class="jtb-label">The J</span><p>Me. The person behind every project.</p></li>
+      <li class="jtb-part" data-part="p" tabindex="0"><span class="jtb-label">The pixel</span><p>The work. The smallest unit of everything I make.</p></li>
+      <li class="jtb-part" data-part="c" tabindex="0"><span class="jtb-label">The container</span><p>The stamp. Set on the same slant as the mark, so it always leans forward, like the work.</p></li>
+    </ul>
+  </div>
+  <div class="jtb-hero" data-rise>
+    <p class="jtb-label jtb-hint">Tap a part</p>
+    <svg viewBox="0 0 539 445" role="img" aria-label="The JT badge: a J and a pixel cut from a slanted container">
+      <path class="jtb-c" data-part="c" d="M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z"/>
+      <g transform="translate(113.795 89)"><path class="jtb-j" data-part="j" d="M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z"/></g>
+      <g transform="translate(362.024 89)"><path class="jtb-p" data-part="p" d="M22.101 0H98.101L76 89H0Z"/></g>
+    </svg>
+  </div>
+</div>
+
+<div class="jtb-steps-wrap">
+  <div class="jtb-label jtb-steps-head" data-rise>From idea to launch</div>
+  <ol class="jtb-steps">
+    <li class="jtb-step" data-rise>
+      <svg viewBox="0 0 539 445" aria-hidden="true"><use class="jtb-mini" href="#jtb-shape-c" mask="url(#jtb-cut)"/></svg>
+      <div><div class="jtb-label">Idea</div><p>A sketch, a brief, a hunch.</p></div>
+    </li>
+    <li class="jtb-step" data-rise>
+      <svg viewBox="0 0 539 445" aria-hidden="true"><use class="jtb-mini" href="#jtb-shape-c" mask="url(#jtb-cut)"/></svg>
+      <div><div class="jtb-label">Build</div><p>Designed, built and tested.</p></div>
+    </li>
+    <li class="jtb-step" data-rise>
+      <svg viewBox="0 0 539 445" aria-hidden="true"><use class="jtb-mini" href="#jtb-shape-c" mask="url(#jtb-cut)"/></svg>
+      <div><div class="jtb-label">Launched</div><p>Signed off. We launched it.</p></div>
+    </li>
+  </ol>
+</div>
+</div>
+</div>
+
+</section>

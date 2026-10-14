@@ -141,6 +141,15 @@ function initHome(
     } catch (e) {}
 
 
+    /*
+     * PREVIEW: ?grid plays the loader every time,
+     * with the tonal badge grid behind it.
+     */
+    if (loaderGridPreview()) {
+      hasPlayed = null;
+    }
+
+
     console.log(
       "LOADER PLAYED:",
       hasPlayed
@@ -283,6 +292,243 @@ function skipLoader(container) {
 
   });
 
+}
+
+
+/* =========================================================
+   LOADER GRID (PREVIEW)
+   Tonal badge grid behind the J + dot loader, with a few
+   cells glowing up and settling back while it runs.
+   Only on when the URL has ?grid. Colors come from the
+   active theme (dark, light-theme, vibe-theme).
+========================================================= */
+
+function loaderGridPreview() {
+  // Calm-lights grid is the default loader. Add ?nogrid to the URL to see the old one.
+  return !/[?&]nogrid(=|&|$)/.test(window.location.search);
+}
+
+
+/*
+ * Recolor one loader element to the theme text color:
+ * text color always, fill/stroke on SVG shapes that use
+ * them, and background where the element has one (the dot).
+ */
+function themeInk(el, color) {
+  const cs = getComputedStyle(el);
+  const props = { color };
+  const hasBg =
+    cs.backgroundColor &&
+    cs.backgroundColor !== "transparent" &&
+    !/rgba\(.*,\s*0\)$/.test(cs.backgroundColor);
+  if (hasBg) props.backgroundColor = color;
+  if (el instanceof SVGElement) {
+    if (cs.fill && cs.fill !== "none") props.fill = color;
+    if (cs.stroke && cs.stroke !== "none") props.stroke = color;
+  }
+  gsap.set(el, props);
+}
+
+
+function buildLoaderGrid(loader) {
+
+  const NS = "http://www.w3.org/2000/svg";
+
+  const BADGE =
+    "M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z";
+
+
+  /* -----------------------------------------
+     THEME COLORS
+  ----------------------------------------- */
+
+  function toRGB(value) {
+    const probe = document.createElement("span");
+    probe.style.color = value;
+    document.body.appendChild(probe);
+    const m = getComputedStyle(probe).color.match(/[\d.]+/g) || [0, 0, 0];
+    probe.remove();
+    return m.slice(0, 3).map(Number);
+  }
+
+  function mix(a, b, t) {
+    return "rgb(" + a.map((v, i) => Math.round(v + (b[i] - v) * t)).join(",") + ")";
+  }
+
+  const bodyStyle = getComputedStyle(document.body);
+  const token = name => bodyStyle.getPropertyValue(name).trim();
+
+  let bgValue = getComputedStyle(loader).backgroundColor;
+  if (!bgValue || /rgba\(.*,\s*0\)$/.test(bgValue) || bgValue === "transparent") {
+    bgValue = token("--color--bg-primary") || "#0A0F12";
+  }
+
+  const lum = c => 0.2126 * c[0] + 0.7152 * c[1] + 0.0722 * c[2];
+
+  const bg = toRGB(bgValue);
+  const isDark = lum(bg) < 128;
+
+  /*
+   * The loader can sit on a different color than the theme
+   * (light loader on the dark theme), so the shape color is
+   * whichever theme color stands out most against it.
+   */
+  const fg = [
+    toRGB(token("--color--text-primary") || "#F7F7F7"),
+    toRGB(token("--color--bg-primary") || "#0A0F12"),
+    isDark ? [247, 247, 247] : [10, 15, 18]
+  ].sort((a, b) => Math.abs(lum(b) - lum(bg)) - Math.abs(lum(a) - lum(bg)))[0];
+
+  /* Accent glows only where they read, otherwise ink. */
+  const accent = toRGB(token("--color--accent") || "#DAF40A");
+  const accentReads = Math.abs(lum(accent) - lum(bg)) > 90;
+
+  const tones = isDark
+    ? [mix(bg, fg, 0.04), mix(bg, fg, 0.07), mix(bg, fg, 0.10)]
+    : [mix(bg, fg, 0.05), mix(bg, fg, 0.08), mix(bg, fg, 0.11)];
+  const lit = mix(bg, fg, isDark ? 0.17 : 0.2);
+  const glow = accentReads
+    ? mix(bg, accent, isDark ? 0.9 : 0.75)
+    : mix(bg, fg, 0.35);
+
+
+  /* -----------------------------------------
+     GRID
+     Same lattice as the Figma tonal pattern.
+  ----------------------------------------- */
+
+  const W = window.innerWidth;
+  const H = window.innerHeight;
+
+  const w = Math.max(150, Math.min(340, W / 5.5));
+  const s = w / 539;
+  const h = 445 * s;
+  const px = 0.796 * w;
+  const py = h * 1.002;
+  const shift = -0.206 * w;
+
+  const svg = document.createElementNS(NS, "svg");
+  svg.setAttribute("class", "loader-grid");
+  svg.setAttribute("aria-hidden", "true");
+  svg.setAttribute("viewBox", "0 0 " + W + " " + H);
+  svg.setAttribute("preserveAspectRatio", "xMidYMid slice");
+  Object.assign(svg.style, {
+    position: "absolute",
+    inset: "0",
+    width: "100%",
+    height: "100%",
+    zIndex: "-1",
+    pointerEvents: "none"
+  });
+
+  const defs = document.createElementNS(NS, "defs");
+  const cellPath = document.createElementNS(NS, "path");
+  cellPath.setAttribute("id", "loader-grid-cell");
+  cellPath.setAttribute("d", BADGE);
+  cellPath.setAttribute("transform", "scale(" + s + ")");
+  defs.appendChild(cellPath);
+  svg.appendChild(defs);
+
+  const cells = [];
+  const rows = Math.ceil(H / py) + 2;
+
+  for (let r = -1; r < rows; r++) {
+    const off = ((r * shift) % px + px) % px - px * 1.5;
+    for (let x = off; x < W + px; x += px) {
+      const use = document.createElementNS(NS, "use");
+      use.setAttribute("href", "#loader-grid-cell");
+      use.setAttribute("x", x.toFixed(1));
+      use.setAttribute("y", (r * py).toFixed(1));
+      const base = tones[Math.floor(Math.random() * tones.length)];
+      use.style.fill = base;
+      svg.appendChild(use);
+      cells.push({
+        el: use,
+        base,
+        cx: x + w / 2,
+        cy: r * py + h / 2
+      });
+    }
+  }
+
+  /* Grid sits behind the logo, above the loader background. */
+  gsap.set(loader, { isolation: "isolate" });
+  loader.insertBefore(svg, loader.firstChild);
+
+
+  /* -----------------------------------------
+     ANIMATE
+  ----------------------------------------- */
+
+  function play(runTime) {
+
+    const tl = gsap.timeline();
+    const reduce =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (reduce) {
+      return tl;
+    }
+
+    const maxD = Math.hypot(W / 2, H / 2);
+
+    cells.forEach(c => {
+      gsap.set(c.el, { opacity: 0 });
+      tl.to(
+        c.el,
+        {
+          opacity: 1,
+          duration: 0.6,
+          ease: "power1.out"
+        },
+        0.6 * Math.hypot(c.cx - W / 2, c.cy - H / 2) / maxD
+      );
+    });
+
+    const pool = cells.slice().sort(() => Math.random() - 0.5);
+    const glows = Math.max(5, Math.round(cells.length * 0.2));
+    const picks = pool.slice(0, glows);
+
+    /* Always exactly three accent tiles, spread apart on screen
+       and lit on an even beat across the run. */
+    const ACCENTS = 3;
+    const onScreen = c =>
+      c.cx > w * 0.35 && c.cx < W - w * 0.35 && c.cy > h * 0.35 && c.cy < H - h * 0.35;
+    const visible = pool.filter(onScreen);
+    const candidates = visible.length >= ACCENTS ? visible : pool;
+    const dist = (a, b) => Math.hypot(a.cx - b.cx, a.cy - b.cy);
+    const accents = [candidates[0]];
+    while (accents.length < ACCENTS) {
+      // Farthest-point pick, random among the near-farthest.
+      const ranked = candidates
+        .filter(c => !accents.includes(c))
+        .map(c => ({ c, d: Math.min(...accents.map(a => dist(a, c))) }))
+        .sort((a, b) => b.d - a.d);
+      const best = ranked.filter(r => r.d >= ranked[0].d * 0.85);
+      accents.push(best[Math.floor(Math.random() * best.length)].c);
+    }
+    const rest = picks.filter(c => !accents.includes(c));
+
+    // One accent per beat. Each flash fades out before the next one
+    // starts, so two never overlap.
+    const beat = runTime / ACCENTS;
+    const flash = Math.min(0.7, beat * 0.9);
+    accents.forEach((c, k) => {
+      const at = 0.5 + k * beat;
+      tl.to(c.el, { fill: glow, duration: flash * 0.4, ease: "sine.out" }, at)
+        .to(c.el, { fill: c.base, duration: flash * 0.5, ease: "sine.in" }, at + flash * 0.5);
+    });
+
+    rest.forEach((c, i) => {
+      const at = 0.5 + (i / rest.length) * runTime + Math.random() * 0.2;
+      tl.to(c.el, { fill: lit, duration: 0.5, ease: "sine.inOut" }, at)
+        .to(c.el, { fill: c.base, duration: 0.9, ease: "sine.inOut" }, at + 0.65);
+    });
+
+    return tl;
+  }
+
+  return { svg, play };
 }
 
 
@@ -473,6 +719,38 @@ function initLoader(container) {
     );
 
     return;
+
+  }
+
+
+  /* =========================================================
+     LOADER GRID (PREVIEW, ?grid ONLY)
+     The loader takes the theme's colors: dark by default,
+     light in light-theme, lime in vibe-theme. J, dot and
+     text use the theme text color so they read on it.
+  ========================================================= */
+
+  let loaderGrid = null;
+  let themeBg = null;
+
+  if (loaderGridPreview()) {
+
+    const themeStyle = getComputedStyle(document.body);
+    themeBg =
+      themeStyle.getPropertyValue("--color--bg-primary").trim() || "#0A0F12";
+    const themeText =
+      themeStyle.getPropertyValue("--color--text-primary").trim() || "#F7F7F7";
+
+    gsap.set(loader, { backgroundColor: themeBg, color: themeText });
+
+    [jLogo, dot, leftText, rightText, progressEl].forEach(el => {
+      if (!el) return;
+      themeInk(el, themeText);
+      el.querySelectorAll("*").forEach(child => themeInk(child, themeText));
+    });
+
+    loaderGrid = buildLoaderGrid(loader);
+    loaderGrid.play(2.2);
 
   }
 
@@ -1358,6 +1636,42 @@ if (elementsToExit.length) {
 }
 
 
+/*
+ * Grid fades out under the dot takeover, and the dot
+ * shifts to the theme background so it hands off cleanly.
+ */
+if (loaderGrid) {
+
+  exitTL.to(
+    loaderGrid.svg,
+    {
+      autoAlpha: 0,
+      duration: 0.7,
+      ease: "power2.in"
+    },
+    0
+  );
+
+  const dotInk = [dot, ...dot.querySelectorAll("*")].filter(el => {
+    const cs = getComputedStyle(el);
+    return el instanceof SVGElement
+      ? cs.fill && cs.fill !== "none"
+      : cs.backgroundColor && !/rgba\(.*,\s*0\)$/.test(cs.backgroundColor) && cs.backgroundColor !== "transparent";
+  });
+
+  dotInk.forEach(el => {
+    exitTL.to(
+      el,
+      el instanceof SVGElement
+        ? { fill: themeBg, duration: 0.6, ease: "power2.in" }
+        : { backgroundColor: themeBg, duration: 0.6, ease: "power2.in" },
+      0
+    );
+  });
+
+}
+
+
 /* =====================================================
    PREP HERO UNDER BLACK TAKEOVER
 ===================================================== */
@@ -1702,14 +2016,12 @@ function revealHero(container) {
 
 
   /* -----------------------------------------
-     DEMO VIDEO ON PHONES + TABLETS
-     It sits in the first screen under the
-     hero, so fade it up after the eyebrow
-     and heading instead of showing first.
+     HERO VIDEO
+     Fades up and in like the heading, right
+     after it, on every screen size.
   ----------------------------------------- */
 
   const demoVid =
-    window.innerWidth < 992 &&
     container.querySelector(
       ".section_demo-vid"
     );
@@ -1721,7 +2033,8 @@ function revealHero(container) {
       demoVid,
       {
         opacity: 0,
-        y: 30
+        y: 60,
+        filter: "blur(8px)"
       }
     );
 
@@ -1730,6 +2043,7 @@ function revealHero(container) {
       {
         opacity: 1,
         y: 0,
+        filter: "blur(0px)",
 
         duration: 0.8,
 
@@ -1737,7 +2051,7 @@ function revealHero(container) {
 
         onComplete: () =>
           gsap.set(demoVid, {
-            clearProps: "transform"
+            clearProps: "transform,filter"
           })
       },
       "-=0.4"
@@ -2454,3 +2768,217 @@ function drawRingLotties(section) {
   }, 250);
 
 }
+
+
+/* =========================================================
+   BADGE STORY (JT CREATIVE CASE STUDY)
+   Hover a part of the badge to light it, fade the
+   section up as it scrolls in, and stamp the launch
+   badge lime. Runs on load and again whenever a page
+   transition brings the section in.
+========================================================= */
+
+function initBadgeStory() {
+
+  const root =
+    document.getElementById(
+      "jt-badge-story"
+    );
+
+  if (!root || root.dataset.jtbInit) return;
+
+  root.dataset.jtbInit = "true";
+  root.classList.add("is-js");
+
+  const reduce =
+    window.matchMedia(
+      "(prefers-reduced-motion: reduce)"
+    ).matches;
+
+
+  /* Anatomy hover */
+
+  const rows =
+    root.querySelectorAll(
+      ".jtb-part"
+    );
+
+  function setPart(part) {
+    if (part) root.setAttribute("data-part", part);
+    else root.removeAttribute("data-part");
+    rows.forEach(row =>
+      row.classList.toggle(
+        "is-on",
+        row.getAttribute("data-part") === part
+      )
+    );
+  }
+
+  rows.forEach(row => {
+    const part = row.getAttribute("data-part");
+    // Remember the state before a tap: on touch, focus fires before
+    // click and would otherwise make the first tap toggle straight off.
+    let before;
+    let mouse = false;
+    row.addEventListener("pointerdown", e => {
+      before = root.getAttribute("data-part");
+      mouse = e.pointerType === "mouse";
+    });
+    row.addEventListener("pointerenter", e => {
+      if (e.pointerType === "mouse") setPart(part);
+    });
+    row.addEventListener("pointerleave", e => {
+      if (e.pointerType === "mouse") setPart(null);
+    });
+    row.addEventListener("focus", () => setPart(part));
+    row.addEventListener("blur", () => setPart(null));
+    row.addEventListener("click", () => {
+      const was = before !== undefined ? before : root.getAttribute("data-part");
+      before = undefined;
+      if (mouse) { mouse = false; setPart(part); return; }
+      setPart(was === part ? null : part);
+    });
+  });
+
+  root.querySelectorAll(".jtb-hero path").forEach(el => {
+    const part = el.getAttribute("data-part");
+    el.addEventListener("mouseenter", () => setPart(part));
+    el.addEventListener("mouseleave", () => setPart(null));
+  });
+
+
+  /* Scroll reveal, launch badge stamps last */
+
+  const launch =
+    root.querySelector(
+      ".jtb-step:nth-child(3)"
+    );
+
+  function goLive() {
+    if (!launch || launch.classList.contains("is-live")) return;
+    launch.classList.add("is-live");
+    if (!reduce) launch.classList.add("is-stamp");
+  }
+
+  const items =
+    root.querySelectorAll(
+      "[data-rise]"
+    );
+
+  if (reduce || !("IntersectionObserver" in window)) {
+    items.forEach(el => el.classList.add("is-in"));
+    goLive();
+    return;
+  }
+
+  const io = new IntersectionObserver(entries => {
+    entries
+      .filter(entry => entry.isIntersecting)
+      .forEach((entry, i) => {
+        const el = entry.target;
+        el.style.transitionDelay = (i * 0.12) + "s";
+        el.classList.add("is-in");
+        io.unobserve(el);
+        if (el === launch) setTimeout(goLive, 700 + i * 120);
+      });
+  }, {
+    rootMargin: "0px 0px -12% 0px",
+    threshold: 0.15
+  });
+
+  items.forEach(el => io.observe(el));
+
+}
+
+
+/*
+ * Page transitions swap the content without running
+ * the page's own scripts, so watch for the section
+ * arriving instead of relying on a hook.
+ */
+/* =========================================================
+   BRAND SECTIONS (TYPOGRAPHY, WHICH MARK)
+   Fade each row or card up as it scrolls in.
+========================================================= */
+
+function initBrandSections() {
+
+  document.querySelectorAll(".jtx:not([data-jtx-init])").forEach(root => {
+
+    root.setAttribute("data-jtx-init", "true");
+    root.classList.add("is-js");
+
+    const items =
+      root.querySelectorAll(
+        "[data-rise]"
+      );
+
+    if (
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches ||
+      !("IntersectionObserver" in window)
+    ) {
+      items.forEach(el => el.classList.add("is-in"));
+      return;
+    }
+
+    const io = new IntersectionObserver(entries => {
+      entries
+        .filter(entry => entry.isIntersecting)
+        .forEach((entry, i) => {
+          entry.target.style.transitionDelay = (i * 0.1) + "s";
+          entry.target.classList.add("is-in");
+          io.unobserve(entry.target);
+        });
+    }, {
+      rootMargin: "0px 0px -10% 0px",
+      threshold: 0.15
+    });
+
+    items.forEach(el => io.observe(el));
+
+  });
+
+}
+
+
+function initLogoSheet() {
+  document.querySelectorAll("#jt-logo-sheet:not([data-jtl-init])").forEach(root => {
+    root.dataset.jtlInit = "true";
+    const build = root.querySelector(".jtl-build");
+    if (!build || !("IntersectionObserver" in window)) return;
+    if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
+    root.classList.add("is-js");
+    const io = new IntersectionObserver(entries => {
+      entries.forEach(e => {
+        if (!e.isIntersecting) return;
+        root.classList.add("is-drawn");
+        io.disconnect();
+      });
+    }, { threshold: 0.35 });
+    io.observe(build);
+  });
+}
+
+(function watchBadgeStory() {
+
+  function initAll() {
+    initBadgeStory();
+    initBrandSections();
+    // initLogoSheet(); on hold until Josh wants the construction draw-in live
+  }
+
+  function start() {
+    initAll();
+    new MutationObserver(initAll).observe(
+      document.body,
+      { childList: true, subtree: true }
+    );
+  }
+
+  if (document.readyState === "loading") {
+    document.addEventListener("DOMContentLoaded", start);
+  } else {
+    start();
+  }
+
+})();
