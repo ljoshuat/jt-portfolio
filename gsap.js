@@ -296,6 +296,25 @@ function skipLoader(container) {
 
 
 /* =========================================================
+   LOADER VARIANT
+   "words" (DESIGN. BUILD. LAUNCH.) is the default since
+   2026-10-15. The J + dot loader is kept intact: add
+   ?loader=classic to the URL, or data-loader="classic" to
+   .loader in Webflow, to play it instead.
+========================================================= */
+
+function loaderVariant(loader) {
+  if (/[?&]loader=classic(&|$)/.test(window.location.search)) {
+    return "classic";
+  }
+  if (loader && loader.dataset.loader === "classic") {
+    return "classic";
+  }
+  return "words";
+}
+
+
+/* =========================================================
    LOADER GRID (PREVIEW)
    Tonal badge grid behind the J + dot loader, with a few
    cells glowing up and settling back while it runs.
@@ -617,7 +636,7 @@ function initLoader(container) {
     logoSides[1];
 
 
-  const dot =
+  let dot =
     rightSide
       ? rightSide.querySelector(
           ".loader-logo.is-dot"
@@ -625,7 +644,7 @@ function initLoader(container) {
       : null;
 
 
-  const leftText =
+  let leftText =
     leftSide
       ? leftSide.querySelector(
           ".loader-text"
@@ -633,7 +652,7 @@ function initLoader(container) {
       : null;
 
 
-  const rightText =
+  let rightText =
     rightSide
       ? rightSide.querySelector(
           ".loader-text"
@@ -641,7 +660,7 @@ function initLoader(container) {
       : null;
 
 
-  const jLogo =
+  let jLogo =
     leftSide
       ? leftSide.querySelector(
           ".loader-logo"
@@ -750,7 +769,7 @@ function initLoader(container) {
     });
 
     loaderGrid = buildLoaderGrid(loader);
-    loaderGrid.play(2.2);
+    loaderGrid.play(loaderVariant(loader) === "words" ? 3.6 : 2.2);
 
   }
 
@@ -1149,6 +1168,210 @@ function initLoader(container) {
 
 
   /* =========================================================
+     WORDS LOADER (DEFAULT)
+     DESIGN. BUILD. LAUNCH. roll up through one line in the
+     center. The dot from the mark is their period: it stays
+     on the line, then flies into the J's dot as the J rolls
+     in. The exit below is the same dot takeover, so the
+     J + dot elements are swapped for the new ones here.
+  ========================================================= */
+
+  const J_PATH =
+    "M87.951 0H236.33L196.392 160.829C179.777 222.007 123.847 267 57.408 267H0L22.101 178H56.748C82.455 178 104.149 160.814 110.495 137.446L118.811 103.961C128.657 94.685 141.925 89 156.521 89H65.85Z";
+
+  const DOT_PATH =
+    "M270.33 0H346.33L324.229 89H248.229Z";
+
+  function runWordsLoader() {
+
+    const themeStyle = getComputedStyle(document.body);
+    const token = name => themeStyle.getPropertyValue(name).trim();
+    const textColor = token("--color--text-primary") || "#F7F7F7";
+    // Lime on dark; the theme maps the accent to ink on light and vibe.
+    const dotColor = token("--color--accent") || "#DAF40A";
+    const display =
+      (leftText && getComputedStyle(leftText).fontFamily) ||
+      '"Druk Wide Web", Verdana, sans-serif';
+    const reduce =
+      window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+    if (!document.getElementById("loader-words-style")) {
+      const style = document.createElement("style");
+      style.id = "loader-words-style";
+      style.textContent =
+        ".loader-words{position:absolute;inset:0;z-index:2;pointer-events:none;--lw-size:min(11vw,8rem)}" +
+        ".loader-words-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:1.12em;overflow:hidden;font-weight:700;font-size:var(--lw-size);line-height:1.12;text-transform:uppercase;white-space:nowrap}" +
+        ".loader-word{position:absolute;inset:0;display:flex;justify-content:center;align-items:baseline}" +
+        ".loader-word-stop{display:inline-block;width:.31em;height:.28em;margin-left:.07em}" +
+        ".loader-words-mark{position:absolute;left:50%;top:50%;width:calc(var(--lw-size) * 2.6);aspect-ratio:346.4/267;transform:translate(-50%,-50%);overflow:hidden}" +
+        ".loader-words-mark svg{display:block;width:100%;height:100%;fill:currentColor}" +
+        ".loader-words-dot{position:absolute;left:0;top:0;width:0;height:0}" +
+        ".loader-words-dot-ink{position:relative;width:100%;height:100%}" +
+        ".loader-words-dot svg{display:block;width:100%;height:100%;fill:currentColor}";
+      document.head.appendChild(style);
+    }
+
+    const stage = document.createElement("div");
+    stage.className = "loader-words";
+    stage.setAttribute("aria-hidden", "true");
+    stage.innerHTML =
+      '<div class="loader-words-line">' +
+      ["Design", "Build", "Launch"]
+        .map(w => '<div class="loader-word">' + w + '<i class="loader-word-stop"></i></div>')
+        .join("") +
+      "</div>" +
+      '<div class="loader-words-mark"><svg viewBox="0 0 346.4 267"><path d="' + J_PATH + '"/></svg></div>' +
+      '<div class="loader-words-dot"><div class="loader-words-dot-ink">' +
+      '<svg viewBox="248.229 0 98.101 89" preserveAspectRatio="none"><path d="' + DOT_PATH + '"/></svg>' +
+      "</div></div>";
+    loader.appendChild(stage);
+
+    const line = stage.querySelector(".loader-words-line");
+    const words = [...stage.querySelectorAll(".loader-word")];
+    const stops = words.map(w => w.querySelector(".loader-word-stop"));
+    const markBox = stage.querySelector(".loader-words-mark");
+    const markSvg = markBox.querySelector("svg");
+    const jPath = markSvg.querySelector("path");
+    const dotBox = stage.querySelector(".loader-words-dot");
+    const dotInk = stage.querySelector(".loader-words-dot-ink");
+
+    gsap.set(stage, { color: textColor });
+    gsap.set(line, { fontFamily: display });
+    gsap.set(dotBox, { color: dotColor });
+
+    // The old J + dot stay in the page, hidden.
+    gsap.set([leftSide, rightSide], { autoAlpha: 0 });
+
+    // Hand the exit the new pieces.
+    dot = dotInk;
+    jLogo = markSvg;
+    leftText = null;
+    rightText = null;
+
+    // Shrink the words if LAUNCH. would not fit the screen.
+    function fit() {
+      stage.style.removeProperty("--lw-size");
+      const widest = Math.max(...words.map(w => {
+        const r = w.lastElementChild.getBoundingClientRect();
+        const l = w.firstChild;
+        const range = document.createRange();
+        range.selectNodeContents(l);
+        return r.right - range.getBoundingClientRect().left;
+      }));
+      const room = window.innerWidth * 0.88;
+      if (widest > room) {
+        const size = parseFloat(getComputedStyle(line).fontSize);
+        stage.style.setProperty("--lw-size", (size * room / widest).toFixed(1) + "px");
+      }
+    }
+
+    // Measured when each move starts, so a late font swap is fine.
+    function stopBox(i) {
+      const o = stage.getBoundingClientRect();
+      const l = line.getBoundingClientRect();
+      const s = stops[i];
+      return {
+        x: l.left - o.left + s.offsetLeft,
+        y: l.top - o.top + s.offsetTop,
+        width: s.offsetWidth,
+        height: s.offsetHeight
+      };
+    }
+
+    // The dot inside the mark spans x 248.229 to 346.33, y 0 to 89.
+    function markDotBox() {
+      const o = stage.getBoundingClientRect();
+      const m = markBox.getBoundingClientRect();
+      const k = m.width / 346.4;
+      return {
+        x: m.left - o.left + 248.229 * k,
+        y: m.top - o.top,
+        width: 98.101 * k,
+        height: 89 * k
+      };
+    }
+
+    const to = box => ({
+      x: () => box().x,
+      y: () => box().y,
+      width: () => box().width,
+      height: () => box().height
+    });
+
+    const progress = { value: 0 };
+    const count = duration => ({
+      value: 100,
+      duration,
+      ease: "power1.inOut",
+      onUpdate() {
+        if (progressEl) {
+          progressEl.textContent = Math.round(progress.value) + "%";
+        }
+      }
+    });
+
+    gsap.set(words, { yPercent: 110 });
+    gsap.set(jPath, { y: 280 });
+    gsap.set(dot, { autoAlpha: 0, scale: 0.2, transformOrigin: "50% 50%" });
+
+    const wordsTL = gsap.timeline({
+      onComplete() {
+        exitLoader();
+      }
+    });
+
+    wordsTL.call(fit, null, 0);
+
+    if (reduce) {
+      gsap.set(words, { autoAlpha: 0 });
+      gsap.set(jPath, { y: 0 });
+      wordsTL.set(dotBox, to(markDotBox), 0)
+        .set(dot, { autoAlpha: 1, scale: 1 }, 0)
+        .to(progress, count(1.2), 0)
+        .to({}, { duration: 0.4 });
+      return;
+    }
+
+    const roll = 0.62;
+    const hold = 0.5;
+    const ease = "power3.inOut";
+
+    // DESIGN. arrives and the dot pops in as its period.
+    wordsTL.to(words[0], { yPercent: 0, duration: roll, ease: "power3.out" }, 0.15)
+      .set(dotBox, to(() => stopBox(0)), 0.5)
+      .to(dot, { autoAlpha: 1, scale: 1, duration: 0.45, ease: "back.out(2.5)" }, 0.5);
+
+    let t = 0.15 + roll + hold;
+
+    // Each word rolls up and out as the next rolls in; the dot slides to the new end.
+    for (let i = 1; i < words.length; i++) {
+      wordsTL.to(words[i - 1], { yPercent: -110, duration: roll, ease }, t)
+        .to(words[i], { yPercent: 0, duration: roll, ease }, t)
+        .to(dotBox, { ...to(() => stopBox(i)), duration: roll, ease }, t);
+      t += roll + hold;
+    }
+
+    // LAUNCH. rolls out, the J rolls up, and the dot lands as the J's dot.
+    wordsTL.to(words[words.length - 1], { yPercent: -110, duration: roll, ease }, t)
+      .to(jPath, { y: 0, duration: 0.8, ease: "power3.out" }, t + 0.3)
+      .to(dotBox, { ...to(markDotBox), duration: 0.8, ease: "power3.inOut" }, t + 0.05);
+
+    t += 0.95;
+
+    wordsTL.to(progress, count(t), 0);
+
+    // Hold the finished mark, then the dot takeover.
+    wordsTL.to({}, { duration: 0.45 }, t);
+  }
+
+
+  if (loaderVariant(loader) === "words") {
+
+    runWordsLoader();
+
+  } else {
+
+  /* =========================================================
      START STATE
   ========================================================= */
 
@@ -1520,6 +1743,10 @@ function initLoader(container) {
       duration: 0.5
     }
   );
+
+
+  }
+  /* END J + DOT LOADER (classic) */
 
 
   /* =========================================================
