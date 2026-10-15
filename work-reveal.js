@@ -9,9 +9,9 @@
    by side start together.
 
    The hero stays as it is (work-gsap.js scales it).
-   Only the row wrappers move, never the gallery items
-   or data-depth layers work-gsap.js drifts, so the
-   parallax keeps working inside a faded row.
+   Gallery columns and data-depth layers keep the
+   parallax work-gsap.js gives them: depth layers rise
+   through yPercent, which adds on top of it.
 
    Load site-wide (footer) after GSAP and ScrollTrigger.
    Hooks into Barba itself, so it also runs when a work
@@ -153,23 +153,48 @@
 
       el.dataset.workReveal = "true";
 
-      /* data-depth layers already move on y with their
-         own parallax, so those only fade. */
-      const depth = el.matches("[data-depth]");
+      /* data-depth layers already own transform y for
+         their parallax (work-gsap.js), so they rise 40px
+         through yPercent instead, which GSAP adds on top
+         of y. Their height is read when they reveal,
+         after their images have loaded. */
+      if (el.matches("[data-depth]")) {
+
+        gsap.set(el, { opacity: 0 });
+
+        let tween = null;
+
+        return {
+          play: () => {
+            const rise =
+              (40 / Math.max(el.offsetHeight, 1)) * 100;
+
+            tween = gsap.fromTo(
+              el,
+              { opacity: 0, yPercent: rise },
+              {
+                opacity: 1,
+                yPercent: 0,
+                duration: 0.8,
+                ease: "power3.out"
+              }
+            );
+          },
+          kill: () => tween && tween.kill()
+        };
+
+      }
 
       /* Gallery images may carry the phone drift
          (yPercent), so keep their transform. */
-      const keepTransform =
-        depth || !!el.closest(GALLERY);
+      const keepTransform = !!el.closest(GALLERY);
 
       return gsap.fromTo(
         el,
-        depth
-          ? { opacity: 0 }
-          : { opacity: 0, y: 40 },
+        { opacity: 0, y: 40 },
         {
           opacity: 1,
-          ...(depth ? {} : { y: 0 }),
+          y: 0,
 
           duration: 0.8,
 
@@ -177,8 +202,6 @@
 
           paused: true,
 
-          /* data-depth layers keep their parallax
-             transform, so only tidy up plain rows. */
           onComplete: () => {
             if (!keepTransform) {
               gsap.set(el, {
