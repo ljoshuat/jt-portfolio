@@ -1199,11 +1199,12 @@ function initLoader(container) {
       const style = document.createElement("style");
       style.id = "loader-words-style";
       style.textContent =
+        // Centered on the small viewport height so phone toolbars don't shift it.
         ".loader-words{position:absolute;inset:0;z-index:2;pointer-events:none;--lw-size:min(11vw,8rem)}" +
-        ".loader-words-line{position:absolute;left:0;right:0;top:50%;transform:translateY(-50%);height:1.12em;overflow:hidden;font-weight:700;font-size:var(--lw-size);line-height:1.12;text-transform:uppercase;white-space:nowrap}" +
+        ".loader-words-line{position:absolute;left:0;right:0;top:50%;top:50svh;transform:translateY(-50%);height:1.12em;overflow:hidden;font-weight:700;font-size:var(--lw-size);line-height:1.12;text-transform:uppercase;white-space:nowrap}" +
         ".loader-word{position:absolute;inset:0;display:flex;justify-content:center;align-items:baseline}" +
         ".loader-word-stop{display:inline-block;width:.31em;height:.28em;margin-left:.07em}" +
-        ".loader-words-mark{position:absolute;left:50%;top:50%;width:calc(var(--lw-size) * 2.6);aspect-ratio:346.4/267;transform:translate(-50%,-50%);overflow:hidden}" +
+        ".loader-words-mark{position:absolute;left:50%;top:50%;top:50svh;width:calc(var(--lw-size) * 2.6);aspect-ratio:346.4/267;transform:translate(-50%,-50%);overflow:hidden}" +
         ".loader-words-mark svg{display:block;width:100%;height:100%;fill:currentColor}" +
         ".loader-words-dot{position:absolute;left:0;top:0;width:0;height:0}" +
         ".loader-words-dot-ink{position:relative;width:100%;height:100%}" +
