@@ -1,0 +1,7 @@
+node_modules/
+dist/
+.wrangler/
+.dev.vars
+# Licensed brand fonts stay off GitHub
+public/fonts/*
+!public/fonts/.gitkeep

@@ -1,0 +1,24 @@
+name = "jt-onboard"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+# Serves onboard.jtcreative.design. Add the custom domain once in the
+# Cloudflare dashboard (Workers > jt-onboard > Settings > Domains), or
+# uncomment this after jtcreative.design's DNS is on Cloudflare:
+# routes = [{ pattern = "onboard.jtcreative.design", custom_domain = true }]
+
+# Brand font files (not in git), same as the proposals worker.
+[assets]
+directory = "./public"
+
+[vars]
+# "self" once the brand woff2 files are in public/fonts; "google" uses the stand-ins.
+FONTS = "google"
+
+# Create with: npx wrangler kv namespace create ONBOARDING
+# then paste the id it prints here.
+[[kv_namespaces]]
+binding = "ONBOARDING"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Optional secret (not in this file): npx wrangler secret put SLACK_WEBHOOK_URL
