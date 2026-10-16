@@ -5,7 +5,7 @@ compatibility_date = "2026-09-01"
 # Serves proposals.jtcreative.design. Add the custom domain once in the
 # Cloudflare dashboard (Workers > jt-proposals > Settings > Domains), or
 # uncomment this after jtcreative.design's DNS is on Cloudflare:
-# routes = [{ pattern = "proposals.jtcreative.design", custom_domain = true }]
+routes = [{ pattern = "proposals.jtcreative.design", custom_domain = true }]
 
 # Brand font files (not in git). Anything in public/ is served as-is,
 # e.g. public/fonts/DrukWide-Bold.woff2 -> /fonts/DrukWide-Bold.woff2
