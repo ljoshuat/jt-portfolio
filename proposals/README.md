@@ -49,11 +49,16 @@ To use the licensed fonts, drop these into `public/fonts/` (git-ignored) and set
    Leave out any section you don't need and it disappears from the page.
 2. Preview it locally: `npm run preview -- clients/<client>.json`, open `dist/preview.html`.
 3. Publish it: `npm run add -- <client-slug> clients/<client>.json`
-   This prints the link and a generated password (or pass `--password <pw>`).
-4. Send the link and the password separately.
+   This prints a **private link** and a **password**.
+4. Email the private link. One tap opens the proposal and that browser stays
+   unlocked for 30 days; the key is dropped from the address bar after it opens.
+   Anyone the client forwards the link to can open it too. The password is the
+   fallback: the plain address `proposals.jtcreative.design/<client-slug>` asks for it.
+5. See when it was opened: `npm run views -- <client-slug>`.
 
-Running `add` again with the same slug updates the proposal. Changing the
-password signs out anyone who already opened it.
+Running `add` again with the same slug updates the content and keeps the same
+link and password. `--new-link` or `--new-password` replaces them and signs
+everyone out (use it to cut off a forwarded link).
 
 ### DocuSign
 

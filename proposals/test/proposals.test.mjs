@@ -12,11 +12,14 @@ function memoryKV(initial = {}) {
   return {
     async get(k, type) { const v = m.get(k); return v == null ? null : type === 'json' ? JSON.parse(v) : v; },
     async put(k, v) { m.set(k, v); },
+    keys: () => [...m.keys()],
   };
 }
 
+const KEY = 'test-link-key-abcdefghijklmnop';
+
 async function setup(password = 'lime-leaf-1234') {
-  const record = { password: await hashPassword(password), data: sample };
+  const record = { password: await hashPassword(password), key: KEY, data: sample };
   return { env: { PROPOSALS: memoryKV({ 'proposal:acme-co': JSON.stringify(record) }), SESSION_SECRET: 'test-secret', FONTS: 'google' }, password };
 }
 
@@ -85,4 +88,27 @@ test('sign button uses the DocuSign link and ignores non-https links', () => {
   const bad = renderProposal({ ...sample, contact: { ...sample.contact, signUrl: 'javascript:alert(1)' } });
   assert.doesNotMatch(bad, /javascript:/);
   assert.match(bad, /href="mailto:/);
+});
+
+test('private link unlocks, drops the key from the address and logs the view', async () => {
+  const { env } = await setup();
+  const res = await worker.fetch(new Request(`https://proposals.example/acme-co?k=${KEY}`), env);
+  assert.equal(res.status, 303);
+  assert.equal(res.headers.get('Location'), '/acme-co');
+  const cookie = res.headers.get('Set-Cookie').split(';')[0];
+  const page = await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookie } }), env);
+  assert.match(await page.text(), /The investment/);
+  assert.ok(env.PROPOSALS.keys().some((k) => k.startsWith('view:acme-co:')));
+});
+
+test('a wrong or missing link key shows the password screen', async () => {
+  const { env } = await setup();
+  for (const k of ['wrong', '']) {
+    const res = await worker.fetch(new Request(`https://proposals.example/acme-co?k=${k}`), env);
+    assert.equal(res.status, 401);
+    assert.equal(res.headers.get('Set-Cookie'), null);
+    assert.match(await res.text(), /That link didn/);
+  }
+  const unknown = await worker.fetch(new Request(`https://proposals.example/nope-co?k=${KEY}`), env);
+  assert.equal(unknown.status, 401);
 });

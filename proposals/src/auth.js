@@ -32,22 +32,31 @@ export async function verifyPassword(password, record) {
   return timingSafeEqual(hash, record.hash);
 }
 
+// Private link keys: long random strings, compared in constant time.
+export function makeKey() {
+  return toB64url(crypto.getRandomValues(new Uint8Array(24)));
+}
+
+export function verifyKey(key, stored) {
+  return Boolean(key && stored) && timingSafeEqual(String(key), String(stored));
+}
+
 async function hmac(secret, message) {
   const key = await crypto.subtle.importKey('raw', enc.encode(secret), { name: 'HMAC', hash: 'SHA-256' }, false, ['sign']);
   return toB64url(await crypto.subtle.sign('HMAC', key, enc.encode(message)));
 }
 
 // Cookie value: <expiry>.<signature over slug + expiry + password hash>.
-// Including the password hash means changing a client's password signs
-// everyone out of that proposal.
-export async function makeToken(secret, slug, passwordHash, maxAgeSec) {
+// The secret passed in covers the password hash and link key, so changing
+// either signs everyone out of that proposal.
+export async function makeToken(secret, slug, accessSecret, maxAgeSec) {
   const exp = Math.floor(Date.now() / 1000) + maxAgeSec;
-  return `${exp}.${await hmac(secret, `${slug}|${exp}|${passwordHash}`)}`;
+  return `${exp}.${await hmac(secret, `${slug}|${exp}|${accessSecret}`)}`;
 }
 
-export async function checkToken(secret, slug, passwordHash, token) {
+export async function checkToken(secret, slug, accessSecret, token) {
   if (!token) return false;
   const [exp, sig] = token.split('.');
   if (!exp || !sig || Number(exp) < Date.now() / 1000) return false;
-  return timingSafeEqual(sig, await hmac(secret, `${slug}|${exp}|${passwordHash}`));
+  return timingSafeEqual(sig, await hmac(secret, `${slug}|${exp}|${accessSecret}`));
 }
