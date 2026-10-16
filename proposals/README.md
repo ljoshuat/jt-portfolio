@@ -15,10 +15,25 @@ npx wrangler secret put SESSION_SECRET       # any long random string, e.g. `ope
 npx wrangler deploy
 ```
 
-Then in the Cloudflare dashboard: Workers & Pages → jt-proposals → Settings →
-Domains & Routes → add custom domain `proposals.jtcreative.design`. This needs
-`jtcreative.design` DNS on Cloudflare. If DNS lives elsewhere, add the domain to
-Cloudflare first (free plan is fine) or point a CNAME at the worker.
+Until the custom domain is set up, the worker is live at
+`https://jt-proposals.<your-subdomain>.workers.dev/<client>`.
+
+### Custom domain (DNS currently on DreamHost)
+
+Cloudflare can only serve `proposals.jtcreative.design` when it runs the
+domain's DNS, so move it over (free plan):
+
+1. Cloudflare dashboard → Add a domain → `jtcreative.design` → Free plan.
+   Cloudflare scans and copies your current DNS records.
+2. Compare the copied records with DreamHost (Panel → Websites → DNS) and make
+   sure every one is there, especially the Webflow records (`A` / `CNAME` for
+   `www`), the `MX` mail records and any `TXT` (SPF, DKIM, verification).
+   Set the Webflow records to **DNS only** (grey cloud).
+3. At DreamHost, switch the domain's nameservers to the two Cloudflare gives you
+   (DreamHost: Websites → Manage Websites → DNS → use external nameservers;
+   if the domain is registered elsewhere, change it at that registrar).
+4. Once Cloudflare shows the domain as Active: Workers & Pages → jt-proposals →
+   Settings → Domains & Routes → Add → Custom domain → `proposals.jtcreative.design`.
 
 ### Brand fonts
 
