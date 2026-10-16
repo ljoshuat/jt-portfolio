@@ -14,8 +14,9 @@ const GATE_CSS = `
 .gate{position:relative;min-height:100svh;display:grid;place-items:center;padding:var(--pad);overflow:hidden;isolation:isolate}
 #field{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block}
 .gate-box{width:min(100%,440px);position:relative}
-.gate-box::before{content:"";position:absolute;inset:-3rem -2.5rem;background:radial-gradient(closest-side,var(--bg) 72%,transparent);z-index:-1;opacity:.95}
-.gate .mark svg{width:60px;margin-bottom:2.25rem;overflow:visible;fill:var(--accent)}
+.gate-box{padding:clamp(1.75rem,5vw,2.75rem);border-radius:var(--r-lg,28px);background:rgba(10,15,18,.55);border:1px solid rgba(247,247,247,.09);-webkit-backdrop-filter:blur(18px) saturate(1.2);backdrop-filter:blur(18px) saturate(1.2);box-shadow:0 30px 80px rgba(0,0,0,.45),inset 0 1px 0 rgba(247,247,247,.06)}
+.gate input{background:rgba(20,26,30,.7)}
+.gate .mark svg{width:56px;margin-bottom:2rem;overflow:visible;fill:var(--accent)}
 .gate .mark .sq{transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
 .gate.typing .mark .sq{transform:translate(10px,-38px)}
 .gate.ok .mark .sq{transform:none;transition-duration:.35s}
