@@ -1,0 +1,84 @@
+{
+  "client": "Client Name",
+  "title": "Brand +\nWebsite",
+  "date": "October 16, 2026",
+  "validUntil": "November 15, 2026",
+  "reference": "JTC-2026-014",
+  "theme": "dark",
+  "intro": {
+    "heading": "Hello, Client.",
+    "accent": "Thanks for the conversation.",
+    "lead": "You told me what's working, what isn't, and where you want to be a year from now. This proposal lays out how we get there together: what I'll make, how we'll work, when it lands and what it costs.",
+    "body": ["Everything here is a starting point. If something feels off, tell me and we'll shape it until it fits."],
+    "signoff": { "name": "Josh Turner", "title": "Founder, JT Creative" }
+  },
+  "challenge": {
+    "current": ["Describe the current state in two or three sentences. What's the brand saying today, where does the site fall short, and what is that costing the business?"],
+    "goals": [
+      { "title": "Look the part", "body": "A brand that matches the quality of the work, so first impressions stop underselling you." },
+      { "title": "Convert visitors", "body": "A site built around one clear next step, with pages that answer the real questions buyers ask." },
+      { "title": "Own it", "body": "A build and guide your team can update without calling a developer." }
+    ]
+  },
+  "scope": [
+    { "title": "Brand identity", "body": "Logo suite, color, type and a guide your team can actually use." },
+    { "title": "Website design", "body": "Responsive layouts for every key page, designed in Figma and reviewed live." },
+    { "title": "Development", "body": "A fast, accessible site with a CMS your team can update on its own." },
+    { "title": "Content & SEO", "body": "Page structure, metadata, redirects and copy edits that help people find you." },
+    { "title": "Motion", "body": "Page transitions, scroll reveals and hover moments that feel smooth, not busy." },
+    { "title": "Launch & support", "body": "Domain, QA across devices, analytics and 30 days of fixes after launch." }
+  ],
+  "processAccent": "One clear sign-off at the end of each.",
+  "process": [
+    { "title": "Discover", "weeks": "Weeks 1–2", "body": "Kickoff, stakeholder interviews, audit and a creative brief we both sign off on." },
+    { "title": "Design", "weeks": "Weeks 3–5", "body": "Brand directions, then the chosen one applied to key pages. Two rounds of revisions." },
+    { "title": "Build", "weeks": "Weeks 6–8", "body": "Development, CMS setup, motion and content load. Review on a staging link." },
+    { "title": "Launch", "weeks": "Weeks 9–10", "body": "Cross-device QA, SEO and redirects, go live, team walkthrough and handoff." }
+  ],
+  "timeline": {
+    "weeks": 10,
+    "accent": "Kickoff Nov 2 · Launch Jan 8",
+    "phases": [
+      { "name": "Discover", "start": 0, "length": 2 },
+      { "name": "Design", "start": 2, "length": 3 },
+      { "name": "Build", "start": 5, "length": 3 },
+      { "name": "Launch", "start": 8, "length": 2 }
+    ],
+    "milestones": [
+      { "label": "Brief sign-off", "when": "End of week 2" },
+      { "label": "Design sign-off", "when": "End of week 5" },
+      { "label": "Staging review", "when": "Week 8" },
+      { "label": "Go live", "when": "Week 10" }
+    ]
+  },
+  "investment": {
+    "items": [
+      { "item": "Discovery & strategy", "detail": "Interviews, audit, creative brief", "price": "$0,000" },
+      { "item": "Brand identity", "detail": "Logo suite, palette, type, brand guide", "price": "$0,000" },
+      { "item": "Website design", "detail": "Up to 8 page templates, mobile + desktop", "price": "$0,000" },
+      { "item": "Development", "detail": "CMS, motion, SEO setup, launch", "price": "$0,000" },
+      { "item": "Support", "detail": "30 days of fixes after launch", "price": "Included" }
+    ],
+    "total": "$00,000",
+    "schedule": ["50% to book your start date", "25% at design sign-off", "25% before launch"]
+  },
+  "work": [
+    { "title": "Project one", "meta": "Brand identity · Web", "url": "https://www.jtcreative.design" },
+    { "title": "Project two", "meta": "Website design · Motion", "url": "https://www.jtcreative.design" },
+    { "title": "Project three", "meta": "Logo · Packaging", "url": "https://www.jtcreative.design" }
+  ],
+  "terms": [
+    { "title": "Revisions", "body": "Two rounds per phase are included. Extra rounds are billed at the hourly rate." },
+    { "title": "Ownership", "body": "You own the final files and code once the last invoice is paid." },
+    { "title": "Your part", "body": "Timely feedback, content and access. Delays on either side move the timeline." },
+    { "title": "Changes", "body": "New requests outside this scope get a quick written estimate before any work starts." },
+    { "title": "Hourly rate", "body": "$000 / hour for anything outside the agreed scope." },
+    { "title": "Cancellation", "body": "Either side can end with written notice. Work to date is billed and delivered." }
+  ],
+  "nextSteps": [
+    { "title": "Approve this proposal", "body": "Tap Review & sign to sign the agreement in DocuSign. That locks your spot in the calendar." },
+    { "title": "Pay the deposit", "body": "The first invoice is 50%. Your start date is confirmed once it clears." },
+    { "title": "Kickoff", "body": "A 60-minute call to meet the team and start discovery." }
+  ],
+  "contact": { "email": "you@example.com", "approveLabel": "Approve proposal", "signUrl": "https://powerforms.docusign.net/REPLACE-WITH-YOUR-POWERFORM-ID", "signLabel": "Review & sign" }
+}

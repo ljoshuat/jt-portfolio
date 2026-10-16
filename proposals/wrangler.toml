@@ -1,0 +1,25 @@
+name = "jt-proposals"
+main = "src/worker.js"
+compatibility_date = "2026-09-01"
+
+# Serves proposals.jtcreative.design. Add the custom domain once in the
+# Cloudflare dashboard (Workers > jt-proposals > Settings > Domains), or
+# uncomment this after jtcreative.design's DNS is on Cloudflare:
+# routes = [{ pattern = "proposals.jtcreative.design", custom_domain = true }]
+
+# Brand font files (not in git). Anything in public/ is served as-is,
+# e.g. public/fonts/DrukWide-Bold.woff2 -> /fonts/DrukWide-Bold.woff2
+[assets]
+directory = "./public"
+
+[vars]
+# "self" once the brand woff2 files are in public/fonts; "google" uses the stand-ins.
+FONTS = "google"
+
+# Create with: npx wrangler kv namespace create PROPOSALS
+# then paste the id it prints here.
+[[kv_namespaces]]
+binding = "PROPOSALS"
+id = "REPLACE_WITH_KV_NAMESPACE_ID"
+
+# Secret (not in this file): npx wrangler secret put SESSION_SECRET
