@@ -48,3 +48,11 @@ section.section_principles.page-padding > .container.principles_container
 .principles_item_layout { display:block } (grid props set but unused)
 .principles-sub-text { max-width:10ch; font-family:var(--typography--font-display); font-size:var(--typography--type-h2-sm); text-transform:uppercase; text-wrap:balance; line-height:1.2 }
 .principles_item_description { max-width:22rem; width:clamp(14rem,18vw,20rem); margin-left:auto; text-align:right; text-indent:10ch; text-wrap:balance; mix-blend-mode:difference; font-size:clamp(.9rem,1.1vw,1.125rem); color:var(--color--text-primary) }
+
+## Brand shapes (from Snippets/logo-golden/marks)
+- shape-badge.svg (jt-badge.svg): viewBox 0 0 539 445, ink #0A0F12, slanted parallelogram with curved corners
+  path: M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z
+- shape-pixel.svg: the T "pixel" from the golden mark, normalised: viewBox 0 0 98.10107 89, path M22.10107,0h76l-22.10107,89h-76z (76 wide x 89 tall, same slant as the J)
+- shape-jt-mark-golden.svg: full mark for reference
+Brand colours: ink #0A0F12, paper #F7F7F7, lime #DAF40A, grey #7D7D7D.
+Size rule: under 48px use the small mark; not relevant at video-box size.
