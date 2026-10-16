@@ -10,6 +10,7 @@
 //   SLACK_WEBHOOK_URL  (secret) fallback when no bot token: first page only, no threads
 //   VISITS             KV namespace: visit id -> Slack thread ts, IP-hash dedupe
 //   ALLOWED_ORIGINS    comma list, default "https://www.jtcreative.design,https://jtcreative.design"
+//   (time on site is added to the first message with chat.update when the tab is hidden)
 //   MAX_PER_HOUR       optional cap on new-visitor posts per hour, default 30
 
 const BOT_RE = /bot|crawl|spider|slurp|preview|fetch|monitor|headless|lighthouse|pingdom|uptime|python|curl|wget|httpclient|axios|node-fetch|go-http|java\/|facebookexternalhit|embedly|whatsapp|telegram|discord|slack/i;
@@ -47,6 +48,16 @@ export default {
     const n = Number(body.n) || 1;
     const kv = env.VISITS || memoryKV;
 
+    // Visitor left or hid the tab: update their ping with time on site so far.
+    if (body.leave != null) {
+      const secs = Math.round(Number(body.leave));
+      if (!sid || !env.SLACK_BOT_TOKEN || !(secs >= 0) || secs > 24 * 3600) return done();
+      const [ts, text] = await Promise.all([kv.get('visit:' + sid), kv.get('text:' + sid)]);
+      if (!ts || !text) return done();
+      ctx.waitUntil(slackCall(env, 'chat.update', { ts, text: `${text}\nTime on site: ${duration(secs)}` }));
+      return done();
+    }
+
     // Something the visitor did on a page (opened a panel, switched theme):
     // reply in that visit's thread.
     if (body.event) {
@@ -83,7 +94,10 @@ export default {
         const ts = await slackPost(env, { text });
         if (ts) {
           posted = true;
-          if (sid) await kv.put('visit:' + sid, ts, { expirationTtl: VISIT_SECONDS });
+          if (sid) {
+            await kv.put('visit:' + sid, ts, { expirationTtl: VISIT_SECONDS });
+            await kv.put('text:' + sid, text, { expirationTtl: VISIT_SECONDS });
+          }
         }
       }
       // No bot token, or the bot post failed: fall back to the webhook (no threads).
@@ -103,7 +117,11 @@ export default {
 };
 
 async function slackPost(env, msg) {
-  const res = await fetch('https://slack.com/api/chat.postMessage', {
+  return slackCall(env, 'chat.postMessage', msg);
+}
+
+async function slackCall(env, method, msg) {
+  const res = await fetch('https://slack.com/api/' + method, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json; charset=utf-8',
@@ -124,6 +142,12 @@ const memoryKV = (() => {
     async put(k, val, o = {}) { m.set(k, { val, exp: Date.now() + (o.expirationTtl || 60) * 1000 }); },
   };
 })();
+
+export function duration(secs) {
+  if (secs < 60) return secs + 's';
+  const m = Math.floor(secs / 60), h = Math.floor(m / 60);
+  return h ? `${h}h ${m % 60}m` : `${m}m ${secs % 60}s`;
+}
 
 export function formatMessage(cf, body, ua) {
   const place = [cf.city, cf.region, cf.country].filter(Boolean).join(', ') || 'Unknown location';

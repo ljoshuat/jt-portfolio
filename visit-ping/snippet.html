@@ -1,4 +1,4 @@
-<!-- Visit ping: Slack message for each new visitor, with the pages they view, panels they open and theme switches as thread replies.
+<!-- Visit ping: Slack message for each new visitor, with the pages they view, panels they open and theme switches as thread replies, and time on site.
      No cookies, no Google Analytics.
      Skip your own visits: open https://www.jtcreative.design/?noping once on each of your browsers.
      Turn it back on with ?ping -->
@@ -27,6 +27,21 @@
       }).catch(function () {});
     };
     send();
+    // Time on site: counted from the first page of the visit, sent whenever the tab is hidden or closed.
+    if (!ss.getItem('jt-start')) ss.setItem('jt-start', Date.now());
+    var lastLeave = -1;
+    var leave = function () {
+      var secs = Math.round((Date.now() - +ss.getItem('jt-start')) / 1000);
+      if (secs - lastLeave < 5) return;
+      lastLeave = secs;
+      fetch(ENDPOINT, {
+        method: 'POST', mode: 'cors', keepalive: true,
+        headers: { 'Content-Type': 'text/plain' },
+        body: JSON.stringify({ sid: sid, leave: secs })
+      }).catch(function () {});
+    };
+    document.addEventListener('visibilitychange', function () { if (document.visibilityState === 'hidden') leave(); });
+    addEventListener('pagehide', leave);
     // Things that open without changing the URL.
     var track = function (label) {
       var e = (+ss.getItem('jt-e') || 0) + 1;
