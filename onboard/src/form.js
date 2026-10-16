@@ -21,8 +21,13 @@ const FORM_CSS = `
 .cover{min-height:auto;padding:clamp(3rem,8vw,7rem) 0 clamp(2.5rem,6vw,5rem)}
 .cover-inner{gap:1.5rem}
 .cover .lead{max-width:38ch}
-.topbar .progress{position:absolute;left:0;right:0;bottom:0;height:2px;background:var(--border)}
-.progress i{display:block;height:100%;width:0;background:var(--accent);transition:width .45s var(--ease)}
+.topbar .progress{position:absolute;left:0;right:0;bottom:0;height:3px;background:var(--border)}
+.progress i{display:block;height:100%;background:var(--accent);transform:scaleX(0);transform-origin:0 50%;will-change:transform}
+.step{font-size:.75rem;text-transform:uppercase;letter-spacing:.08em;color:var(--gray);white-space:nowrap;font-variant-numeric:tabular-nums}
+.step b{color:var(--accent);font-weight:500}
+.step span{margin-left:.5rem}
+.toc a.on{color:var(--accent)}
+@media (min-width:768px){.step span{display:none}}
 .q-section{display:grid;gap:clamp(1.5rem,4vw,5rem);grid-template-columns:1fr}
 @media (min-width:900px){.q-section{grid-template-columns:minmax(0,1fr) minmax(0,1.6fr)}.q-head{position:sticky;top:6rem;align-self:start}}
 .q-head .muted{max-width:32ch}
@@ -60,7 +65,7 @@ const FORM_CSS = `
 .draft{font-size:.85rem;color:var(--muted);min-height:1.2em}
 .thanks{min-height:100svh;display:grid;align-items:center}
 .thanks .steps{margin-top:2.5rem;max-width:720px}
-@media (prefers-reduced-motion:reduce){.progress i,.chip span,.chip span::before{transition:none}}
+@media (prefers-reduced-motion:reduce){.chip span,.chip span::before{transition:none}}
 `;
 
 function head(title, selfHostedFonts) {
@@ -81,6 +86,7 @@ function head(title, selfHostedFonts) {
 const topbar = (progress = false) => `<header class="topbar">
   <a class="mark" href="https://www.jtcreative.design" aria-label="JT Creative">${MARK_SVG}</a>
   <nav class="toc" aria-label="Sections">${SECTIONS.map((s, i) => `<a href="#${s.id}">${pad(i + 1)} ${esc(s.title)}</a>`).join('')}</nav>
+  ${progress ? `<p class="step" aria-live="polite"><b>${pad(1)}</b> / ${pad(SECTIONS.length)}<span>${esc(SECTIONS[0].title)}</span></p>` : ''}
   <button class="theme" type="button" aria-label="Switch light or dark">Light / Dark</button>
   ${progress ? '<div class="progress" aria-hidden="true"><i></i></div>' : ''}
 </header>`;
@@ -209,7 +215,22 @@ const FORM_JS = `${THEME_JS}
     return false;
   }
   var boxes=[].slice.call(form.querySelectorAll('[data-field]'));
-  function progress(){var n=boxes.filter(filled).length;bar.style.width=(n/boxes.length*100)+'%';}
+  // Progress follows your place in the form: the bar fills as you scroll
+  // from the first question to Send, and the counter names the section.
+  var secs=[].slice.call(form.querySelectorAll('section[id]')),links=[].slice.call(document.querySelectorAll('.toc a')),
+      step=document.querySelector('.step'),stepN=step.querySelector('b'),stepT=step.querySelector('span'),cur=-1,ticking=false;
+  function progress(){
+    ticking=false;
+    var top=secs[0].getBoundingClientRect().top+scrollY,end=form.getBoundingClientRect().bottom+scrollY-innerHeight;
+    var p=end>top?(scrollY-top+innerHeight*0.35)/(end-top+innerHeight*0.35):1;
+    bar.style.transform='scaleX('+Math.max(0,Math.min(1,p)).toFixed(4)+')';
+    var line=innerHeight*0.4,i=0;
+    secs.forEach(function(s,k){if(s.getBoundingClientRect().top<line)i=k;});
+    if(i!==cur){cur=i;stepN.textContent=(i<9?'0':'')+(i+1);stepT.textContent=secs[i].querySelector('h2').textContent;
+      links.forEach(function(a,k){a.classList.toggle('on',k===i);});}
+  }
+  function onScroll(){if(!ticking){ticking=true;requestAnimationFrame(progress);}}
+  addEventListener('scroll',onScroll,{passive:true});addEventListener('resize',onScroll);
 
   // Draft: kept in this browser only, cleared once the form is sent.
   function save(){
@@ -231,7 +252,7 @@ const FORM_JS = `${THEME_JS}
   if(!form.querySelector('.bad'))restore();
   var t;form.addEventListener('input',function(e){
     var box=e.target.closest('[data-field]');if(box&&filled(box)){box.classList.remove('bad');var er=box.querySelector('.err');if(er)er.textContent='';}
-    progress();clearTimeout(t);t=setTimeout(save,400);
+    clearTimeout(t);t=setTimeout(save,400);
   });
   progress();
 

@@ -18,8 +18,8 @@ name, email, company, project type, a short description and a budget range.
 All questions and options live in `src/options.js`; change them there and the
 page, the server check and the Slack summary all follow.
 
-The page works without JavaScript. With it, a lime progress bar fills as they
-answer, required answers are checked before sending, and a draft is kept in
+The page works without JavaScript. With it, a lime progress line and a section counter
+(02 / 06) follow their place in the form, required answers are checked before sending, and a draft is kept in
 their browser until they send it.
 
 ## One-time setup (on your Mac)
