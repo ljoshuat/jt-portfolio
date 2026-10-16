@@ -39,6 +39,8 @@ const GATE_CSS = `
 @keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 .gate.ok .gate-box{transition:opacity .45s .35s,transform .45s .35s;opacity:0;transform:translateY(-12px)}
 .hint{color:var(--muted);font-size:.85rem}
+.welcome-actions{margin-top:2rem;display:grid;gap:1rem}
+.welcome-actions .btn{text-align:center;text-decoration:none}
 .js .gate-box{animation:rise .9s cubic-bezier(.2,.8,.2,1) .8s both}
 .js .gate .mark svg{animation:lean 1.1s cubic-bezier(.2,.8,.2,1) .9s both}
 @keyframes rise{from{opacity:0;transform:translateY(28px)}}
@@ -48,7 +50,9 @@ const GATE_CSS = `
 
 // demo: used by the local preview only. Any password unlocks and nothing is sent.
 // style: 'leaf' (lit leaf field) or 'wave' (dithered wave of angled pixels).
-export function renderGate({ client = '', error = '', selfHostedFonts = false, demo = false, style = 'leaf' } = {}) {
+// welcome: { client, title, href } shows the private-link welcome instead of
+// the password form: the browser is already unlocked, the button opens it.
+export function renderGate({ client = '', error = '', selfHostedFonts = false, demo = false, style = 'leaf', welcome = null } = {}) {
   return `<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
@@ -66,6 +70,13 @@ export function renderGate({ client = '', error = '', selfHostedFonts = false, d
   <div class="gate-box">
     <span class="mark">${MARK}</span>
     <p class="label"><span class="leaf" aria-hidden="true"></span>Private proposal</p>
+    ${welcome ? `
+    <h1 class="h2">Hello, ${esc(welcome.client || 'there')}.</h1>
+    <p class="muted">${welcome.title ? `Your proposal for ${esc(welcome.title)} is ready.` : 'Your proposal is ready.'}</p>
+    <div class="welcome-actions">
+      <a class="btn" id="open" href="${esc(welcome.href)}">Open proposal</a>
+      ${demo ? '<p class="hint">Preview of the private-link welcome.</p>' : ''}
+    </div>` : `
     <h1 class="h2">${client ? `Hello, ${esc(client)}.` : 'Hello.'}</h1>
     <p class="muted">Enter the password from your email to open your proposal.</p>
     <form method="post" autocomplete="off" novalidate>
@@ -74,7 +85,7 @@ export function renderGate({ client = '', error = '', selfHostedFonts = false, d
       <p class="err" role="alert" aria-live="assertive">${esc(error)}</p>
       <button class="btn" type="submit">Open proposal</button>
       ${demo ? '<p class="hint">Preview: any password unlocks.</p>' : ''}
-    </form>
+    </form>`}
   </div>
 </main>
 <script>${GATE_JS.replaceAll('__LEAF__', LEAF).replace('__DEMO__', demo ? 'true' : 'false').replace('__STYLE__', style === 'wave' ? 'wave' : 'leaf')}</script>
@@ -90,7 +101,7 @@ const GATE_JS = `
       dots=gate.querySelector('.dots'),err=gate.querySelector('.err'),btn=gate.querySelector('.btn');
   var still=matchMedia('(prefers-reduced-motion: reduce)').matches;
   var leaf=new Path2D('__LEAF__');
-  dots.style.setProperty('--leaf','url("data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 539 445'><path d='__LEAF__'/></svg>")+'")');
+  if(dots)dots.style.setProperty('--leaf','url("data:image/svg+xml,'+encodeURIComponent("<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 539 445'><path d='__LEAF__'/></svg>")+'")');
 
   // Leaf dots that mirror the typed length.
   function sync(){
@@ -100,7 +111,7 @@ const GATE_JS = `
     gate.classList.toggle('typing',input.value.length>0);
     gate.classList.remove('bad');
   }
-  input.addEventListener('input',sync);
+  if(input)input.addEventListener('input',sync);
 
   // Background: the loader's pattern. Large leaves tile the screen on the
   // brand slant (same spacing as the site loader and process video), each in
@@ -196,14 +207,14 @@ const GATE_JS = `
   if(STYLE==='wave'){
     size=sizeWave;draw=drawWave;
     addEventListener('pointerdown',function(e){drop(e.clientX,e.clientY);});
-    input.addEventListener('input',function(){var b=input.getBoundingClientRect();drop(b.left+Math.min(b.width-20,24+input.value.length*22),b.top+b.height/2,0.35);});
+    if(input)input.addEventListener('input',function(){var b=input.getBoundingClientRect();drop(b.left+Math.min(b.width-20,24+input.value.length*22),b.top+b.height/2,0.35);});
   }
 
   addEventListener('resize',function(){size();});
   addEventListener('pointermove',function(e){idle=false;px=e.clientX;py=e.clientY;});
   addEventListener('pointerdown',function(e){idle=false;px=e.clientX;py=e.clientY;});
   document.addEventListener('mouseout',function(e){if(!e.relatedTarget)idle=true;});
-  input.addEventListener('focus',function(){if(matchMedia('(pointer:coarse)').matches){var b=input.getBoundingClientRect();idle=false;px=b.left+b.width/2;py=b.top+b.height/2;}});
+  if(input)input.addEventListener('focus',function(){if(matchMedia('(pointer:coarse)').matches){var b=input.getBoundingClientRect();idle=false;px=b.left+b.width/2;py=b.top+b.height/2;}});
   size();if(!still)requestAnimationFrame(draw);
 
   function fail(msg){
@@ -211,13 +222,20 @@ const GATE_JS = `
     btn.disabled=false;btn.textContent='Open proposal';input.focus();
   }
   function unlock(go){
-    gate.classList.add('ok');err.textContent='';btn.textContent='Opening…';
+    gate.classList.add('ok');if(err)err.textContent='';btn.textContent='Opening…';
     wave=performance.now();
     if(still){go();return;}
     setTimeout(go,1100);
   }
 
-  form.addEventListener('submit',function(e){
+  // Private-link welcome: already unlocked, the button just plays the unlock.
+  var open=document.getElementById('open');
+  if(open)open.addEventListener('click',function(e){
+    e.preventDefault();gate.classList.add('typing');
+    setTimeout(function(){unlock(function(){if(DEMO){btn.textContent='Opened';return;}location.replace(open.href);});},250);
+  });
+
+  if(form)form.addEventListener('submit',function(e){
     e.preventDefault();
     if(!input.value){fail('Enter your password to continue.');return;}
     btn.disabled=true;btn.textContent='Checking…';

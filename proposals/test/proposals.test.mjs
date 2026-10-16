@@ -95,8 +95,14 @@ test('private link unlocks, drops the key from the address and logs the view', a
   const res = await worker.fetch(new Request(`https://proposals.example/acme-co?k=${KEY}`), env);
   assert.equal(res.status, 303);
   assert.equal(res.headers.get('Location'), '/acme-co');
-  const cookie = res.headers.get('Set-Cookie').split(';')[0];
-  const page = await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookie } }), env);
+  const cookies = res.headers.getSetCookie().map((c) => c.split(';')[0]);
+  assert.equal(cookies.length, 2);
+  const welcome = await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookies.join('; ') } }), env);
+  const welcomeHtml = await welcome.text();
+  assert.match(welcomeHtml, /Hello, Client Name\./);
+  assert.match(welcomeHtml, /href="\/acme-co"/);
+  assert.doesNotMatch(welcomeHtml, /The investment/);
+  const page = await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookies[0] } }), env);
   assert.match(await page.text(), /The investment/);
   assert.ok(env.PROPOSALS.keys().some((k) => k.startsWith('view:acme-co:')));
 });

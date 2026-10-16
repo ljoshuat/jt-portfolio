@@ -129,13 +129,22 @@ export default {
       }
       if (record && verifyKey(linkKey, record.key)) {
         await logView(env, slug, request, 'link');
-        return unlocked(env, slug, path, name, await makeToken(env.SESSION_SECRET, slug, accessSecret(record), COOKIE_DAYS * 86400));
+        const res = unlocked(env, slug, path, name, await makeToken(env.SESSION_SECRET, slug, accessSecret(record), COOKIE_DAYS * 86400));
+        // Show the welcome screen once, on the next load.
+        res.headers.append('Set-Cookie', `${name}_hi=1; Path=${path}; Max-Age=300; HttpOnly; Secure; SameSite=Lax`);
+        return res;
       }
       await countAttempt(env, limitKey);
       return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, error: "That link didn't work. Enter the password from your email instead." }), 401);
     }
 
     if (record && (await checkToken(env.SESSION_SECRET, slug, accessSecret(record), readCookie(request, name)))) {
+      if (readCookie(request, `${name}_hi`)) {
+        const title = String(record.data?.title || '').replace(/\s*\n\s*/g, ' ');
+        return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, welcome: { client: record.data?.client, title, href: path } }), 200, {
+          'Set-Cookie': `${name}_hi=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
+        });
+      }
       return html(renderProposal(record.data, { selfHostedFonts }));
     }
     return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }));

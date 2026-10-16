@@ -50,7 +50,8 @@ To use the licensed fonts, drop these into `public/fonts/` (git-ignored) and set
 2. Preview it locally: `npm run preview -- clients/<client>.json`, open `dist/preview.html`.
 3. Publish it: `npm run add -- <client-slug> clients/<client>.json`
    This prints a **private link** and a **password**.
-4. Email the private link. One tap opens the proposal and that browser stays
+4. Email the private link. It opens on a welcome screen ("Hello, <client>.") whose
+   Open proposal button plays the unlock and shows the proposal. That browser stays
    unlocked for 30 days; the key is dropped from the address bar after it opens.
    Anyone the client forwards the link to can open it too. The password is the
    fallback: the plain address `proposals.jtcreative.design/<client-slug>` asks for it.
