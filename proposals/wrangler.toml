@@ -16,7 +16,7 @@ directory = "./public"
 # "self" once the brand woff2 files are in public/fonts; "google" uses the stand-ins.
 FONTS = "google"
 # Password screen background: "leaf" or "wave"
-GATE_STYLE = "wave"
+GATE_STYLE = "leaf"
 
 # Create with: npx wrangler kv namespace create PROPOSALS
 # then paste the id it prints here.

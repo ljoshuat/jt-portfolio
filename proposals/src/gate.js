@@ -38,7 +38,11 @@ const GATE_CSS = `
 @keyframes shake{20%{transform:translateX(-10px)}40%{transform:translateX(8px)}60%{transform:translateX(-5px)}80%{transform:translateX(3px)}}
 .gate.ok .gate-box{transition:opacity .45s .35s,transform .45s .35s;opacity:0;transform:translateY(-12px)}
 .hint{color:var(--muted);font-size:.85rem}
-@media (prefers-reduced-motion:reduce){.gate .mark .sq,.dots i,.gate.bad .pw-wrap{transition:none;animation:none}}
+.js .gate-box{animation:rise .9s cubic-bezier(.2,.8,.2,1) .8s both}
+.js .gate .mark svg{animation:lean 1.1s cubic-bezier(.2,.8,.2,1) .9s both}
+@keyframes rise{from{opacity:0;transform:translateY(28px)}}
+@keyframes lean{from{opacity:0;transform:translate(8%,-6%)}}
+@media (prefers-reduced-motion:reduce){.gate .mark .sq,.dots i,.gate.bad .pw-wrap,.js .gate-box,.js .gate .mark svg{transition:none;animation:none}}
 `;
 
 // demo: used by the local preview only. Any password unlocks and nothing is sent.
@@ -107,14 +111,23 @@ const GATE_JS = `
     for(var r=-1;r*h<H+h;r++)for(var c=-1;c*w<W+w;c++)cells.push({x:c*w+(r%2?w*0.42:0),y:r*h,s:w/539*0.8,a:0});
     if(still)draw(0);
   }
+  var INTRO=0.96,LIME=[['#DAF40A',.2],['#7D7D7D',.36],['#1E2428',.44]],TONAL=[['#1F262A',.3],['#181E22',.4],['#13191C',.3]];
+  function hh(k,r){var x=(Math.imul(k,73856093)^Math.imul(r,19349663))>>>0;x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0;return((x^(x>>>15))&0xffff)/65535;}
+  function pick(pal,v){var a=0;for(var i=0;i<pal.length;i++){a+=pal[i][1];if(v<=a)return pal[i][0];}return pal[2][0];}
   function draw(now){
     var t=(now-t0)/1000;
     if(idle&&!still){tx=W*(0.5+0.32*Math.sin(t*0.35));ty=H*(0.5+0.28*Math.sin(t*0.53+1));}
     else if(!idle){tx=px;ty=py;}
     cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
     var R=Math.max(W,H)*0.33,wr=wave>=0?(now-wave)*1.6:-1;
+    // Load: the pattern flickers between lime and tonal palettes while it
+    // drifts, like the tile interlude in the process video, then settles.
+    var lt=still?9:(now-t0)/1000,intro=lt<INTRO,step=Math.floor(lt/0.16),pal=step%2?TONAL:LIME,
+        ox=intro?(INTRO-lt)*60:0,oy=intro?(INTRO-lt)*15:0;
+    if(intro){cx.setTransform(dpr,0,0,dpr,ox*dpr,oy*dpr);}
     for(var i=0;i<cells.length;i++){
       var p=cells[i],dx=p.x+20-tx,dy=p.y+16-ty,d=Math.sqrt(dx*dx+dy*dy);
+      if(intro){cx.save();cx.translate(p.x,p.y);cx.scale(p.s,p.s);cx.fillStyle=pick(pal,hh(i,step+3));cx.fill(leaf);cx.restore();continue;}
       var glow=still?0:Math.max(0,1-d/R);glow*=glow;
       var lit=0;
       if(wr>=0){var dw=Math.hypot(p.x-W/2,p.y-H/2);lit=dw<wr?Math.min(1,(wr-dw)/180):0;}
