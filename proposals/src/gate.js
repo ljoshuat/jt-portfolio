@@ -128,38 +128,51 @@ const GATE_JS = `
     if(!still)requestAnimationFrame(draw);
   }
 
-  // Alternative background: a dithered wave drawn with the angled pixel from
-  // the J (the square), quantised to ink and lime with a 4x4 ordered dither.
-  var BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5],ripples=[],level=0,grid=[];
+  // Alternative background: a halftone wave in the About page's style
+  // (portfolio/halftone/halftone-portrait.js): tone sets each dot's size,
+  // dots spring away from the pointer, a tap sends a ripple. Each dot is the
+  // angled pixel from the J.
+  var ripples=[],level=0,D=null,N=0,SP=6,intro0=0;
+  var SPRING=0.085,DAMP=0.82,REACH=96,PUSH=0.4,MIN_DOT=0.06;
   function sizeWave(){
     dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
-    cv.width=W*dpr;cv.height=H*dpr;grid=[];
-    var s=W<600?10:12,pw=s*0.86,k=s*0.25,gx=s*1.02,gy=s*1.18;
-    grid.s={pw:pw,h:s,k:k};
-    for(var r=0;r*gy<H+gy;r++)for(var c=-1;c*gx<W+gx;c++)grid.push({x:c*gx,y:r*gy,b:(BAYER[(r&3)*4+((c+8)&3)]+0.5)/16});
+    cv.width=W*dpr;cv.height=H*dpr;
+    SP=W<600?6:7;
+    var cols=Math.ceil(W/SP)+1,rows=Math.ceil(H/SP)+1;N=cols*rows;D=new Float32Array(N*6);
+    for(var r=0,i=0;r<rows;r++)for(var c=0;c<cols;c++,i+=6){D[i]=D[i+2]=c*SP+SP/2;D[i+1]=D[i+3]=r*SP+SP/2;}
+    intro0=performance.now();
     if(still)drawWave(0);
   }
   function drawWave(now){
-    var t=(now-t0)/1000,g=grid.s,lime=new Path2D(),dim=new Path2D();
-    if(wave>=0)level=Math.min(1.4,(now-wave)/700);
-    ripples=ripples.filter(function(r){return now-r.t<2600;});
-    for(var i=0;i<grid.length;i++){
-      var p=grid[i],yn=p.y/H;
-      var v=Math.pow(yn,1.7)*0.95-0.2
-        +0.17*Math.sin(p.x*0.011+t*0.9+yn*3)
-        +0.12*Math.sin(p.x*0.004-p.y*0.009-t*0.6);
-      if(!idle){var dx=p.x-px,dy=p.y-py;v+=0.42*Math.exp(-(dx*dx+dy*dy)/12800);}
+    var t=(now-t0)/1000,max=SP*0.5,k=0.25,path=new Path2D();
+    if(wave>=0)level=Math.min(1.6,(now-wave)/650);
+    ripples=ripples.filter(function(r){return now-r.t<2400;});
+    var intro=still?1:Math.min(1,(now-intro0)/1400),maxD=Math.hypot(W,H)/2;
+    for(var i=0;i<N*6;i+=6){
+      var hx=D[i],hy=D[i+1],x=D[i+2],y=D[i+3],yn=hy/H;
+      var v=Math.pow(yn,1.6)*1.05-0.22
+        +0.16*Math.sin(hx*0.011+t*0.9+yn*3)
+        +0.11*Math.sin(hx*0.004-hy*0.009-t*0.6);
       for(var j=0;j<ripples.length;j++){
-        var R=ripples[j],age=(now-R.t)/1000,d=Math.hypot(p.x-R.x,p.y-R.y),front=age*420;
-        if(d<front+60&&d>front-160)v+=R.a*(1-age/2.6)*Math.sin((d-front)*0.045)*Math.exp(-d/700);
+        var R=ripples[j],age=(now-R.t)/1000,d=Math.hypot(hx-R.x,hy-R.y),front=age*420;
+        if(d<front+60&&d>front-160)v+=R.a*(1-age/2.4)*Math.sin((d-front)*0.045)*Math.exp(-d/700);
       }
       v+=level;
-      var path=v>p.b?lime:(v>p.b-0.35?dim:null);
-      if(path){path.moveTo(p.x+g.k,p.y);path.lineTo(p.x+g.k+g.pw,p.y);path.lineTo(p.x+g.pw,p.y+g.h);path.lineTo(p.x,p.y+g.h);path.closePath();}
+      // Spring away from the pointer, like the About portrait.
+      var tx=hx,ty=hy;
+      if(!idle&&!still){var dx=hx-px,dy=hy-py,dd=Math.sqrt(dx*dx+dy*dy);
+        if(dd<REACH&&dd>0.01){var f=(1-dd/REACH)*REACH*PUSH;tx+=dx/dd*f;ty+=dy/dd*f;}}
+      if(still){x=tx;y=ty;}else{
+        D[i+4]=(D[i+4]+(tx-x)*SPRING)*DAMP;D[i+5]=(D[i+5]+(ty-y)*SPRING)*DAMP;x+=D[i+4];y+=D[i+5];
+        D[i+2]=x;D[i+3]=y;}
+      var tone=v<0?0:v>1?1:v;if(tone<MIN_DOT)continue;
+      var rv=1;if(intro<1){rv=Math.min(1,Math.max(0,intro*1.6-Math.hypot(hx-W/2,hy-H/2)/maxD*0.6));rv=rv*rv*(3-2*rv);}
+      var h=Math.sqrt(tone)*max*rv;if(h<0.25)continue;
+      var w=h*0.86,o=h*k*2;
+      path.moveTo(x-w+o/2,y-h);path.lineTo(x+w+o/2,y-h);path.lineTo(x+w-o/2,y+h);path.lineTo(x-w-o/2,y+h);path.closePath();
     }
     cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
-    cx.fillStyle='#1B2328';cx.fill(dim);
-    cx.fillStyle='#DAF40A';cx.fill(lime);
+    cx.fillStyle='#DAF40A';cx.fill(path);
     if(!still)requestAnimationFrame(drawWave);
   }
   function drop(x,y,a){if(!still)ripples.push({x:x,y:y,t:performance.now(),a:a||0.6});}

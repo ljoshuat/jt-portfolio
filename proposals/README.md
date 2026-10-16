@@ -78,5 +78,5 @@ npm run dev     # wrangler dev, local KV
 ## Password screen style
 
 `GATE_STYLE` in `wrangler.toml` picks the password screen background:
-`"wave"` (dithered wave of angled pixels) or `"leaf"` (leaf field that lights
+`"wave"` (halftone wave of angled pixels, same motion as the About page portrait) or `"leaf"` (leaf field that lights
 up around the pointer). Deploy after changing it.
