@@ -101,41 +101,42 @@ const GATE_JS = `
   }
   input.addEventListener('input',sync);
 
-  // Background: a slanted grid of leaves that brightens near the pointer.
-  var cv=document.getElementById('field'),cx=cv.getContext('2d'),W=0,H=0,dpr=1,cells=[];
-  var px=-1e4,py=-1e4,tx=0,ty=0,wave=-1,waveColor='218,244,10',t0=performance.now(),idle=true;
-  function size(){
-    dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
-    cv.width=W*dpr;cv.height=H*dpr;cells=[];
-    var w=W<600?64:84,h=w*0.83;
-    for(var r=-1;r*h<H+h;r++)for(var c=-1;c*w<W+w;c++)cells.push({x:c*w+(r%2?w*0.42:0),y:r*h,s:w/539*0.8,a:0});
-    if(still)draw(0);
-  }
+  // Background: the tonal brand pattern drifting on a diagonal, with single
+  // leaves lighting up lime at random and fading back. It opens with the
+  // pattern flicker from the process video. Tiles near the pointer light up.
+  var cv=document.getElementById('field'),cx=cv.getContext('2d'),W=0,H=0,dpr=1,cells=[],CW=64,CH=53;
+  var px=-1e4,py=-1e4,tx=0,ty=0,wave=-1,t0=performance.now(),idle=true;
   var INTRO=0.96,LIME=[['#DAF40A',.2],['#7D7D7D',.36],['#1E2428',.44]],TONAL=[['#1F262A',.3],['#181E22',.4],['#13191C',.3]];
   function hh(k,r){var x=(Math.imul(k,73856093)^Math.imul(r,19349663))>>>0;x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0;return((x^(x>>>15))&0xffff)/65535;}
   function pick(pal,v){var a=0;for(var i=0;i<pal.length;i++){a+=pal[i][1];if(v<=a)return pal[i][0];}return pal[2][0];}
+  function size(){
+    dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+    cv.width=W*dpr;cv.height=H*dpr;cells=[];
+    CW=W<600?64:84;CH=CW*0.83;
+    for(var r=-1;r*CH<H+CH*3;r++)for(var c=-1;c*CW<W+CW*2;c++){var i=cells.length,per=4+hh(i,1)*9;
+      cells.push({x:c*CW+(r%2?CW*0.42:0),y:r*CH,s:CW/539*0.8,a:0,per:per,ph:hh(i,2)*per});}
+    if(still)draw(0);
+  }
   function draw(now){
-    var t=(now-t0)/1000;
-    if(idle&&!still){tx=W*(0.5+0.32*Math.sin(t*0.35));ty=H*(0.5+0.28*Math.sin(t*0.53+1));}
-    else if(!idle){tx=px;ty=py;}
+    var t=still?0:(now-t0)/1000;
+    if(!idle){tx=px;ty=py;}else{tx=ty=-1e4;}
+    var ox=-((t*26)%CW),oy=-((t*6)%(CH*2));
     cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
-    var R=Math.max(W,H)*0.33,wr=wave>=0?(now-wave)*1.6:-1;
-    // Load: the pattern flickers between lime and tonal palettes while it
-    // drifts, like the tile interlude in the process video, then settles.
-    var lt=still?9:(now-t0)/1000,intro=lt<INTRO,step=Math.floor(lt/0.16),pal=step%2?TONAL:LIME,
-        ox=intro?(INTRO-lt)*60:0,oy=intro?(INTRO-lt)*15:0;
-    if(intro){cx.setTransform(dpr,0,0,dpr,ox*dpr,oy*dpr);}
+    cx.setTransform(dpr,0,0,dpr,ox*dpr,oy*dpr);
+    var R=170,wr=wave>=0?(now-wave)*1.6:-1,intro=!still&&t<INTRO,step=Math.floor(t/0.16);
     for(var i=0;i<cells.length;i++){
-      var p=cells[i],dx=p.x+20-tx,dy=p.y+16-ty,d=Math.sqrt(dx*dx+dy*dy);
-      if(intro){cx.save();cx.translate(p.x,p.y);cx.scale(p.s,p.s);cx.fillStyle=pick(pal,hh(i,step+3));cx.fill(leaf);cx.restore();continue;}
-      var glow=still?0:Math.max(0,1-d/R);glow*=glow;
-      var lit=0;
-      if(wr>=0){var dw=Math.hypot(p.x-W/2,p.y-H/2);lit=dw<wr?Math.min(1,(wr-dw)/180):0;}
-      p.a+=(glow-p.a)*0.12;
+      var p=cells[i],X=p.x+ox,Y=p.y+oy;
+      var col=intro?pick(LIME,hh(i,step+3)):pick(TONAL,hh(i,5));
+      // Random lime light: on each cycle about 1 in 4 leaves glows, eased in and out.
+      var flash=0;if(!intro){var cyc=Math.floor((t+p.ph)/p.per),f=((t+p.ph)%p.per)/1.6;
+        if(hh(i,cyc+11)<0.25&&f<1)flash=Math.sin(Math.PI*f);}
+      var dx=X+20-tx,dy=Y+16-ty,glow=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/R);
+      p.a+=(glow-p.a)*0.15;
+      var lit=0;if(wr>=0){var dw=Math.hypot(X-W/2,Y-H/2);lit=dw<wr?Math.min(1,(wr-dw)/180):0;}
       cx.save();cx.translate(p.x,p.y);cx.scale(p.s,p.s);
-      cx.fillStyle='rgba(36,46,51,'+(0.55+p.a*0.45)+')';cx.fill(leaf);
-      var g=Math.max(p.a*0.5,lit);
-      if(g>0.01){cx.fillStyle='rgba('+waveColor+','+g.toFixed(3)+')';cx.fill(leaf);}
+      cx.fillStyle=col;cx.fill(leaf);
+      var g=Math.max(p.a*0.85,lit,flash);
+      if(g>0.01){cx.fillStyle='rgba(218,244,10,'+g.toFixed(3)+')';cx.fill(leaf);}
       cx.restore();
     }
     if(!still)requestAnimationFrame(draw);
