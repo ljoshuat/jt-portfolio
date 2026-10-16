@@ -2,7 +2,7 @@
 // Everything that comes from proposal data goes through esc(), so a proposal
 // file can never inject markup into the page.
 
-import { BRAND_CSS, FONT_FACES, MARK_SVG, TRIO_SVG, leafUri } from './brand.js';
+import { BRAND_CSS, FONT_FACES, MARK_SVG, TRIO_SVG, leafUri, LEAF } from './brand.js';
 
 export const esc = (v) =>
   String(v ?? '')
@@ -28,10 +28,9 @@ function section(id, n, name, inner, extraClass = '') {
 // on the brand slant to reveal the cover.
 const CURTAIN_CSS = `
 .curtain{display:none}
-.from-unlock .curtain{display:block;position:fixed;inset:-10% 0;z-index:100;pointer-events:none;
-  background:#0A0F12 ${leafUri('#DAF40A')} 0 0/88px 73px;
-  transform-origin:0 0;animation:curtain .9s cubic-bezier(.7,0,.2,1) .15s forwards}
-@keyframes curtain{to{transform:translateY(-110%) skewY(-6deg)}}
+.from-unlock .curtain{display:block;position:fixed;top:0;left:0;width:100vw;height:100vh;z-index:100;pointer-events:none;
+  background:#0A0F12;transform-origin:0 0;animation:curtain .9s cubic-bezier(.7,0,.2,1) .15s forwards}
+@keyframes curtain{99%{visibility:visible}to{transform:translateY(-125%) skewY(-6deg);visibility:hidden}}
 @media (prefers-reduced-motion:reduce){.from-unlock .curtain{animation:none;display:none}}
 `;
 
@@ -210,7 +209,18 @@ export function renderProposal(d, { previewBanner = '', selfHostedFonts = false 
 <script>try{if(sessionStorage.getItem('jtp-unlock')){sessionStorage.removeItem('jtp-unlock');document.documentElement.classList.add('from-unlock');}}catch(e){}</script>
 </head>
 <body>
-<div class="curtain" aria-hidden="true"></div>
+<canvas class="curtain" aria-hidden="true"></canvas>
+<script>(function(){
+  // Same tiling as the unlock screen's last frame, so the hand-off is seamless.
+  if(!document.documentElement.classList.contains('from-unlock'))return;
+  var cv=document.querySelector('.curtain'),cx=cv.getContext('2d'),dpr=Math.min(devicePixelRatio||1,2),W=innerWidth,H=innerHeight;
+  cv.width=W*dpr;cv.height=H*dpr;cx.setTransform(dpr,0,0,dpr,0,0);
+  cx.fillStyle='#0A0F12';cx.fillRect(0,0,W,H);
+  var leaf=new Path2D('${LEAF}'),TS=(W<600?72:Math.min(120,W/12))/428.4,cs=428.4*TS,rs=445*TS,sl=111.0667*TS,G=0.972;
+  cx.fillStyle='#DAF40A';
+  for(var r=-1;r*rs<H+rs;r++)for(var k=-2;k*cs-r*sl<W+cs;k++){var x=k*cs-r*sl;if(x+539*TS<0)continue;
+    cx.save();cx.translate(x+269.5*TS*(1-G),r*rs+222.5*TS*(1-G));cx.scale(TS*G,TS*G);cx.fill(leaf);cx.restore();}
+})();</script>
 ${previewBanner}
 <header class="topbar">
   <a class="mark" href="#cover" aria-label="Back to top">${MARK_SVG}</a>
@@ -219,7 +229,7 @@ ${previewBanner}
 </header>
 
 <section class="page cover" id="cover" aria-label="Cover">
-  <div class="cover-pattern" aria-hidden="true"></div>
+  <canvas class="cover-pattern" aria-hidden="true"></canvas>
   <div class="wrap cover-inner">
     <p class="label"><span class="leaf" aria-hidden="true"></span>Project proposal</p>
     <div>
@@ -239,6 +249,30 @@ ${sections.join('\n')}
   <p class="meta">Confidential · prepared for ${esc(d.client)}</p>
   <p class="meta">JT Creative · jtcreative.design</p>
 </footer>
+<script>(function(){
+  // Cover pattern: the loader's tonal leaf tiling, with the odd leaf lighting up lime.
+  var cv=document.querySelector('.cover-pattern');if(!cv)return;
+  var cx=cv.getContext('2d'),leaf=new Path2D('${LEAF}'),still=matchMedia('(prefers-reduced-motion:reduce)').matches;
+  var TONAL=['#1F262A','#181E22','#13191C'],cells=[],W=0,H=0,dpr=1,t0=performance.now();
+  function hh(k,r){var x=(Math.imul(k,73856093)^Math.imul(r,19349663))>>>0;x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0;return((x^(x>>>15))&0xffff)/65535;}
+  function size(){
+    dpr=Math.min(devicePixelRatio||1,2);W=cv.clientWidth;H=cv.clientHeight;cv.width=W*dpr;cv.height=H*dpr;cells=[];
+    var vw=innerWidth,TS=(vw<600?72:Math.min(120,vw/12))/428.4,cs=428.4*TS,rs=445*TS,sl=111.0667*TS,G=0.972;
+    for(var r=-1;r*rs<H+rs;r++)for(var k=-2;k*cs-r*sl<W+cs;k++){var x=k*cs-r*sl;if(x+539*TS<0)continue;
+      var i=cells.length,per=5+hh(i,1)*10;
+      cells.push({x:x+269.5*TS*(1-G),y:r*rs+222.5*TS*(1-G),s:TS*G,col:TONAL[Math.floor(hh(k+50,r+50)*3)%3],per:per,ph:hh(i,2)*per});}
+    if(still)draw(0);
+  }
+  function draw(now){
+    var t=(now-t0)/1000;cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
+    for(var i=0;i<cells.length;i++){var p=cells[i],g=0;
+      if(!still){var cyc=Math.floor((t+p.ph)/p.per),f=((t+p.ph)%p.per)/2.4;if(hh(i,cyc+11)<0.35&&f<1)g=Math.sin(Math.PI*f)*0.7;}
+      cx.save();cx.translate(p.x,p.y);cx.scale(p.s,p.s);cx.fillStyle=p.col;cx.fill(leaf);
+      if(g>0.01){cx.fillStyle='rgba(218,244,10,'+g.toFixed(3)+')';cx.fill(leaf);}cx.restore();}
+    if(!still)requestAnimationFrame(draw);
+  }
+  addEventListener('resize',size);size();if(!still)requestAnimationFrame(draw);
+})();</script>
 
 <script>${CLIENT_JS}</script>
 </body>
