@@ -349,12 +349,16 @@ function themeInk(el, color) {
 }
 
 
+// The badge cell: the tonal grid's tile and the shape the dot morphs into.
+const LOADER_BADGE_PATH =
+  "M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z";
+
+
 function buildLoaderGrid(loader) {
 
   const NS = "http://www.w3.org/2000/svg";
 
-  const BADGE =
-    "M66.5861 176.845C79.1247 126.353 108.201 81.5103 149.182 49.461C190.164 17.4117 240.693 0 292.718 0H538.905L472.315 268.155C459.777 318.647 430.7 363.49 389.719 395.539C348.737 427.588 298.208 445 246.183 445H0L66.5861 176.845Z";
+  const BADGE = LOADER_BADGE_PATH;
 
 
   /* -----------------------------------------
@@ -548,6 +552,100 @@ function buildLoaderGrid(loader) {
   }
 
   return { svg, play };
+}
+
+
+/* =========================================================
+   DOT → BADGE MORPH
+   On the dot takeover the words loader's dot grows into
+   the badge (the tonal grid's cell). Both outlines use the
+   same commands (M L C C L L C C Z) so the numbers can be
+   tweened, and the takeover scale is checked against the
+   badge so its rounded corners still cover the screen.
+   Works in the dot's own coordinates (DOT_PATH's viewBox).
+========================================================= */
+
+function dotBadgeMorph(path) {
+
+  const lerp = (a, b, t) => [a[0] + (b[0] - a[0]) * t, a[1] + (b[1] - a[1]) * t];
+
+  // The dot: M270.33 0H346.33L324.229 89H248.229Z
+  const BL = [248.229, 89], TL = [270.33, 0], TR = [346.33, 0], BR = [324.229, 89];
+  const from = [
+    BL, lerp(BL, TL, 0.6),
+    lerp(BL, TL, 0.73), lerp(BL, TL, 0.87), TL,
+    lerp(TL, TR, 0.15), lerp(TL, TR, 0.3), lerp(TL, TR, 0.45),
+    TR, lerp(TR, BR, 0.6),
+    lerp(TR, BR, 0.73), lerp(TR, BR, 0.87), BR,
+    lerp(BR, BL, 0.15), lerp(BR, BL, 0.3), lerp(BR, BL, 0.45)
+  ];
+
+  // The badge (LOADER_BADGE_PATH), 89 tall and centered on the dot.
+  const k = 89 / 445;
+  const ox = (BL[0] + TR[0]) / 2 - 538.905 * k / 2;
+  const to = [
+    [0, 445], [66.5861, 176.845],
+    [79.1247, 126.353], [108.201, 81.5103], [149.182, 49.461],
+    [190.164, 17.4117], [240.693, 0], [292.718, 0],
+    [538.905, 0], [472.315, 268.155],
+    [459.777, 318.647], [430.7, 363.49], [389.719, 395.539],
+    [348.737, 427.588], [298.208, 445], [246.183, 445]
+  ].map(([x, y]) => [ox + x * k, y * k]);
+
+  const d = p => {
+    const f = i => p[i][0].toFixed(3) + " " + p[i][1].toFixed(3);
+    return "M" + f(0) + "L" + f(1) +
+      "C" + f(2) + " " + f(3) + " " + f(4) +
+      "C" + f(5) + " " + f(6) + " " + f(7) +
+      "L" + f(8) + "L" + f(9) +
+      "C" + f(10) + " " + f(11) + " " + f(12) +
+      "C" + f(13) + " " + f(14) + " " + f(15) + "Z";
+  };
+
+  // The badge's outline as a polygon, for the cover check.
+  const bez = (a, b, c, e, t) => {
+    const u = 1 - t;
+    return [0, 1].map(i => u * u * u * a[i] + 3 * u * u * t * b[i] + 3 * u * t * t * c[i] + t * t * t * e[i]);
+  };
+  const outline = [to[0], to[1]];
+  [[1, 4], [4, 7], [9, 12], [12, 15]].forEach(([a, e], n) => {
+    for (let i = 1; i <= 8; i++) outline.push(bez(to[a], to[a + 1], to[a + 2], to[e], i / 8));
+    if (n === 1) outline.push(to[8], to[9]);
+  });
+
+  const inside = ([x, y]) => outline.every((a, i) => {
+    const b = outline[(i + 1) % outline.length];
+    return (b[0] - a[0]) * (y - a[1]) - (b[1] - a[1]) * (x - a[0]) >= 0;
+  });
+
+  const state = { t: 0 };
+  const svg = path.ownerSVGElement;
+  if (svg) svg.style.overflow = "visible";
+
+  return {
+    // Scale (of the dot's on-screen box) at which the badge covers the screen.
+    coverScale(rect) {
+      const px = rect.width / (TR[0] - BL[0]);
+      const cx = rect.left + rect.width / 2;
+      const cy = rect.top + rect.height / 2;
+      const corners = [[0, 0], [window.innerWidth, 0], [0, window.innerHeight], [window.innerWidth, window.innerHeight]];
+      const covers = s => corners.every(([x, y]) =>
+        inside([(BL[0] + TR[0]) / 2 + (x - cx) / (px * s), 44.5 + (y - cy) / (px * s)]));
+      let lo = 1, hi = 1;
+      while (!covers(hi) && hi < 1e5) hi *= 2;
+      for (let i = 0; i < 30; i++) {
+        const mid = (lo + hi) / 2;
+        covers(mid) ? (hi = mid) : (lo = mid);
+      }
+      return hi;
+    },
+    tween(vars) {
+      return gsap.to(state, Object.assign({
+        t: 1,
+        onUpdate: () => path.setAttribute("d", d(from.map((a, i) => lerp(a, to[i], state.t))))
+      }, vars));
+    }
+  };
 }
 
 
@@ -1783,11 +1881,32 @@ function initLoader(container) {
       );
 
 
-    const takeoverScale =
+    let takeoverScale =
       (
         viewportDiagonal /
         dotSize
       ) * 1.35;
+
+
+    /*
+     * Words loader: the dot grows into the badge on the
+     * way up, so the scale has to cover with the badge's
+     * rounded corners too.
+     */
+    const dotPath =
+      dot.querySelector("path");
+
+    const badgeMorph =
+      dotPath && dotPath.getAttribute("d") === DOT_PATH
+        ? dotBadgeMorph(dotPath)
+        : null;
+
+    if (badgeMorph) {
+      takeoverScale = Math.max(
+        takeoverScale,
+        badgeMorph.coverScale(dotRect) * 1.1
+      );
+    }
 
 
     console.log(
@@ -1893,7 +2012,8 @@ if (loaderGrid) {
       el instanceof SVGElement
         ? { fill: themeBg, duration: 0.6, ease: "power2.in" }
         : { backgroundColor: themeBg, duration: 0.6, ease: "power2.in" },
-      0
+      // Hold the color a beat longer so the badge reads.
+      badgeMorph ? 0.2 : 0
     );
   });
 
@@ -1937,6 +2057,18 @@ exitTL.to(
   },
   0
 );
+
+if (badgeMorph) {
+
+  exitTL.add(
+    badgeMorph.tween({
+      duration: 0.5,
+      ease: "power2.inOut"
+    }),
+    0
+  );
+
+}
 
 
 /* =====================================================
