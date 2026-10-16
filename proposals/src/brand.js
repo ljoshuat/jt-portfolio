@@ -18,7 +18,7 @@ export const FONT_FACES = `
 // The open J (separated version from logo-mock/jt-mark-golden-lime.svg).
 export const MARK_SVG = `<svg viewBox="-12.34 0 350.45 267" aria-hidden="true"><path d="M75.61628,0h148.37872l-39.93821,160.82932c-16.61457,61.17812 -72.54472,106.17068 -138.98345,106.17068h-57.40845l22.10107,-89h35.30738c25.37734,0 46.74075,-17.18563 53.08695,-40.55359l12.03053,-48.44641h-56.67563zM106.47557,103.96121c9.84669,-9.27633 23.11458,-14.96121 37.71024,-14.96121l-33.99498,0z"/><path d="M262.11876,0h76l-22.10107,89h-76z"/></svg>`;
 
-const LEAF = 'M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z';
+export const LEAF = 'M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z';
 export const TRIO_SVG = `<svg viewBox="0 0 1100 916" aria-hidden="true"><path d="${LEAF}" transform="translate(0 471)"/><path d="${LEAF}" transform="translate(455 471)"/><path d="${LEAF}" transform="translate(568 0)"/></svg>`;
 
 const leafUri = (fill) =>
@@ -149,14 +149,4 @@ p+p{margin-top:1rem}
 .js-reveal [data-reveal].in .wrap{opacity:1;transform:none}
 @media (prefers-reduced-motion:reduce){html{scroll-behavior:auto}.js-reveal [data-reveal] .wrap{opacity:1;transform:none;transition:none}}
 
-/* password gate */
-.gate{min-height:100svh;display:grid;place-items:center;padding:var(--pad)}
-.gate-box{width:min(100%,440px)}
-.gate-box .mark svg{width:56px;margin-bottom:2.5rem}
-.gate-box .h2{margin-bottom:.75rem}
-.gate form{margin-top:2rem;display:grid;gap:1rem}
-.gate input{font:inherit;font-size:1.1rem;background:var(--panel);color:var(--text);border:1px solid var(--border);border-radius:var(--r-md);padding:1rem 1.1rem}
-.gate input:focus{outline:2px solid var(--accent);outline-offset:2px}
-.gate .btn{cursor:pointer;font-family:inherit}
-.gate .err{color:#FF7A6B;font-size:.95rem}
 `;
