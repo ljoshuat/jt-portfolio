@@ -149,14 +149,24 @@ export function duration(secs) {
   return h ? `${h}h ${m % 60}m` : `${m}m ${secs % 60}s`;
 }
 
+// Visits from cloud/hosting networks are almost always bots or scanners
+// running a normal-looking browser. They're labelled, not dropped.
+const CLOUD_RE = /amazon|aws|google|microsoft|azure|digitalocean|linode|akamai|ovh|hetzner|oracle|alibaba|tencent|huawei cloud|vultr|choopa|leaseweb|contabo|scaleway|m247|datacamp|cloudflare|hostinger|ionos|hostroyale|zenlayer|psychz|colocrossing|quadranet|servers\.com|g-core|gcore/i;
+
+export function possibleBot(cf) {
+  return CLOUD_RE.test(cf.asOrganization || '');
+}
+
 export function formatMessage(cf, body, ua) {
   const place = [cf.city, cf.region, cf.country].filter(Boolean).join(', ') || 'Unknown location';
-  const flag = flagEmoji(cf.country);
+  const flag = possibleBot(cf) ? '🤖' : flagEmoji(cf.country);
   const page = clean(body.path) || '/';
   const ref = referrerLabel(clean(body.ref));
   const device = deviceLabel(ua);
   const lines = [
-    `${flag ? flag + ' ' : ''}*New visitor* from ${place}`,
+    possibleBot(cf)
+      ? `${flag} *Possible bot* from ${place} (${clean(cf.asOrganization)})`
+      : `${flag ? flag + ' ' : ''}*New visitor* from ${place}`,
     `Page: ${page}`,
     `From: ${ref}`,
     `Device: ${device}`,
