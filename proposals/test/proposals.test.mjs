@@ -83,9 +83,10 @@ test('proposal content is escaped', () => {
 });
 
 test('sign button uses the DocuSign link and ignores non-https links', () => {
-  const withSign = renderProposal(sample);
+  const docusign = { ...sample.contact, signUrl: 'https://powerforms.docusign.net/abc-123', signLabel: 'Review & sign' };
+  const withSign = renderProposal({ ...sample, contact: docusign });
   assert.match(withSign, /href="https:\/\/powerforms\.docusign\.net\/[^"]+" target="_blank" rel="noopener noreferrer">Review &amp; sign/);
-  const bad = renderProposal({ ...sample, contact: { ...sample.contact, signUrl: 'javascript:alert(1)' } });
+  const bad = renderProposal({ ...sample, contact: { ...docusign, signUrl: 'javascript:alert(1)' } });
   assert.doesNotMatch(bad, /javascript:/);
   assert.match(bad, /href="mailto:/);
 });
@@ -117,4 +118,48 @@ test('a wrong or missing link key shows the password screen', async () => {
   }
   const unknown = await worker.fetch(new Request(`https://proposals.example/nope-co?k=${KEY}`), env);
   assert.equal(unknown.status, 401);
+});
+
+async function unlock(env) {
+  const res = await worker.fetch(new Request(`https://proposals.example/acme-co?k=${KEY}`), env);
+  return res.headers.getSetCookie().map((c) => c.split(';')[0]).find((c) => c.startsWith('jtp_acme_co='));
+}
+const sign = (cookie, fields) =>
+  new Request('https://proposals.example/acme-co/sign', {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/x-www-form-urlencoded', Cookie: cookie || '', 'CF-Connecting-IP': '5.6.7.8' },
+    body: new URLSearchParams(fields),
+  });
+
+test('a client can sign once, and the proposal shows who signed', async () => {
+  const { env } = await setup();
+  const cookie = await unlock(env);
+  const page = await (await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookie } }), env)).text();
+  assert.match(page, /<form class="sign" method="post" action="\/acme-co\/sign">/);
+
+  const res = await worker.fetch(sign(cookie, { name: '  Jane   Client ', agree: 'on' }), env);
+  assert.equal(res.status, 303);
+  assert.equal(res.headers.get('Location'), '/acme-co#sign');
+  const saved = JSON.parse(env.PROPOSALS.keys().includes('signed:acme-co') && (await env.PROPOSALS.get('signed:acme-co')));
+  assert.equal(saved.name, 'Jane Client');
+  assert.equal(saved.ip, '5.6.7.8');
+  assert.match(saved.proposal, /^[0-9a-f]{64}$/);
+
+  await worker.fetch(sign(cookie, { name: 'Someone Else', agree: 'on' }), env);
+  assert.equal(JSON.parse(await env.PROPOSALS.get('signed:acme-co')).name, 'Jane Client');
+
+  const after = await (await worker.fetch(new Request('https://proposals.example/acme-co', { headers: { Cookie: cookie } }), env)).text();
+  assert.match(after, /Signed\. Thank you\./);
+  assert.match(after, /Jane Client/);
+  assert.doesNotMatch(after, /<form class="sign"/);
+});
+
+test('signing needs an unlocked browser, a name and consent', async () => {
+  const { env } = await setup();
+  const locked = await worker.fetch(sign('', { name: 'Jane Client', agree: 'on' }), env);
+  assert.equal(locked.status, 403);
+  const cookie = await unlock(env);
+  await worker.fetch(sign(cookie, { name: 'Jane Client' }), env);
+  await worker.fetch(sign(cookie, { name: 'J', agree: 'on' }), env);
+  assert.equal(await env.PROPOSALS.get('signed:acme-co'), null);
 });

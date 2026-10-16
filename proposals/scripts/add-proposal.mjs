@@ -45,6 +45,17 @@ if (pwIndex >= 0 || flag('--new-password') || !passwordRecord) {
 const key = !existing?.key || flag('--new-link') ? makeKey() : existing.key;
 
 const data = JSON.parse(readFileSync(file, 'utf8'));
+
+// Editing a signed proposal would change what the client sees after signing.
+let signed = '';
+try {
+  signed = wrangler(['kv', 'key', 'get', `signed:${slug}`], { stdio: ['ignore', 'pipe', 'ignore'] }).toString().trim();
+} catch { signed = ''; }
+if (signed.startsWith('{') && !flag('--force')) {
+  const s = JSON.parse(signed);
+  console.error(`${slug} was signed by ${s.name} on ${s.at}. Publishing would change the signed proposal.\nUse a new name for a revised proposal, or add --force if you really mean to edit it.`);
+  process.exit(1);
+}
 const record = { password: passwordRecord, key, data, updated: new Date().toISOString() };
 
 const dir = mkdtempSync(join(tmpdir(), 'jtp-'));

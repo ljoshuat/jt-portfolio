@@ -3,13 +3,16 @@
 //   GET  /<slug>?k=<key>  private link: unlocks this browser, then drops the key from the address
 //   GET  /<slug>          password screen, or the proposal once unlocked
 //   POST /<slug>          check the password, set a cookie for this proposal
+//   POST /<slug>/sign     sign the proposal (typed name + consent), once
 //   GET  /<slug>/logout   forget this browser
 //
 // Proposals live in the PROPOSALS KV namespace under "proposal:<slug>" as
 // { password: {salt, iterations, hash}, key, data: {...} }. Add them with
 // scripts/add-proposal.mjs; the content never lives in this repo.
 // Each unlock is logged as "view:<slug>:<time>" (kept a year) for
-// scripts/views.mjs.
+// scripts/views.mjs. A signature is stored once as "signed:<slug>" with the
+// signer's typed name, time, IP, country, browser and a SHA-256 fingerprint of
+// the exact proposal they saw.
 
 import { renderProposal } from './template.js';
 import { renderGate } from './gate.js';
@@ -67,6 +70,11 @@ function unlocked(env, slug, path, name, token) {
   });
 }
 
+async function fingerprint(data) {
+  const digest = await crypto.subtle.digest('SHA-256', new TextEncoder().encode(JSON.stringify(data)));
+  return [...new Uint8Array(digest)].map((b) => b.toString(16).padStart(2, '0')).join('');
+}
+
 async function countAttempt(env, key) {
   const n = Number((await env.PROPOSALS.get(key)) || 0) + 1;
   await env.PROPOSALS.put(key, String(n), { expirationTtl: 900 });
@@ -92,11 +100,33 @@ export default {
         headers: { Location: path, 'Set-Cookie': `${name}=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`, ...SECURITY_HEADERS },
       });
     }
-    if (parts.length > 1) return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }), 404);
+    if (parts.length > 1 && parts[1] !== 'sign') return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }), 404);
 
     // Unknown slugs get the same password screen, so nobody can tell which
     // proposals exist by guessing addresses.
     const record = await env.PROPOSALS.get(`proposal:${slug}`, 'json');
+    const signedIn = async () => record && (await checkToken(env.SESSION_SECRET, slug, accessSecret(record), readCookie(request, name)));
+
+    // Signing needs the proposal unlocked in this browser. The cookie is
+    // SameSite=Lax, so another site can't post this form on the client's behalf.
+    if (parts[1] === 'sign') {
+      if (request.method !== 'POST' || !(await signedIn())) return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }), 403);
+      const back = new Response(null, { status: 303, headers: { Location: `${path}#sign`, ...SECURITY_HEADERS } });
+      if (await env.PROPOSALS.get(`signed:${slug}`)) return back; // first signature stands
+      const form = await request.formData().catch(() => null);
+      const signer = String(form?.get('name') || '').replace(/\s+/g, ' ').trim();
+      if (signer.length < 2 || signer.length > 100 || !form?.get('agree')) return back;
+      await env.PROPOSALS.put(`signed:${slug}`, JSON.stringify({
+        name: signer,
+        at: new Date().toISOString(),
+        ip: request.headers.get('CF-Connecting-IP') || '',
+        country: request.cf?.country || '',
+        userAgent: request.headers.get('User-Agent') || '',
+        proposal: await fingerprint(record.data),
+        updated: record.updated || '',
+      }));
+      return back;
+    }
 
     if (request.method === 'POST') {
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
@@ -138,14 +168,15 @@ export default {
       return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, error: "That link didn't work. Enter the password from your email instead." }), 401);
     }
 
-    if (record && (await checkToken(env.SESSION_SECRET, slug, accessSecret(record), readCookie(request, name)))) {
+    if (await signedIn()) {
       if (readCookie(request, `${name}_hi`)) {
         const title = String(record.data?.title || '').replace(/\s*\n\s*/g, ' ');
         return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, welcome: { client: record.data?.client, title, href: path } }), 200, {
           'Set-Cookie': `${name}_hi=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`,
         });
       }
-      return html(renderProposal(record.data, { selfHostedFonts }));
+      const signature = await env.PROPOSALS.get(`signed:${slug}`, 'json');
+      return html(renderProposal(record.data, { selfHostedFonts, signature, signAction: `${path}/sign` }));
     }
     return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }));
   },

@@ -61,12 +61,20 @@ Running `add` again with the same slug updates the content and keeps the same
 link and password. `--new-link` or `--new-password` replaces them and signs
 everyone out (use it to cut off a forwarded link).
 
-### DocuSign
+### Signing
 
-Set `contact.signUrl` to a DocuSign link (a PowerForm works best: DocuSign →
-Templates → your agreement → Create PowerForm) and the Next steps button becomes
-"Review & sign", opening DocuSign in a new tab. `contact.signLabel` changes the
-button text. Without `signUrl` the button falls back to an approval email.
+Clients sign right on the proposal: they type their full name, tick the consent
+box and tap **Sign proposal**. The first signature is stored as `signed:<slug>`
+with the typed name, time, IP, country, browser and a SHA-256 fingerprint of the
+exact proposal content, and the form is replaced by a signed record with a
+"Save a copy (PDF)" button. `npm run views -- <slug>` shows it.
+
+Once signed, `npm run add` refuses to change that proposal (publish a revision
+under a new slug, or pass `--force`). `contact.signLabel` changes the button text.
+
+To use DocuSign instead, set `contact.signUrl` to a PowerForm link (DocuSign →
+Templates → your agreement → Create PowerForm; needs Business Pro) and the
+button opens DocuSign in a new tab.
 
 ## Security notes
 

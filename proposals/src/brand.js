@@ -136,6 +136,18 @@ p+p{margin-top:1rem}
 
 .approve{background:var(--panel);border:1px solid var(--border);border-radius:var(--r-lg);padding:clamp(1.75rem,3vw,3.5rem);align-self:start}
 .approve>*+*{margin-top:1.25rem}
+.sign{display:grid;gap:1rem}
+.sign .sig{width:100%;background:transparent;border:0;border-bottom:1px solid var(--border);color:var(--text);padding:.5rem 0;font:italic 2rem/1.2 var(--serif);outline:none;transition:border-color .3s}
+.sign .sig:focus{border-bottom-color:var(--accent)}
+.sign .sig::placeholder{color:var(--gray);opacity:.5}
+.agree{display:grid;grid-template-columns:auto 1fr;gap:.75rem;align-items:start;color:var(--gray);font-size:.95rem;cursor:pointer}
+.agree input{width:1.15rem;height:1.15rem;margin-top:.15rem;accent-color:var(--accent)}
+.sign .btn{justify-self:start;cursor:pointer;font-family:inherit}
+.signed{display:grid;gap:1rem}
+.signed dd{margin-top:.35rem}
+.signed .sig{font:italic 2rem/1.2 var(--serif);color:var(--accent)}
+.btn.btn-ghost{background:transparent;color:var(--text);border-color:var(--border);cursor:pointer;font-family:inherit}
+@media print{.topbar,.curtain,.cover-pattern,.btn-ghost{display:none!important}}
 .btn{display:inline-block;background:var(--accent);color:var(--on-accent);border:2px solid var(--accent);border-radius:var(--r-md);padding:1rem 1.75rem;font-weight:500;text-transform:uppercase;letter-spacing:.06em;text-decoration:none;font-size:.95rem;transition:background .35s,color .35s}
 .btn:hover{background:transparent;color:var(--accent)}
 

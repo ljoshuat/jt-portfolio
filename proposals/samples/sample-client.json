@@ -80,5 +80,5 @@
     { "title": "Pay the deposit", "body": "The first invoice is 50%. Your start date is confirmed once it clears." },
     { "title": "Kickoff", "body": "A 60-minute call to meet the team and start discovery." }
   ],
-  "contact": { "email": "you@example.com", "approveLabel": "Approve proposal", "signUrl": "https://powerforms.docusign.net/REPLACE-WITH-YOUR-POWERFORM-ID", "signLabel": "Review & sign" }
+  "contact": { "email": "you@example.com", "approveLabel": "Approve proposal" }
 }

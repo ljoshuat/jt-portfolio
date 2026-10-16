@@ -34,7 +34,7 @@ const CURTAIN_CSS = `
 @media (prefers-reduced-motion:reduce){.from-unlock .curtain{animation:none;display:none}}
 `;
 
-export function renderProposal(d, { previewBanner = '', selfHostedFonts = false } = {}) {
+export function renderProposal(d, { previewBanner = '', selfHostedFonts = false, signature = null, signAction = '' } = {}) {
   const theme = d.theme === 'light' ? 'light' : 'dark';
   const sections = [];
   let n = 0;
@@ -171,9 +171,35 @@ export function renderProposal(d, { previewBanner = '', selfHostedFonts = false 
     const subject = encodeURIComponent(`Approved: ${d.title || 'Proposal'} (${d.reference || d.client})`);
     // A DocuSign (or any e-sign) link, e.g. a PowerForm. Only https links are used.
     const signUrl = /^https:\/\//i.test(d.contact?.signUrl || '') ? d.contact.signUrl : '';
-    const primary = signUrl
-      ? `<a class="btn" href="${esc(signUrl)}" target="_blank" rel="noopener noreferrer">${esc(d.contact?.signLabel || 'Review & sign')}</a>`
-      : email ? `<a class="btn" href="mailto:${esc(email)}?subject=${subject}">${esc(d.contact?.approveLabel || 'Approve proposal')}</a>` : '';
+    const when = (iso) => new Date(iso).toLocaleString('en-US', { dateStyle: 'long', timeStyle: 'short', timeZone: 'America/New_York' }) + ' ET';
+    // Signed: the record replaces the form. Otherwise a DocuSign link if one is
+    // set, else signing right here (typed name + consent), else a mailto.
+    const approve = signature
+      ? `<h2 class="h2">Signed. Thank you.</h2>
+          <dl class="signed">
+            <div><dt class="meta">Signed by</dt><dd class="sig">${esc(signature.name)}</dd></div>
+            <div><dt class="meta">Date</dt><dd>${esc(when(signature.at))}</dd></div>
+          </dl>
+          <p class="muted">I'll hold your start date and send the deposit invoice the same day.</p>
+          <button class="btn btn-ghost" type="button" onclick="print()">Save a copy (PDF)</button>`
+      : signUrl
+      ? `<h2 class="h2">Ready to go?</h2>
+          <p class="muted">Signing opens the agreement in DocuSign. Once it's signed I hold your start date and send the deposit invoice the same day.</p>
+          <a class="btn" href="${esc(signUrl)}" target="_blank" rel="noopener noreferrer">${esc(d.contact?.signLabel || 'Review & sign')}</a>`
+      : signAction
+      ? `<h2 class="h2">Ready to go?</h2>
+          <form class="sign" method="post" action="${esc(signAction)}">
+            <label class="meta" for="sig-name">Type your full name to sign</label>
+            <input id="sig-name" name="name" class="sig" required minlength="2" maxlength="100" autocomplete="name" placeholder="Your full name">
+            <label class="agree"><input type="checkbox" name="agree" required> <span>I've read this proposal and its terms, I agree to them, and I agree to sign electronically.</span></label>
+            <button class="btn" type="submit">${esc(d.contact?.signLabel || 'Sign proposal')}</button>
+          </form>
+          <p class="muted small">Signing holds your start date. I'll send the deposit invoice the same day.</p>`
+      : email
+      ? `<h2 class="h2">Ready to go?</h2>
+          <p class="muted">Approving tells me to hold your start date. I'll send the deposit invoice the same day.</p>
+          <a class="btn" href="mailto:${esc(email)}?subject=${subject}">${esc(d.contact?.approveLabel || 'Approve proposal')}</a>`
+      : '';
     sections.push(section('next', n, 'Next steps', `
       ${label(n, 'Next steps')}
       <div class="split">
@@ -183,12 +209,8 @@ export function renderProposal(d, { previewBanner = '', selfHostedFonts = false 
             <li><span class="num">${pad(i + 1)}</span><div><h3>${esc(s.title)}</h3><p>${esc(s.body)}</p></div></li>`).join('')}
           </ol>
         </div>
-        <div class="approve">
-          <h2 class="h2">Ready to go?</h2>
-          <p class="muted">${signUrl
-            ? "Signing opens the agreement in DocuSign. Once it's signed I hold your start date and send the deposit invoice the same day."
-            : "Approving tells me to hold your start date. I'll send the deposit invoice the same day."}</p>
-          ${primary}
+        <div class="approve" id="sign">
+          ${approve}
           ${email ? `<p class="muted small">Questions? <a class="link" href="mailto:${esc(email)}">${esc(email)}</a></p>` : ''}
         </div>
       </div>`));
