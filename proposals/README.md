@@ -74,3 +74,9 @@ button text. Without `signUrl` the button falls back to an approval email.
 npm test        # node --test
 npm run dev     # wrangler dev, local KV
 ```
+
+## Password screen style
+
+`GATE_STYLE` in `wrangler.toml` picks the password screen background:
+`"wave"` (dithered wave of angled pixels) or `"leaf"` (leaf field that lights
+up around the pointer). Deploy after changing it.

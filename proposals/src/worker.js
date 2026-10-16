@@ -57,7 +57,7 @@ export default {
     if (parts.length === 0) return Response.redirect('https://www.jtcreative.design', 302);
 
     const slug = parts[0].toLowerCase();
-    if (!SLUG.test(slug)) return html(renderGate({ selfHostedFonts }), 404);
+    if (!SLUG.test(slug)) return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }), 404);
 
     const name = cookieName(slug);
     const path = `/${slug}`;
@@ -68,7 +68,7 @@ export default {
         headers: { Location: path, 'Set-Cookie': `${name}=; Path=${path}; Max-Age=0; HttpOnly; Secure; SameSite=Lax`, ...SECURITY_HEADERS },
       });
     }
-    if (parts.length > 1) return html(renderGate({ selfHostedFonts }), 404);
+    if (parts.length > 1) return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }), 404);
 
     // Unknown slugs get the same password screen, so nobody can tell which
     // proposals exist by guessing addresses.
@@ -78,7 +78,7 @@ export default {
       const ip = request.headers.get('CF-Connecting-IP') || 'unknown';
       const limitKey = `attempts:${slug}:${ip}`;
       if (await tooManyAttempts(env, limitKey)) {
-        return html(renderGate({ selfHostedFonts, error: 'Too many tries. Wait 15 minutes and try again.' }), 429);
+        return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, error: 'Too many tries. Wait 15 minutes and try again.' }), 429);
       }
       const form = await request.formData().catch(() => null);
       const password = String(form?.get('password') || '');
@@ -94,7 +94,7 @@ export default {
         });
       }
       await countAttempt(env, limitKey);
-      return html(renderGate({ selfHostedFonts, error: "That password didn't match. Check your email and try again." }), 401);
+      return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts, error: "That password didn't match. Check your email and try again." }), 401);
     }
 
     if (request.method !== 'GET' && request.method !== 'HEAD') {
@@ -104,6 +104,6 @@ export default {
     if (record && (await checkToken(env.SESSION_SECRET, slug, record.password.hash, readCookie(request, name)))) {
       return html(renderProposal(record.data, { selfHostedFonts }));
     }
-    return html(renderGate({ selfHostedFonts }));
+    return html(renderGate({ style: env.GATE_STYLE, selfHostedFonts }));
   },
 };

@@ -12,4 +12,5 @@ const out = new URL('../dist/', import.meta.url);
 mkdirSync(out, { recursive: true });
 writeFileSync(new URL('preview.html', out), renderProposal(data));
 writeFileSync(new URL('gate.html', out), renderGate({ demo: true }));
+writeFileSync(new URL('gate-wave.html', out), renderGate({ demo: true, style: 'wave' }));
 console.log('Wrote dist/preview.html and dist/gate.html');

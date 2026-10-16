@@ -14,7 +14,7 @@ const GATE_CSS = `
 .gate{position:relative;min-height:100svh;display:grid;place-items:center;padding:var(--pad);overflow:hidden;isolation:isolate}
 #field{position:fixed;inset:0;width:100%;height:100%;z-index:-1;display:block}
 .gate-box{width:min(100%,440px);position:relative}
-.gate-box::before{content:"";position:absolute;inset:-2.5rem -2rem;background:radial-gradient(closest-side,var(--bg) 55%,transparent);z-index:-1;opacity:.92}
+.gate-box::before{content:"";position:absolute;inset:-3rem -2.5rem;background:radial-gradient(closest-side,var(--bg) 72%,transparent);z-index:-1;opacity:.95}
 .gate .mark svg{width:60px;margin-bottom:2.25rem;overflow:visible;fill:var(--accent)}
 .gate .mark .sq{transition:transform .5s cubic-bezier(.3,1.4,.5,1)}
 .gate.typing .mark .sq{transform:translate(10px,-38px)}
@@ -42,7 +42,8 @@ const GATE_CSS = `
 `;
 
 // demo: used by the local preview only. Any password unlocks and nothing is sent.
-export function renderGate({ client = '', error = '', selfHostedFonts = false, demo = false } = {}) {
+// style: 'leaf' (lit leaf field) or 'wave' (dithered wave of angled pixels).
+export function renderGate({ client = '', error = '', selfHostedFonts = false, demo = false, style = 'leaf' } = {}) {
   return `<!doctype html>
 <html lang="en" data-theme="dark">
 <head>
@@ -71,14 +72,14 @@ export function renderGate({ client = '', error = '', selfHostedFonts = false, d
     </form>
   </div>
 </main>
-<script>${GATE_JS.replaceAll('__LEAF__', LEAF).replace('__DEMO__', demo ? 'true' : 'false')}</script>
+<script>${GATE_JS.replaceAll('__LEAF__', LEAF).replace('__DEMO__', demo ? 'true' : 'false').replace('__STYLE__', style === 'wave' ? 'wave' : 'leaf')}</script>
 </body>
 </html>`;
 }
 
 const GATE_JS = `
 (function(){
-  var DEMO=__DEMO__;
+  var DEMO=__DEMO__,STYLE='__STYLE__';
   document.documentElement.classList.add('js');
   var gate=document.querySelector('.gate'),form=gate.querySelector('form'),input=gate.querySelector('#pw'),
       dots=gate.querySelector('.dots'),err=gate.querySelector('.err'),btn=gate.querySelector('.btn');
@@ -126,7 +127,49 @@ const GATE_JS = `
     }
     if(!still)requestAnimationFrame(draw);
   }
-  addEventListener('resize',size);
+
+  // Alternative background: a dithered wave drawn with the angled pixel from
+  // the J (the square), quantised to ink and lime with a 4x4 ordered dither.
+  var BAYER=[0,8,2,10,12,4,14,6,3,11,1,9,15,7,13,5],ripples=[],level=0,grid=[];
+  function sizeWave(){
+    dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
+    cv.width=W*dpr;cv.height=H*dpr;grid=[];
+    var s=W<600?10:12,pw=s*0.86,k=s*0.25,gx=s*1.02,gy=s*1.18;
+    grid.s={pw:pw,h:s,k:k};
+    for(var r=0;r*gy<H+gy;r++)for(var c=-1;c*gx<W+gx;c++)grid.push({x:c*gx,y:r*gy,b:(BAYER[(r&3)*4+((c+8)&3)]+0.5)/16});
+    if(still)drawWave(0);
+  }
+  function drawWave(now){
+    var t=(now-t0)/1000,g=grid.s,lime=new Path2D(),dim=new Path2D();
+    if(wave>=0)level=Math.min(1.4,(now-wave)/700);
+    ripples=ripples.filter(function(r){return now-r.t<2600;});
+    for(var i=0;i<grid.length;i++){
+      var p=grid[i],yn=p.y/H;
+      var v=Math.pow(yn,1.7)*0.95-0.2
+        +0.17*Math.sin(p.x*0.011+t*0.9+yn*3)
+        +0.12*Math.sin(p.x*0.004-p.y*0.009-t*0.6);
+      if(!idle){var dx=p.x-px,dy=p.y-py;v+=0.42*Math.exp(-(dx*dx+dy*dy)/12800);}
+      for(var j=0;j<ripples.length;j++){
+        var R=ripples[j],age=(now-R.t)/1000,d=Math.hypot(p.x-R.x,p.y-R.y),front=age*420;
+        if(d<front+60&&d>front-160)v+=R.a*(1-age/2.6)*Math.sin((d-front)*0.045)*Math.exp(-d/700);
+      }
+      v+=level;
+      var path=v>p.b?lime:(v>p.b-0.35?dim:null);
+      if(path){path.moveTo(p.x+g.k,p.y);path.lineTo(p.x+g.k+g.pw,p.y);path.lineTo(p.x+g.pw,p.y+g.h);path.lineTo(p.x,p.y+g.h);path.closePath();}
+    }
+    cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
+    cx.fillStyle='#1B2328';cx.fill(dim);
+    cx.fillStyle='#DAF40A';cx.fill(lime);
+    if(!still)requestAnimationFrame(drawWave);
+  }
+  function drop(x,y,a){if(!still)ripples.push({x:x,y:y,t:performance.now(),a:a||0.6});}
+  if(STYLE==='wave'){
+    size=sizeWave;draw=drawWave;
+    addEventListener('pointerdown',function(e){drop(e.clientX,e.clientY);});
+    input.addEventListener('input',function(){var b=input.getBoundingClientRect();drop(b.left+Math.min(b.width-20,24+input.value.length*22),b.top+b.height/2,0.35);});
+  }
+
+  addEventListener('resize',function(){size();});
   addEventListener('pointermove',function(e){idle=false;px=e.clientX;py=e.clientY;});
   addEventListener('pointerdown',function(e){idle=false;px=e.clientX;py=e.clientY;});
   document.addEventListener('mouseout',function(e){if(!e.relatedTarget)idle=true;});
