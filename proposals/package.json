@@ -1,0 +1,16 @@
+{
+  "name": "jt-proposals",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "preview": "node scripts/preview.mjs",
+    "test": "node --test test/*.test.mjs",
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "add": "node scripts/add-proposal.mjs",
+    "views": "node scripts/views.mjs"
+  },
+  "devDependencies": {
+    "wrangler": "^4.0.0"
+  }
+}
