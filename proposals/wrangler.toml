@@ -22,6 +22,6 @@ GATE_STYLE = "leaf"
 # then paste the id it prints here.
 [[kv_namespaces]]
 binding = "PROPOSALS"
-id = "REPLACE_WITH_KV_NAMESPACE_ID"
+id = "9d8aec0b03c244479e8ff3158dbd7180"
 
 # Secret (not in this file): npx wrangler secret put SESSION_SECRET
