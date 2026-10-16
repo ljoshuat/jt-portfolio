@@ -101,41 +101,43 @@ const GATE_JS = `
   }
   input.addEventListener('input',sync);
 
-  // Background: the tonal brand pattern drifting on a diagonal, with single
-  // leaves lighting up lime at random and fading back. It opens with the
-  // pattern flicker from the process video. Tiles near the pointer light up.
-  var cv=document.getElementById('field'),cx=cv.getContext('2d'),W=0,H=0,dpr=1,cells=[],CW=64,CH=53;
+  // Background: the loader's pattern. Large leaves tile the screen on the
+  // brand slant (same spacing as the site loader and process video), each in
+  // one of three tonal inks. Now and then a single leaf fades up to lime and
+  // back. Leaves under the pointer light up too.
+  var cv=document.getElementById('field'),cx=cv.getContext('2d'),W=0,H=0,dpr=1,cells=[],TS=0.3;
   var px=-1e4,py=-1e4,tx=0,ty=0,wave=-1,t0=performance.now(),idle=true;
-  var INTRO=0.96,LIME=[['#DAF40A',.2],['#7D7D7D',.36],['#1E2428',.44]],TONAL=[['#1F262A',.3],['#181E22',.4],['#13191C',.3]];
+  var TONAL=[['#1F262A',.3],['#181E22',.4],['#13191C',.3]],LIT=0.7;
   function hh(k,r){var x=(Math.imul(k,73856093)^Math.imul(r,19349663))>>>0;x=Math.imul(x^(x>>>13),0x5bd1e995)>>>0;return((x^(x>>>15))&0xffff)/65535;}
   function pick(pal,v){var a=0;for(var i=0;i<pal.length;i++){a+=pal[i][1];if(v<=a)return pal[i][0];}return pal[2][0];}
   function size(){
     dpr=Math.min(devicePixelRatio||1,2);W=innerWidth;H=innerHeight;
     cv.width=W*dpr;cv.height=H*dpr;cells=[];
-    CW=W<600?64:84;CH=CW*0.83;
-    for(var r=-1;r*CH<H+CH*3;r++)for(var c=-1;c*CW<W+CW*2;c++){var i=cells.length,per=4+hh(i,1)*9;
-      cells.push({x:c*CW+(r%2?CW*0.42:0),y:r*CH,s:CW/539*0.8,a:0,per:per,ph:hh(i,2)*per});}
+    TS=(W<600?72:Math.min(120,W/12))/428.4;
+    var cs=428.4*TS,rs=445*TS,sl=111.0667*TS,G=0.972;
+    for(var r=-1;r*rs<H+rs;r++)for(var k=-2;k*cs-r*sl<W+cs;k++){
+      var x=k*cs-r*sl;if(x+539*TS<0)continue;
+      var i=cells.length,per=5+hh(i,1)*10;
+      cells.push({x:x+269.5*TS*(1-G),y:r*rs+222.5*TS*(1-G),s:TS*G,cx:x+269.5*TS,cy:r*rs+222.5*TS,
+        col:pick(TONAL,hh(k+50,r+50)),a:0,per:per,ph:hh(i,2)*per});
+    }
     if(still)draw(0);
   }
   function draw(now){
     var t=still?0:(now-t0)/1000;
     if(!idle){tx=px;ty=py;}else{tx=ty=-1e4;}
-    var ox=-((t*26)%CW),oy=-((t*6)%(CH*2));
-    cx.setTransform(dpr,0,0,dpr,0,0);cx.clearRect(0,0,W,H);
-    cx.setTransform(dpr,0,0,dpr,ox*dpr,oy*dpr);
-    var R=170,wr=wave>=0?(now-wave)*1.6:-1,intro=!still&&t<INTRO,step=Math.floor(t/0.16);
+    cx.setTransform(dpr,0,0,dpr,0,0);cx.fillStyle='#0A0F12';cx.fillRect(0,0,W,H);
+    var R=110,wr=wave>=0?(now-wave)*1.6:-1;
     for(var i=0;i<cells.length;i++){
-      var p=cells[i],X=p.x+ox,Y=p.y+oy;
-      var col=intro?pick(LIME,hh(i,step+3)):pick(TONAL,hh(i,5));
-      // Random lime light: on each cycle about 1 in 4 leaves glows, eased in and out.
-      var flash=0;if(!intro){var cyc=Math.floor((t+p.ph)/p.per),f=((t+p.ph)%p.per)/1.6;
-        if(hh(i,cyc+11)<0.25&&f<1)flash=Math.sin(Math.PI*f);}
-      var dx=X+20-tx,dy=Y+16-ty,glow=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/R);
+      var p=cells[i];
+      var flash=0;if(!still){var cyc=Math.floor((t+p.ph)/p.per),f=((t+p.ph)%p.per)/2.4;
+        if(hh(i,cyc+11)<0.35&&f<1)flash=Math.sin(Math.PI*f)*LIT;}
+      var dx=p.cx-tx,dy=p.cy-ty,glow=Math.max(0,1-Math.sqrt(dx*dx+dy*dy)/R)*LIT;
       p.a+=(glow-p.a)*0.15;
-      var lit=0;if(wr>=0){var dw=Math.hypot(X-W/2,Y-H/2);lit=dw<wr?Math.min(1,(wr-dw)/180):0;}
+      var lit=0;if(wr>=0){var dw=Math.hypot(p.cx-W/2,p.cy-H/2);lit=dw<wr?Math.min(1,(wr-dw)/180):0;}
       cx.save();cx.translate(p.x,p.y);cx.scale(p.s,p.s);
-      cx.fillStyle=col;cx.fill(leaf);
-      var g=Math.max(p.a*0.85,lit,flash);
+      cx.fillStyle=p.col;cx.fill(leaf);
+      var g=Math.max(p.a,lit,flash);
       if(g>0.01){cx.fillStyle='rgba(218,244,10,'+g.toFixed(3)+')';cx.fill(leaf);}
       cx.restore();
     }
