@@ -28,7 +28,7 @@
   const SECTIONS =
     "section:not(.section_proj-hero):not(.section_hero-visual), footer.footer";
 
-  let triggers = [];
+  let cleanups = [];
   let tweens = [];
 
 
@@ -156,29 +156,30 @@
       /* data-depth layers already own transform y for
          their parallax (work-gsap.js), so they rise 40px
          through yPercent instead, which GSAP adds on top
-         of y. Their height is read when they reveal,
-         after their images have loaded. */
+         of y. */
       if (el.matches("[data-depth]")) {
 
         gsap.set(el, { opacity: 0 });
 
+        const rise = { px: 40 };
         let tween = null;
 
         return {
           play: () => {
-            const rise =
-              (40 / Math.max(el.offsetHeight, 1)) * 100;
-
-            tween = gsap.fromTo(
-              el,
-              { opacity: 0, yPercent: rise },
-              {
-                opacity: 1,
-                yPercent: 0,
-                duration: 0.8,
-                ease: "power3.out"
+            /* Re-read the height every frame, as a lazy
+               image may still be loading. */
+            tween = gsap.to(rise, {
+              px: 0,
+              duration: 0.8,
+              ease: "power3.out",
+              onUpdate: () => {
+                gsap.set(el, {
+                  opacity: 1 - rise.px / 40,
+                  yPercent:
+                    (rise.px / Math.max(el.offsetHeight, 1)) * 100
+                });
               }
-            );
+            });
           },
           kill: () => tween && tween.kill()
         };
@@ -247,15 +248,48 @@
 
     };
 
-    /* Wait two frames before watching the scroll: after
-       a page transition ScrollTrigger can still hold the
-       old page's scroll position for a moment, which
-       would reveal rows far below the screen at once. */
+    /* Watch where each row really is on screen. Lazy
+       images have no height until they load, so start
+       points measured up front sit far too high on a
+       phone and rows lower down "reveal" off screen
+       before anyone reaches them. An IntersectionObserver
+       always reads the live layout. A row reveals once
+       its top passes 85% down the screen, or once it is
+       already above the screen. */
+    const observer = new IntersectionObserver((entries) => {
+
+      entries.forEach((entry) => {
+
+        if (
+          entry.isIntersecting ||
+          entry.boundingClientRect.top < 0
+        ) {
+          observer.unobserve(entry.target);
+          revealThrough(items.indexOf(entry.target));
+        }
+
+      });
+
+    }, { rootMargin: "0px 0px -15% 0px" });
+
+    /* Rows that never get 85% up the screen (the footer)
+       reveal when the page reaches the bottom. */
+    const atBottom = () => {
+      if (
+        window.scrollY + window.innerHeight >=
+        document.documentElement.scrollHeight - 2
+      ) {
+        revealThrough(items.length - 1);
+        window.removeEventListener("scroll", atBottom);
+      }
+    };
+
+    /* Wait two frames before watching: after a page
+       transition the old page's scroll position can
+       hold for a moment. */
     requestAnimationFrame(() => requestAnimationFrame(() => {
 
       if (!page.isConnected) return;
-
-      ScrollTrigger.update();
 
       page.querySelectorAll("img").forEach((img) => {
         if (!img.complete) {
@@ -263,41 +297,24 @@
         }
       });
 
-      items.forEach((el, i) => {
+      items.forEach((el) => observer.observe(el));
 
-        triggers.push(ScrollTrigger.create({
-
-          trigger: el,
-
-          /* 85% down the screen, or the bottom of the
-             page for rows that never get that high. */
-          start: () =>
-            Math.min(
-              el.getBoundingClientRect().top +
-                window.scrollY -
-                window.innerHeight * 0.85,
-              ScrollTrigger.maxScroll(window) - 2
-            ),
-
-          once: true,
-
-          invalidateOnRefresh: true,
-
-          onEnter: () => revealThrough(i)
-
-        }));
-
-      });
+      window.addEventListener("scroll", atBottom, { passive: true });
 
     }));
+
+    cleanups.push(() => {
+      observer.disconnect();
+      window.removeEventListener("scroll", atBottom);
+    });
 
   }
 
 
   function destroyWorkReveal() {
 
-    triggers.forEach((trigger) => trigger.kill());
-    triggers = [];
+    cleanups.forEach((cleanup) => cleanup());
+    cleanups = [];
 
     tweens.forEach((tween) => tween.kill());
     tweens = [];
