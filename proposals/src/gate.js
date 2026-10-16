@@ -224,6 +224,7 @@ const GATE_JS = `
   function unlock(go){
     gate.classList.add('ok');if(err)err.textContent='';btn.textContent='Opening…';
     wave=performance.now();
+    try{sessionStorage.setItem('jtp-unlock','1');}catch(e){}
     if(still){go();return;}
     setTimeout(go,1100);
   }

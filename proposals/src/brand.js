@@ -21,7 +21,7 @@ export const MARK_SVG = `<svg viewBox="-12.34 0 350.45 267" aria-hidden="true"><
 export const LEAF = 'M66.59 176.845C79.129 126.353 108.205 81.51 149.186 49.461 190.168 17.412 240.697 0 292.722 0H538.909L472.319 268.155C459.78 318.647 430.704 363.49 389.723 395.539 348.741 427.588 298.212 445 246.187 445H0Z';
 export const TRIO_SVG = `<svg viewBox="0 0 1100 916" aria-hidden="true"><path d="${LEAF}" transform="translate(0 471)"/><path d="${LEAF}" transform="translate(455 471)"/><path d="${LEAF}" transform="translate(568 0)"/></svg>`;
 
-const leafUri = (fill) =>
+export const leafUri = (fill) =>
   `url("data:image/svg+xml,${encodeURIComponent(`<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 539 445'><path fill='${fill}' d='${LEAF}'/></svg>`)}")`;
 
 export const BRAND_CSS = `

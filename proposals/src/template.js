@@ -2,7 +2,7 @@
 // Everything that comes from proposal data goes through esc(), so a proposal
 // file can never inject markup into the page.
 
-import { BRAND_CSS, FONT_FACES, MARK_SVG, TRIO_SVG } from './brand.js';
+import { BRAND_CSS, FONT_FACES, MARK_SVG, TRIO_SVG, leafUri } from './brand.js';
 
 export const esc = (v) =>
   String(v ?? '')
@@ -23,6 +23,17 @@ function section(id, n, name, inner, extraClass = '') {
   <div class="wrap">${inner}</div>
 </section>`;
 }
+
+// Arriving from the unlock screen: the lime leaf field it ends on lifts away
+// on the brand slant to reveal the cover.
+const CURTAIN_CSS = `
+.curtain{display:none}
+.from-unlock .curtain{display:block;position:fixed;inset:-10% 0;z-index:100;pointer-events:none;
+  background:#0A0F12 ${leafUri('#DAF40A')} 0 0/88px 73px;
+  transform-origin:0 0;animation:curtain .9s cubic-bezier(.7,0,.2,1) .15s forwards}
+@keyframes curtain{to{transform:translateY(-110%) skewY(-6deg)}}
+@media (prefers-reduced-motion:reduce){.from-unlock .curtain{animation:none;display:none}}
+`;
 
 export function renderProposal(d, { previewBanner = '', selfHostedFonts = false } = {}) {
   const theme = d.theme === 'light' ? 'light' : 'dark';
@@ -195,9 +206,11 @@ export function renderProposal(d, { previewBanner = '', selfHostedFonts = false 
 <title>${esc(String(d.title || 'Proposal').replace(/\s*\n\s*/g, ' '))} · ${esc(d.client)} · JT Creative</title>
 <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500&family=Instrument+Serif:ital@1&family=Unbounded:wght@500;700&display=swap" rel="stylesheet">
-<style>${selfHostedFonts ? FONT_FACES : ''}${BRAND_CSS}</style>
+<style>${selfHostedFonts ? FONT_FACES : ''}${BRAND_CSS}${CURTAIN_CSS}</style>
+<script>try{if(sessionStorage.getItem('jtp-unlock')){sessionStorage.removeItem('jtp-unlock');document.documentElement.classList.add('from-unlock');}}catch(e){}</script>
 </head>
 <body>
+<div class="curtain" aria-hidden="true"></div>
 ${previewBanner}
 <header class="topbar">
   <a class="mark" href="#cover" aria-label="Back to top">${MARK_SVG}</a>
