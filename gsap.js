@@ -1286,7 +1286,9 @@ function initLoader(container) {
     const token = name => themeStyle.getPropertyValue(name).trim();
     const textColor = token("--color--text-primary") || "#F7F7F7";
     // Lime on dark; the theme maps the accent to ink on light and vibe.
-    const dotColor = token("--color--accent") || "#DAF40A";
+    // A theme can set --loader-dot-color to keep the dot lime anyway.
+    const dotColor =
+      token("--loader-dot-color") || token("--color--accent") || "#DAF40A";
     const display =
       (leftText && getComputedStyle(leftText).fontFamily) ||
       '"Druk Wide Web", Verdana, sans-serif';
@@ -1343,6 +1345,9 @@ function initLoader(container) {
 
     // Hand the exit the new pieces.
     dot = dotInk;
+    // The logo is one color: once the dot lands it matches the J,
+    // and the exit turns it back to the dot color for the takeover.
+    dot.dataset.takeoverColor = dotColor;
     jLogo = markSvg;
     leftText = null;
     rightText = null;
@@ -1425,7 +1430,7 @@ function initLoader(container) {
       gsap.set(words, { autoAlpha: 0 });
       gsap.set(jPath, { y: 0 });
       wordsTL.set(dotBox, to(markDotBox), 0)
-        .set(dot, { autoAlpha: 1, scale: 1 }, 0)
+        .set(dot, { autoAlpha: 1, scale: 1, color: textColor }, 0)
         .to(progress, count(1.2), 0)
         .to({}, { duration: 0.4 });
       return;
@@ -1453,7 +1458,8 @@ function initLoader(container) {
     // LAUNCH. rolls out, the J rolls up, and the dot lands as the J's dot.
     wordsTL.to(words[words.length - 1], { yPercent: -110, duration: roll, ease }, t)
       .to(jPath, { y: 0, duration: 0.8, ease: "power3.out" }, t + 0.3)
-      .to(dotBox, { ...to(markDotBox), duration: 0.8, ease: "power3.inOut" }, t + 0.05);
+      .to(dotBox, { ...to(markDotBox), duration: 0.8, ease: "power3.inOut" }, t + 0.05)
+      .to(dot, { color: textColor, duration: 0.25, ease: "power1.out" }, t + 0.7);
 
     t += 0.95;
 
@@ -2043,6 +2049,20 @@ if (heroLayout) {
 
    STARTS AT SAME TIME AS EXIT
 ===================================================== */
+
+if (dot.dataset.takeoverColor) {
+
+  exitTL.to(
+    dot,
+    {
+      color: dot.dataset.takeoverColor,
+      duration: 0.2,
+      ease: "power1.out"
+    },
+    0
+  );
+
+}
 
 exitTL.to(
   dot,
