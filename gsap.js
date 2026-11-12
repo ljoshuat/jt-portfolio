@@ -142,10 +142,11 @@ function initHome(
 
 
     /*
-     * PREVIEW: ?grid plays the loader every time,
-     * with the tonal badge grid behind it.
+     * PREVIEW: ?grid in the URL plays the loader every time.
+     * (The grid became the default look, and this check then
+     * made the loader replay on every load; fixed 2026-11-12.)
      */
-    if (loaderGridPreview()) {
+    if (/[?&]grid(=|&|$)/.test(window.location.search)) {
       hasPlayed = null;
     }
 
