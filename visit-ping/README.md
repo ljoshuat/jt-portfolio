@@ -1,6 +1,6 @@
 # Visit ping
 
-Posts a Slack message when someone new visits www.jtcreative.design:
+Posts a Slack message when someone new visits www.thejt.studio (old jtcreative.design links redirect there):
 city/region/country, page, where they came from, device. No Google Analytics,
 no cookies, no raw IP stored or sent anywhere.
 
