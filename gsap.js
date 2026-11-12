@@ -1522,23 +1522,75 @@ function initLoader(container) {
     const hold = 0.5;
     const ease = "power3.inOut";
 
+    /*
+     * The word rolls and the dot's slide run as browser
+     * animations (2026-11-12), so the phone's compositor
+     * plays them even while the page is still busy loading
+     * behind the loader. GSAP only says when each one starts.
+     * Curves match power3.out and power3.inOut.
+     */
+    const OUT = "cubic-bezier(0.25, 1, 0.5, 1)";
+    const IN_OUT = "cubic-bezier(0.76, 0, 0.24, 1)";
+    const native = typeof stage.animate === "function";
+
+    function rollWord(el, from, to, curve, gsapEase) {
+      if (!native) {
+        gsap.fromTo(el, { yPercent: from }, { yPercent: to, duration: roll, ease: gsapEase });
+        return;
+      }
+      gsap.set(el, { yPercent: to });
+      el.animate(
+        [
+          { transform: "translate(0, " + from + "%)" },
+          { transform: "translate(0, " + to + "%)" }
+        ],
+        { duration: roll * 1000, easing: curve }
+      );
+    }
+
+    let dotAt = null;
+
+    function slideDot(i) {
+      const next = stopBox(i);
+      if (!native || !dotAt) {
+        gsap.to(dotBox, { ...next, duration: roll, ease });
+        dotAt = next;
+        return;
+      }
+      const from = dotAt;
+      dotAt = next;
+      gsap.set(dotBox, next);
+      dotBox.animate(
+        [
+          { transform: "translate(" + from.x + "px, " + from.y + "px)" },
+          { transform: "translate(" + next.x + "px, " + next.y + "px)" }
+        ],
+        { duration: roll * 1000, easing: IN_OUT }
+      );
+    }
+
     // DESIGN. arrives and the dot pops in as its period.
-    wordsTL.to(words[0], { yPercent: 0, duration: roll, ease: "power3.out" }, 0.15)
-      .set(dotBox, to(() => stopBox(0)), 0.5)
+    wordsTL.call(() => rollWord(words[0], 110, 0, OUT, "power3.out"), null, 0.15)
+      .call(() => {
+        dotAt = stopBox(0);
+        gsap.set(dotBox, dotAt);
+      }, null, 0.5)
       .to(dot, { autoAlpha: 1, scale: 1, duration: 0.45, ease: "back.out(2.5)" }, 0.5);
 
     let t = 0.15 + roll + hold;
 
     // Each word rolls up and out as the next rolls in; the dot slides to the new end.
     for (let i = 1; i < words.length; i++) {
-      wordsTL.to(words[i - 1], { yPercent: -110, duration: roll, ease }, t)
-        .to(words[i], { yPercent: 0, duration: roll, ease }, t)
-        .to(dotBox, { ...to(() => stopBox(i)), duration: roll, ease }, t);
+      wordsTL.call(() => {
+        rollWord(words[i - 1], 0, -110, IN_OUT, ease);
+        rollWord(words[i], 110, 0, IN_OUT, ease);
+        slideDot(i);
+      }, null, t);
       t += roll + hold;
     }
 
     // LAUNCH. rolls out, the J rolls up, and the dot lands as the J's dot.
-    wordsTL.to(words[words.length - 1], { yPercent: -110, duration: roll, ease }, t)
+    wordsTL.call(() => rollWord(words[words.length - 1], 0, -110, IN_OUT, ease), null, t)
       .to(jPath, { y: 0, duration: 0.8, ease: "power3.out" }, t + 0.3)
       .to(dotBox, { ...to(markDotBox), duration: 0.8, ease: "power3.inOut" }, t + 0.05)
       .to(dot, { color: textColor, duration: 0.25, ease: "power1.out" }, t + 0.7);
