@@ -1,6 +1,6 @@
 <!-- Visit ping: Slack message for each new visitor, with the pages they view, panels they open and theme switches as thread replies, and time on site.
      No cookies, no Google Analytics.
-     Skip your own visits: open https://www.jtcreative.design/?noping once on each of your browsers.
+     Skip your own visits: open https://www.thejt.studio/?noping once on each of your browsers.
      Turn it back on with ?ping -->
 <script>
 (function () {
@@ -10,7 +10,7 @@
     if (/[?&]noping\b/.test(q)) localStorage.setItem('jt-noping', '1');
     if (/[?&]ping\b/.test(q)) localStorage.removeItem('jt-noping');
     if (localStorage.getItem('jt-noping') || navigator.webdriver) return;
-    if (!/(^|\.)jtcreative\.design$/.test(location.hostname)) return;
+    if (!/(^|\.)(jtcreative\.design|thejt\.studio)$/.test(location.hostname)) return;
     var ss = sessionStorage;
     var sid = ss.getItem('jt-visit');
     if (!sid) { sid = Math.random().toString(36).slice(2) + Date.now().toString(36); ss.setItem('jt-visit', sid); }

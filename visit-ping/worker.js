@@ -1,4 +1,4 @@
-// Visit ping: receives page-view beacons from jtcreative.design. The first
+// Visit ping: receives page-view beacons from thejt.studio (and jtcreative.design). The first
 // page of a visit posts a Slack message with the visitor's approximate
 // location; later pages in the same visit are added as thread replies under it.
 // Location comes from Cloudflare's own edge data (request.cf); the raw IP is
@@ -9,7 +9,7 @@
 //   SLACK_CHANNEL      channel id for chat.postMessage (e.g. C0C7NJ40V9R)
 //   SLACK_WEBHOOK_URL  (secret) fallback when no bot token: first page only, no threads
 //   VISITS             KV namespace: visit id -> Slack thread ts, IP-hash dedupe
-//   ALLOWED_ORIGINS    comma list, default "https://www.jtcreative.design,https://jtcreative.design"
+//   ALLOWED_ORIGINS    comma list, default "https://www.thejt.studio,https://thejt.studio,https://www.jtcreative.design,https://jtcreative.design"
 //   (time on site is added to the first message with chat.update when the tab is hidden)
 //   MAX_PER_HOUR       optional cap on new-visitor posts per hour, default 30
 
@@ -24,7 +24,7 @@ let hourCount = 0;
 
 export default {
   async fetch(request, env, ctx) {
-    const allowed = (env.ALLOWED_ORIGINS || 'https://www.jtcreative.design,https://jtcreative.design')
+    const allowed = (env.ALLOWED_ORIGINS || 'https://www.thejt.studio,https://thejt.studio,https://www.jtcreative.design,https://jtcreative.design')
       .split(',').map(s => s.trim());
     const origin = request.headers.get('Origin') || '';
     const cors = {
@@ -179,7 +179,7 @@ function referrerLabel(ref) {
   try {
     const u = new URL(ref);
     const host = u.hostname.replace(/^www\./, '');
-    if (/jtcreative\.design$/.test(host)) return 'Direct / unknown';
+    if (/(jtcreative\.design|thejt\.studio)$/.test(host)) return 'Direct / unknown';
     if (/(^|\.)linkedin\.com$|lnkd\.in$/.test(host)) return 'LinkedIn';
     if (/(^|\.)google\./.test(host)) return 'Google';
     if (/(^|\.)bing\.com$/.test(host)) return 'Bing';
