@@ -98,16 +98,50 @@ function initBunnyVideos(container = document) {
     video.playsInline = true;
 
 
+    /* Card hover videos never play on touch
+       screens (see HOVER VIDEOS), so don't
+       download them there. */
+
+    if (
+      window.matchMedia &&
+      window.matchMedia("(hover: none)").matches &&
+      video.classList.contains("bunny-hover") &&
+      video.closest(".video-card")
+    ) {
+
+      video.preload = "none";
+
+      // Stop a download the page already started.
+      if (
+        video.networkState !==
+        HTMLMediaElement.NETWORK_EMPTY
+      ) {
+
+        video
+          .querySelectorAll("source")
+          .forEach((s) => s.removeAttribute("src"));
+
+        video.removeAttribute("src");
+
+        video.load();
+
+      }
+
+      return;
+
+    }
+
+
     /* -----------------------------------------
        HOVER VIDEOS WAIT
 
-       Project-card hover clips (21 of them on a
-       case study page, mostly 1080p) used to
-       download in full as the page opened. That
-       starved the page's own autoplay videos,
-       which sat on their first frame. They now
-       hold off until their card nears the
-       viewport (see HOVER VIDEOS).
+       The page HTML starts every card hover clip
+       downloading (21 of them on a case study
+       page, mostly 1080p), which starved the
+       page's own autoplay videos: the Westlake
+       studio mosaic sat on its first frame. The
+       clips now give up their source until their
+       card nears the viewport (see HOVER VIDEOS).
     ----------------------------------------- */
 
     if (isHoverVideo(video)) {
@@ -121,10 +155,7 @@ function initBunnyVideos(container = document) {
 
     /* Autoplay videos get the bandwidth. */
 
-    if (
-      video.autoplay ||
-      video.hasAttribute("autoplay")
-    ) {
+    if (video.hasAttribute("autoplay")) {
 
       video.preload = "auto";
 
@@ -147,8 +178,17 @@ function initBunnyVideos(container = document) {
       HTMLMediaElement.NETWORK_EMPTY
     ) {
 
+      const sources = Array.from(
+        video.querySelectorAll("source")
+      );
+
       const source =
-        video.querySelector("source");
+        sources.find(
+          (s) =>
+            !s.media ||
+            !window.matchMedia ||
+            window.matchMedia(s.media).matches
+        ) || sources[0];
 
       if (
         source &&
@@ -192,6 +232,18 @@ function initBunnyVideos(container = document) {
   );
 
 
+  /* Touch screens (phones, tablets) have no real
+     hover: a tap fires mouseenter with no
+     mouseleave, which left the hover video
+     running over the thumbnail (often still
+     black). They keep the thumbnail, and the
+     videos aren't warmed or played. */
+
+  const noHover =
+    window.matchMedia &&
+    window.matchMedia("(hover: none)").matches;
+
+
   cards.forEach((card) => {
 
     const video =
@@ -211,8 +263,23 @@ function initBunnyVideos(container = document) {
     card.dataset.videoInitialized = "true";
 
 
+    if (
+      noHover &&
+      video.classList.contains("bunny-hover")
+    ) {
+
+      video.pause();
+
+      return;
+
+    }
+
+
     /* -----------------------------------------
        WARM VIDEO
+       Hover videos load as their card nears the
+       viewport, so the page doesn't download
+       every one up front.
     ----------------------------------------- */
 
     const warm = () => {
@@ -240,11 +307,7 @@ function initBunnyVideos(container = document) {
 
     };
 
-
-    if (
-      isHoverVideo(video) &&
-      "IntersectionObserver" in window
-    ) {
+    if ("IntersectionObserver" in window) {
 
       const io = new IntersectionObserver(
         (entries) => {
@@ -257,7 +320,7 @@ function initBunnyVideos(container = document) {
           }
 
         },
-        { rootMargin: "400px 0px" }
+        { rootMargin: "300px 0px" }
       );
 
       io.observe(card);
@@ -312,8 +375,8 @@ function initBunnyVideos(container = document) {
 
    A muted autoplay video that was still loading
    when the browser tried to start it can sit
-   paused on its first frame. Each autoplay video
-   gets play() again when it has data and when it
+   paused on its first frame. Each one gets
+   play() again when it has data and when it
    scrolls into view. Sliders, slideshows and the
    JT player run their own playback and are left
    alone.
