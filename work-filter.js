@@ -27,6 +27,8 @@
    and A to Z by project title (.feat-title, or data-sort-title on a
    card). It gets .is-active + aria-pressed while A to Z is on, keeps
    the current filter, and ?sort=az in the URL turns it on at load.
+   data-pin-first="<slug>[, <slug>]" on the list puts those projects
+   first in the default order.
 ========================================================= */
 
 (() => {
@@ -71,7 +73,25 @@
 
       /* Sort: remember the Webflow order so A to Z can be undone */
       const sortBtn = bar.querySelector("[data-work-sort]");
-      const original = items.slice();
+      /* data-pin-first="slug, slug" on the list moves those projects
+         (matched by their /work/<slug> link) to the front of the
+         default order, ahead of the CMS order */
+      const pins = (list.getAttribute("data-pin-first") || "")
+        .split(",")
+        .map((s) => s.trim())
+        .filter(Boolean);
+      const pinIndex = (item) => {
+        const href = (item.querySelector("a[href]") || {}).getAttribute
+          ? item.querySelector("a[href]").getAttribute("href")
+          : "";
+        const slug = (href || "").replace(/[?#].*$/, "").replace(/\/$/, "").split("/").pop();
+        const i = pins.indexOf(slug);
+        return i === -1 ? pins.length : i;
+      };
+      const original = items
+        .map((item, i) => [item, i])
+        .sort((a, b) => pinIndex(a[0]) - pinIndex(b[0]) || a[1] - b[1])
+        .map(([item]) => item);
       const titleOf = (item) => {
         const el = item.querySelector("[data-sort-title], .feat-title");
         const raw =
@@ -384,6 +404,8 @@
         sortBtn.classList.add(ACTIVE);
         sortBtn.setAttribute("aria-pressed", "true");
         order(true);
+      } else if (pins.length) {
+        order(false);
       }
 
       select(start, true);
