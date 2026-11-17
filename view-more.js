@@ -19,19 +19,28 @@
       return clean(new URL(link.getAttribute("href"), location.origin).pathname);
     }
   
-    function pick(items, index, count) {
-      if (index < 0) return items.slice(0, count);
-      const picked = [];
-      const n = items.length;
-      for (let step = 1; picked.length < count && step < n; step += 1) {
-        const prev = items[(index - step + n) % n];
-        const next = items[(index + step) % n];
-        if (!picked.includes(prev)) picked.push(prev);
-        if (picked.length < count && !picked.includes(next)) picked.push(next);
+    let lastShown = [];
+
+    function shuffle(list) {
+      const out = list.slice();
+      for (let i = out.length - 1; i > 0; i -= 1) {
+        const j = Math.floor(Math.random() * (i + 1));
+        [out[i], out[j]] = [out[j], out[i]];
       }
+      return out;
+    }
+
+    // Random projects, never the page you're on, and not the ones shown
+    // on the previous case study when there are enough others to choose from.
+    function pick(items, index, count) {
+      const others = items.filter((_, i) => i !== index);
+      const fresh = others.filter((item) => !lastShown.includes(pathOf(item)));
+      const pool = fresh.length >= count ? fresh : others;
+      const picked = shuffle(pool).slice(0, count);
+      lastShown = picked.map(pathOf);
       return picked;
     }
-  
+
     function rollLink(link) {
       if (link.dataset.rollReady || typeof gsap === "undefined") return;
       if (window.matchMedia("(prefers-reduced-motion: reduce)").matches) return;
