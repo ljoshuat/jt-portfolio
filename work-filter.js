@@ -22,6 +22,11 @@
    from data-page-size on the list, default 6). Filters reset it.
    The sticky bar follows the bottom of .nav-component, and changing
    filters scrolls the grid's first row back into view.
+
+   Sort: [data-work-sort] toggles the grid between its Webflow order
+   and A to Z by project title (.feat-title, or data-sort-title on a
+   card). It gets .is-active + aria-pressed while A to Z is on, keeps
+   the current filter, and ?sort=az in the URL turns it on at load.
 ========================================================= */
 
 (() => {
@@ -62,6 +67,31 @@
   
       let current = "all";
       let busy = null;
+
+      /* Sort: remember the Webflow order so A to Z can be undone */
+      const sortBtn = bar.querySelector("[data-work-sort]");
+      const original = items.slice();
+      const titleOf = (item) => {
+        const el = item.querySelector("[data-sort-title], .feat-title");
+        const raw =
+          (el && (el.getAttribute("data-sort-title") || el.textContent)) || "";
+        return raw.replace(/\s+/g, " ").trim();
+      };
+      const byTitle = original.slice().sort((a, b) =>
+        titleOf(a).localeCompare(titleOf(b), undefined, {
+          sensitivity: "base",
+          numeric: true,
+        })
+      );
+      let sorted = false;
+
+      /* Put the cards (hidden ones too) in the chosen order, both in
+         the page and in the list the filter walks */
+      function order(az) {
+        const next = az ? byTitle : original;
+        items.splice(0, items.length, ...next);
+        next.forEach((item) => list.appendChild(item));
+      }
   
       /* Buttons: hide services nothing uses, make them accessible */
       buttons.forEach((btn) => {
@@ -101,8 +131,44 @@
           const on = btn.getAttribute("data-filter").trim() === slug;
           btn.classList.toggle(ACTIVE, on);
           btn.setAttribute("aria-pressed", on ? "true" : "false");
+          if (on) revealButton(btn);
         });
       }
+
+      /* On phones the bar is one row that scrolls sideways (CSS in
+         site head). Mark the edges so the fades only show where more
+         filters are hidden, and slide the active filter into view. */
+      function scrollable() {
+        return bar.scrollWidth > bar.clientWidth + 2;
+      }
+
+      function updateEdges() {
+        if (!bar.isConnected) return;
+        const end = bar.scrollWidth - bar.clientWidth;
+        bar.classList.toggle("is-scrolled", scrollable() && bar.scrollLeft > 2);
+        bar.classList.toggle(
+          "is-scroll-end",
+          !scrollable() || bar.scrollLeft >= end - 2
+        );
+      }
+
+      function revealButton(btn) {
+        if (!scrollable()) return;
+        const barBox = bar.getBoundingClientRect();
+        const btnBox = btn.getBoundingClientRect();
+        const left =
+          bar.scrollLeft +
+          (btnBox.left - barBox.left) -
+          (barBox.width - btnBox.width) / 2;
+        bar.scrollTo({
+          left: Math.max(0, left),
+          behavior: reduceMotion ? "auto" : "smooth",
+        });
+      }
+
+      bar.addEventListener("scroll", updateEdges, { passive: true });
+      window.addEventListener("resize", updateEdges);
+      updateEdges();
   
       function setUrl(slug) {
         const url = new URL(window.location.href);
@@ -211,20 +277,25 @@
           setUrl(slug);
           scrollToList();
         }
-  
+        swap(null, instant);
+      }
+
+      /* Out: dim and drop the current cards, then run `change`
+         (e.g. reorder), show the matching ones and bring them in
+         with a stagger */
+      function swap(change, instant = false) {
         const hasGsap = typeof gsap !== "undefined";
-  
+
         if (instant || reduceMotion || !hasGsap) {
-          apply(slug);
+          if (change) change();
+          apply(current);
           return;
         }
-  
+
         if (busy) busy.kill();
-  
+
         const visible = items.filter((i) => i.style.display !== "none");
-  
-        /* Out: dim and drop the current cards, then swap and bring
-           the matching ones in with a stagger */
+
         busy = gsap
           .timeline()
           .to(visible, {
@@ -235,7 +306,8 @@
             stagger: 0.02,
           })
           .add(() => {
-            const shown = apply(slug);
+            if (change) change();
+            const shown = apply(current);
             gsap.fromTo(
               shown,
               { opacity: 0, y: 30 },
@@ -250,16 +322,62 @@
             );
           });
       }
-  
-      /* Initial state: ?service=<slug>, else All */
-      const fromUrl = new URLSearchParams(window.location.search).get(
-        "service"
-      );
+
+      /* Sort toggle: Webflow order <-> A to Z, keeping the filter */
+      function setSort(az, instant = false) {
+        if (az === sorted && !instant) return;
+        sorted = az;
+        if (sortBtn) {
+          sortBtn.classList.toggle(ACTIVE, az);
+          sortBtn.setAttribute("aria-pressed", az ? "true" : "false");
+        }
+        if (!instant) {
+          const url = new URL(window.location.href);
+          if (az) url.searchParams.set("sort", "az");
+          else url.searchParams.delete("sort");
+          history.replaceState(history.state, "", url);
+          limit = pageSize;
+          scrollToList();
+        }
+        swap(() => order(az), instant);
+      }
+
+      if (sortBtn) {
+        if (sortBtn.tagName !== "BUTTON") {
+          sortBtn.setAttribute("role", "button");
+          sortBtn.setAttribute("tabindex", "0");
+        }
+        sortBtn.setAttribute("aria-pressed", "false");
+        if (!sortBtn.getAttribute("aria-label")) {
+          sortBtn.setAttribute("aria-label", "Sort projects A to Z");
+        }
+        sortBtn.addEventListener("click", (e) => {
+          e.preventDefault();
+          setSort(!sorted);
+        });
+        sortBtn.addEventListener("keydown", (e) => {
+          if (e.key === "Enter" || e.key === " ") {
+            e.preventDefault();
+            setSort(!sorted);
+          }
+        });
+      }
+
+      /* Initial state: ?service=<slug>, else All; ?sort=az */
+      const params = new URLSearchParams(window.location.search);
+      const fromUrl = params.get("service");
       const start =
         fromUrl && buttons.some((b) => b.getAttribute("data-filter") === fromUrl)
           ? fromUrl
           : "all";
-  
+
+      if (sortBtn && params.get("sort") === "az") {
+        sorted = true;
+        sortBtn.classList.add(ACTIVE);
+        sortBtn.setAttribute("aria-pressed", "true");
+        order(true);
+      }
+
       select(start, true);
       followNav(bar);
     }
