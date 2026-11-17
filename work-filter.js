@@ -67,6 +67,7 @@
   
       let current = "all";
       let busy = null;
+      let pending = null;
 
       /* Sort: remember the Webflow order so A to Z can be undone */
       const sortBtn = bar.querySelector("[data-work-sort]");
@@ -287,12 +288,18 @@
         const hasGsap = typeof gsap !== "undefined";
 
         if (instant || reduceMotion || !hasGsap) {
+          if (pending) { pending(); pending = null; }
           if (change) change();
           apply(current);
           return;
         }
 
-        if (busy) busy.kill();
+        /* A swap cut short still owes its change (e.g. a reorder) */
+        if (busy) {
+          busy.kill();
+          if (pending) pending();
+        }
+        pending = change;
 
         const visible = items.filter((i) => i.style.display !== "none");
 
@@ -306,6 +313,7 @@
             stagger: 0.02,
           })
           .add(() => {
+            pending = null;
             if (change) change();
             const shown = apply(current);
             gsap.fromTo(
