@@ -46,6 +46,7 @@
       if (!bar || !list || bar.dataset.filterReady) return;
       bar.dataset.filterReady = "true";
   
+      const track = bar.querySelector("[data-work-filter-scroll]") || bar;
       const buttons = [...bar.querySelectorAll("[data-filter]")];
       const items = [...list.querySelectorAll(".w-dyn-item")].filter(
         (item) => item.parentElement === list
@@ -156,38 +157,40 @@
         });
       }
 
-      /* On phones the bar is one row that scrolls sideways (CSS in
-         site head). Mark the edges so the fades only show where more
-         filters are hidden, and slide the active filter into view. */
+      /* On phones the services row scrolls sideways (CSS in site
+         head): [data-work-filter-scroll] if the bar has one, else the
+         whole bar. Sort and Snippets sit on their own row. Mark the
+         edges so the fades only show where more filters are hidden,
+         and slide the active filter into view. */
       function scrollable() {
-        return bar.scrollWidth > bar.clientWidth + 2;
+        return track.scrollWidth > track.clientWidth + 2;
       }
 
       function updateEdges() {
-        if (!bar.isConnected) return;
-        const end = bar.scrollWidth - bar.clientWidth;
-        bar.classList.toggle("is-scrolled", scrollable() && bar.scrollLeft > 2);
-        bar.classList.toggle(
+        if (!track.isConnected) return;
+        const end = track.scrollWidth - track.clientWidth;
+        track.classList.toggle("is-scrolled", scrollable() && track.scrollLeft > 2);
+        track.classList.toggle(
           "is-scroll-end",
-          !scrollable() || bar.scrollLeft >= end - 2
+          !scrollable() || track.scrollLeft >= end - 2
         );
       }
 
       function revealButton(btn) {
         if (!scrollable()) return;
-        const barBox = bar.getBoundingClientRect();
+        const barBox = track.getBoundingClientRect();
         const btnBox = btn.getBoundingClientRect();
         const left =
-          bar.scrollLeft +
+          track.scrollLeft +
           (btnBox.left - barBox.left) -
           (barBox.width - btnBox.width) / 2;
-        bar.scrollTo({
+        track.scrollTo({
           left: Math.max(0, left),
           behavior: reduceMotion ? "auto" : "smooth",
         });
       }
 
-      bar.addEventListener("scroll", updateEdges, { passive: true });
+      track.addEventListener("scroll", updateEdges, { passive: true });
       window.addEventListener("resize", updateEdges);
       updateEdges();
   
