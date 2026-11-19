@@ -12,7 +12,7 @@
    section[data-backflip-track]          (tall, e.g. 420vh)
      div (sticky)
        canvas[data-backflip]             (data-spacing, default 4)
-       [data-backflip-phase]             (optional label)
+       [data-backflip-phase]             (retired: removed on init)
      [data-backflip-step] x 4            (optional, gets .is-active)
    The track also gets --bf-progress (0-1) for CSS.
 
@@ -352,7 +352,9 @@
 
   function create(canvas) {
     const track = canvas.closest("[data-backflip-track]") || canvas.parentElement;
-    const phaseEl = track.querySelector("[data-backflip-phase]");
+    // The corner phase label (SET / LOAD / ...) is retired: it read as a
+    // stock "eyebrow". Drop any leftover [data-backflip-phase] node.
+    track.querySelectorAll("[data-backflip-phase]").forEach((el) => el.remove());
     const steps = [...track.querySelectorAll("[data-backflip-step]")];
     const cue = track.querySelector("[data-backflip-cue]");
     const ctx = canvas.getContext("2d");
@@ -417,11 +419,6 @@
 
       p = labelP;
       track.style.setProperty("--bf-progress", p.toFixed(4));
-      if (phaseEl) {
-        let label = PHASES[0][1];
-        PHASES.forEach(([at, name]) => { if (p >= at) label = name; });
-        if (phaseEl.textContent !== label) phaseEl.textContent = label;
-      }
       if (steps.length) {
         // One step per phase when counts match, otherwise equal slices
         let idx = Math.min(steps.length - 1, Math.floor(p * steps.length));
