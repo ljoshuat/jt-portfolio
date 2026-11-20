@@ -279,7 +279,10 @@ export async function mount(canvas, opts = {}) {
     if (pts.Hips) { const p = pts.Hips, s = 7; ctx.fillStyle = stroke; ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s); }
     // selection box with corner and edge handles
     const pad = 30;
-    const x0 = minmax[0] - pad, y0 = minmax[1] - pad - 10, x1 = minmax[2] + pad, y1 = minmax[3] + pad;
+    // keep the box and its 6px handles inside the canvas so nothing gets clipped
+    const m = 5;
+    const x0 = Math.max(m, minmax[0] - pad), y0 = Math.max(m, minmax[1] - pad - 10);
+    const x1 = Math.min(state.w - m - 1, minmax[2] + pad), y1 = Math.min(state.h - m - 1, minmax[3] + pad);
     ctx.globalAlpha = 0.55;
     ctx.strokeRect(Math.round(x0) + 0.5, Math.round(y0) + 0.5, Math.round(x1 - x0), Math.round(y1 - y0));
     ctx.globalAlpha = 1;
@@ -290,7 +293,9 @@ export async function mount(canvas, opts = {}) {
     });
   }
 
+  let camLift = -1;
   function resize() {
+    camLift = -1;
     const dpr = Math.min(2, window.devicePixelRatio || 1);
     const r = canvas.getBoundingClientRect();
     state.w = Math.max(1, Math.round(r.width));
@@ -337,6 +342,12 @@ export async function mount(canvas, opts = {}) {
       follow.z + Math.cos(az) * Math.cos(el) * dist,
     );
     camera.lookAt(follow);
+    // On tall (phone) stages sit the figure a little higher in the frame
+    const lift = portrait ? Math.round(state.h * 0.07) : 0;
+    if (lift !== camLift) {
+      camLift = lift;
+      if (lift) camera.setViewOffset(state.w, state.h, 0, lift, state.w, state.h); else camera.clearViewOffset();
+    }
 
     const col = post.uniforms.uColor.value.set(accentOf(canvas));
     post.uniforms.uInvert.value = (0.299 * col.r + 0.587 * col.g + 0.114 * col.b) < 0.35 ? 1 : 0;
