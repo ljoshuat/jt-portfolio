@@ -69,7 +69,7 @@ const HALFTONE = {
 };
 
 const EDGES = {
-  uniforms: { tN: { value: null }, tP: { value: null }, uOp: { value: 0 }, uPx: { value: new THREE.Vector2(1, 1) }, uW: { value: 1 }, uColor: { value: new THREE.Color("#d8f400") } },
+  uniforms: { tN: { value: null }, tP: { value: null }, uOp: { value: 0 }, uPx: { value: new THREE.Vector2(1, 1) }, uW: { value: 1 }, uCont: { value: 0 }, uColor: { value: new THREE.Color("#d8f400") } },
   vertexShader: HALFTONE.vertexShader,
   fragmentShader: /* glsl */ `
     uniform sampler2D tN;
@@ -77,16 +77,36 @@ const EDGES = {
     uniform float uOp;
     uniform vec2 uPx;
     uniform float uW;
+    uniform float uCont;
     uniform vec3 uColor;
     varying vec2 vUv;
-    vec4 S(vec2 o) { return texture2D(tN, vUv + o * uPx * uW); }
-    void main() {
-      vec4 c = S(vec2(0.0));
-      vec4 r = S(vec2(1.0, 0.0)), u = S(vec2(0.0, 1.0));
-      // one-sided differences keep lines a single pixel wide
+    // uPx is one texel of the 2x supersampled normal buffer
+    vec4 S(vec2 uv) { return texture2D(tN, uv); }
+    float edgeAt(vec2 uv) {
+      vec4 c = S(uv);
+      vec4 r = S(uv + vec2(uPx.x * uW, 0.0)), u = S(uv + vec2(0.0, uPx.y * uW));
       float sil = max(abs(c.a - r.a), abs(c.a - u.a));
-      float crease = (length(c.rgb - r.rgb) + length(c.rgb - u.rgb)) * 1.4 * min(c.a, min(r.a, u.a));
-      float e = max(sil, smoothstep(0.1, 0.3, crease));
+      float m = min(c.a, min(r.a, u.a));
+      float crease = (length(c.rgb - r.rgb) + length(c.rgb - u.rgb)) * 1.4 * m;
+      float e = max(sil, smoothstep(0.12, 0.32, crease));
+      if (uCont > 0.0) {
+        // cross-contours: faint iso-lines of the shading that wrap round the form
+        vec3 L = normalize(vec3(-0.45, 0.75, 0.5));
+        float k = 6.0;
+        float bc = floor(dot(c.rgb * 2.0 - 1.0, L) * k);
+        float br = floor(dot(r.rgb * 2.0 - 1.0, L) * k);
+        float bu = floor(dot(u.rgb * 2.0 - 1.0, L) * k);
+        float iso = (bc != br || bc != bu) ? 1.0 : 0.0;
+        e = max(e, iso * 0.45 * uCont * m);
+      }
+      return e;
+    }
+    void main() {
+      // average a 3x3 grid of sub-samples across the output pixel: smooth, anti-aliased lines
+      vec2 h = uPx * 0.67;
+      float e = 0.0;
+      for (int i = -1; i <= 1; i++) for (int j = -1; j <= 1; j++) e += edgeAt(vUv + vec2(float(i), float(j)) * h);
+      e = clamp(e / 9.0 * 1.6, 0.0, 1.0);
       vec4 photo = vec4(0.0);
       if (uOp > 0.0) { vec4 t = texture2D(tP, vUv); photo = vec4(pow(t.rgb, vec3(1.0 / 2.2)), t.a) * uOp; }
       gl_FragColor = mix(photo, vec4(uColor, 1.0), e);
@@ -351,12 +371,13 @@ export async function mount(canvas, opts = {}) {
 
     const col = post.uniforms.uColor.value.set(accentOf(canvas));
     post.uniforms.uInvert.value = (0.299 * col.r + 0.587 * col.g + 0.114 * col.b) < 0.35 ? 1 : 0;
-    const vector = state.mode === "lines" || state.mode === "overlay";
-    overlay.style.display = vector ? "" : "none";
+    const vector = state.mode === "lines" || state.mode === "overlay" || state.mode === "clean" || state.mode === "contour";
+    const bare = state.mode === "clean" || state.mode === "contour";
+    overlay.style.display = vector && !bare ? "" : "none";
     if (vector) {
       const dpr = renderer.getPixelRatio();
       const W = Math.round(state.w * dpr), H = Math.round(state.h * dpr);
-      if (rtN.width !== W || rtN.height !== H) { rtN.setSize(W, H); rtP.setSize(W, H); }
+      if (rtP.width !== W || rtP.height !== H) { rtN.setSize(W * 2, H * 2); rtP.setSize(W, H); }
       const withPhoto = state.mode === "overlay";
       edges.uniforms.uOp.value = withPhoto ? 0.6 : 0;
       if (withPhoto) {
@@ -364,8 +385,9 @@ export async function mount(canvas, opts = {}) {
         renderer.setRenderTarget(rtP); renderer.clear();
         renderer.render(scene, camera);
       }
-      edges.uniforms.uPx.value.set(1 / W, 1 / H);
-      edges.uniforms.uW.value = 1;
+      edges.uniforms.uPx.value.set(1 / (W * 2), 1 / (H * 2));
+      edges.uniforms.uW.value = 1.5;
+      edges.uniforms.uCont.value = state.mode === "contour" ? 1 : 0;
       edges.uniforms.uColor.value.copy(col);
       scene.overrideMaterial = normalMat;
       renderer.setRenderTarget(rtN); renderer.setClearColor(0x000000, 0); renderer.clear();
@@ -373,7 +395,7 @@ export async function mount(canvas, opts = {}) {
       scene.overrideMaterial = null;
       renderer.setRenderTarget(null); renderer.clear();
       renderer.render(edgeScene, postCam);
-      drawAnchors(col);
+      if (!bare) drawAnchors(col);
       return;
     }
     if (state.mode !== "dots") {

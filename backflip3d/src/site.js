@@ -72,7 +72,7 @@ function init(scope) {
     const track = canvas.closest("[data-backflip-track]") || canvas.parentElement;
     // the corner phase label is retired (it read as a stock eyebrow)
     track.querySelectorAll("[data-backflip-phase]").forEach((el) => el.remove());
-    mount(canvas, { src: cfg.glb, onProgress })
+    mount(canvas, { src: cfg.glb, onProgress, mode: canvas.dataset.mode || "lines" })
       .then((api) => { const stopCue = cueFor(track); live.push({ destroy() { stopCue(); api.destroy(); } }); })
       .catch((err) => { console.warn("[backflip3d]", err); if (canvas.isConnected) fallback(); })
       .finally(() => { delete c.__bf3dLoading; });
