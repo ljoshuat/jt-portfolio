@@ -335,7 +335,7 @@ export async function mount(canvas, opts = {}) {
     const az = THREE.MathUtils.degToRad(lerp(parseFloat(canvas.dataset.az0 ?? 90), parseFloat(canvas.dataset.az1 ?? 25), a));
     const el = THREE.MathUtils.degToRad(lerp(6, 14, Math.sin(Math.PI * a)));
     const portrait = state.h > state.w;
-    const dist = portrait ? 6.4 : 5.4;
+    const dist = portrait ? 5.2 : 5.4;
     camera.position.set(
       follow.x + Math.sin(az) * Math.cos(el) * dist,
       follow.y + Math.sin(el) * dist,
@@ -343,7 +343,7 @@ export async function mount(canvas, opts = {}) {
     );
     camera.lookAt(follow);
     // On tall (phone) stages sit the figure a little higher in the frame
-    const lift = portrait ? Math.round(state.h * 0.07) : 0;
+    const lift = portrait ? Math.round(state.h * 0.05) : 0;
     if (lift !== camLift) {
       camLift = lift;
       if (lift) camera.setViewOffset(state.w, state.h, 0, lift, state.w, state.h); else camera.clearViewOffset();
