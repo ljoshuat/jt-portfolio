@@ -263,8 +263,11 @@ export async function mount(canvas, opts = {}) {
     });
     ctx.lineWidth = 0.75;
     ctx.strokeStyle = stroke;
+    // joint nodes + pen paths only on tall (phone) stages; wide stages show the box alone
+    const nodes = !isDesk();
     // pen paths: smooth bezier curves through every chain, using the same handles
     ctx.globalAlpha = 0.8;
+    if (nodes) {
     CHAINS.forEach((ch) => {
       const P = ch.map((n) => pts[n]).filter(Boolean);
       if (P.length < 2) return;
@@ -297,8 +300,9 @@ export async function mount(canvas, opts = {}) {
       ctx.strokeRect(p[0] - s / 2 + 0.5, p[1] - s / 2 + 0.5, s - 1, s - 1);
     });
     if (pts.Hips) { const p = pts.Hips, s = 7; ctx.fillStyle = stroke; ctx.fillRect(p[0] - s / 2, p[1] - s / 2, s, s); }
+    }
     // selection box with corner and edge handles
-    const pad = 30;
+    const pad = nodes ? 30 : 40;
     // keep the box and its 6px handles inside the canvas so nothing gets clipped
     const m = 5;
     const x0 = Math.max(m, minmax[0] - pad), y0 = Math.max(m, minmax[1] - pad - 10);
@@ -312,6 +316,9 @@ export async function mount(canvas, opts = {}) {
       ctx.strokeRect(Math.round(x) - 2.5, Math.round(y) - 2.5, 6, 6);
     });
   }
+
+  // desktop layouts (side-by-side column) get a bigger figure and the box without joint nodes
+  const isDesk = () => window.innerWidth >= 992;
 
   let camLift = -1;
   function resize() {
@@ -355,7 +362,7 @@ export async function mount(canvas, opts = {}) {
     const az = THREE.MathUtils.degToRad(lerp(parseFloat(canvas.dataset.az0 ?? 90), parseFloat(canvas.dataset.az1 ?? 25), a));
     const el = THREE.MathUtils.degToRad(lerp(6, 14, Math.sin(Math.PI * a)));
     const portrait = state.h > state.w;
-    const dist = portrait ? 5.2 : 5.4;
+    const dist = isDesk() ? 4.6 : portrait ? 5.2 : 5.4;
     camera.position.set(
       follow.x + Math.sin(az) * Math.cos(el) * dist,
       follow.y + Math.sin(el) * dist,
@@ -363,7 +370,7 @@ export async function mount(canvas, opts = {}) {
     );
     camera.lookAt(follow);
     // On tall (phone) stages sit the figure a little higher in the frame
-    const lift = portrait ? Math.round(state.h * 0.05) : 0;
+    const lift = portrait && !isDesk() ? Math.round(state.h * 0.05) : 0;
     if (lift !== camLift) {
       camLift = lift;
       if (lift) camera.setViewOffset(state.w, state.h, 0, lift, state.w, state.h); else camera.clearViewOffset();
