@@ -49,7 +49,7 @@ html,body{margin:0;height:100%;background:#050708;color:var(--paper);font-family
     <input type="range" id="scrub" min="0" max="1000" value="0">
     <span id="shotname"></span>
   </div>
-  <div id="log">Draft 1. Hard cuts on the beat, colour-bar wipes between chapters, loops after the end card. Clips stream from Bunny at 720p, so the first loop can stutter while they buffer; the second loop is the real feel.</div>
+  <div id="log">Draft 2. Hard cuts on the beat, colour-bar wipes between chapters, no end card: the last shot wipes straight back into the first. Clips stream from Bunny at 720p, so the first loop can stutter while they buffer; the second loop is the real feel.</div>
 </div>
 <script>
 const HOST='https://vz-348bfc5b-acc.b-cdn.net/';
@@ -60,12 +60,10 @@ const V={
  west:'63a3aae7-1f49-4215-82e0-cc9bcc6f0be9', palms:'6f29f3a6-1f6c-4621-8f11-2902678119f8', palms2:'6b92072e-94b0-4ab7-b43e-261631e833ef', studio:'5e8fed7f-9abb-41fa-98b5-e4665bef887a',
  verias:'cd4490b4-c792-4698-95d3-47ed6f75c104', touch:'92fe4247-3c0e-4cfe-8b57-ca66b0051cce', truck:'7cc2f641-19be-4679-bb7b-84b4c594323c', aac:'5482b286-e326-4293-bd62-83df8cbbba0e',
  sugar:'11c31c2a-63ec-4874-a9e9-a9b429966827', stl:'db47e270-aadd-4f15-b5b5-062af88016dd', fan:'7cf0f525-4450-4199-94a3-2d7455d5ff88', greta:'9b5924fb-7058-487d-9a22-0f43b88f3241',
- hive:'0b85a742-1983-44ae-b7b3-c90a8c3c20fa', kova:'19e4fcc2-d94a-452f-86d4-e2c7fd40cfae', logos:'750c93fe-ce48-4bba-a279-45043c25b5ed', rise:'c80c21b5-645a-406f-bfc3-2705698e0eda'
+ desert:'c21720cc-0e82-436d-8d20-482447739394', hive:'0b85a742-1983-44ae-b7b3-c90a8c3c20fa', kova:'19e4fcc2-d94a-452f-86d4-e2c7fd40cfae', logos:'750c93fe-ce48-4bba-a279-45043c25b5ed', rise:'c80c21b5-645a-406f-bfc3-2705698e0eda'
 };
 // Edit decision list. b = length in beats, at = clip in-point (s), frame = full | inset (inset sits on bg colour)
 const EDL=[
- // Open: J mark lands
- {n:'Open · JT mark', v:'jtc', at:0.9, b:4, frame:'full'},
  // Client montage: one beat per cut, alternating full bleed and inset on colour
  {n:'Fred Rogers', v:'fredH', at:3.7, b:1, frame:'full', wipeIn:true},
  {n:'Westlake', v:'west', at:7.4, b:1, frame:'inset', bg:C.lime},
@@ -103,9 +101,9 @@ const EDL=[
  {n:'Greta Rose', v:'greta', at:2.6, b:2, frame:'inset', bg:'#E8332A'},
  {n:'Verias', v:'verias', at:2.2, b:2, frame:'full'},
  {n:'Sugar Bowl', v:'sugar', at:5.0, b:2, frame:'full'},
- // End card
- {n:'End · Josh Turner', v:'jtc', at:6.4, b:4, frame:'full', wipeIn:true},
- {n:'End · URL', word:'THEJT.STUDIO', bg:C.lime, fg:C.ink, b:4},
+ // Back into the montage: the wipe on the first shot hides the loop point
+ {n:'Designed for the Desert', v:'desert', at:1.5, b:2, frame:'inset', bg:C.lime},
+ {n:'Ford Fan Zone', v:'fan', at:8.7, b:2, frame:'full'},
 ];
 const WIPE=['#DAF40A','#0A0F12','#F7F7F7','#DAF40A','#0A0F12'];
 
@@ -154,7 +152,7 @@ document.getElementById('click').onclick=e=>{clickOn=!clickOn; if(!actx) actx=ne
 document.getElementById('bpm').onchange=e=>{const p=pos; bpm=+e.target.value||110; startAt=performance.now()-p*beatLen()*1000};
 document.getElementById('music').onchange=e=>{const f=e.target.files[0]; if(f){audio.src=URL.createObjectURL(f);}};
 document.getElementById('scrub').oninput=e=>{pos=e.target.value/1000*TOTAL; startAt=performance.now()-pos*beatLen()*1000; if(audio.src) audio.currentTime=pos*beatLen();};
-document.getElementById('log').textContent+=` ${EDL.length} shots, ${TOTAL} beats = ${(TOTAL*60/110).toFixed(1)}s at 110 BPM.`;
+document.getElementById('log').textContent+=` ${EDL.length} shots, ${TOTAL} beats = ${(TOTAL*60/bpm).toFixed(1)}s at 110 BPM.`;
 requestAnimationFrame(frame);
 </script>
 </body>
